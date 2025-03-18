@@ -1,0 +1,2010 @@
+controls:
+- code: CIS-AZ-01
+  name: MFA enabled for all privileged users
+  description: Multi-factor authentication should be enabled for accounts with owner/contributor
+    permissions
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable MFA for all privileged accounts via Azure AD Conditional
+    Access
+  provider_check_ref:
+    azure: 151e82c5-5341-a74b-1eb0-bc38d2c84bb5
+    aws: iam-user-mfa-enabled
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.2
+    - CC6.3
+    nist:
+    - IA-2
+    - IA-2(1)
+    - IA-2(2)
+    iso27001:
+    - A.8.5
+    - A.5.17
+    - A.5.15
+- code: CIS-AZ-02
+  name: MFA enabled for all users
+  description: Multi-factor authentication should be enabled for all users
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable MFA via Azure AD Conditional Access policy for all users
+  provider_check_ref:
+    azure: 57e98606-6b1e-6193-0e3d-fe621387c16b
+    aws: iam-root-access-key-check
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.2
+    - CC6.3
+    nist:
+    - IA-2
+    - IA-2(1)
+    - IA-2(2)
+    iso27001:
+    - A.8.5
+    - A.5.17
+    - A.5.15
+- code: CIS-AZ-03
+  name: No custom owner roles
+  description: Custom subscription owner roles should not exist to prevent privilege
+    escalation
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Remove custom roles with owner-level permissions; use built-in
+    roles
+  provider_check_ref:
+    azure: a451c1ef-c1f8-df24-8d1b-0a5b2527fe93
+    aws: iam-policy-no-statements-with-admin-access
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.2
+    - CC6.3
+    nist:
+    - AC-2
+    - AC-3
+    - AC-6
+    iso27001:
+    - A.5.15
+    - A.8.2
+    - A.5.18
+- code: CIS-AZ-04
+  name: Diagnostic logs enabled
+  description: Diagnostic logs in resources should be enabled for activity tracking
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable diagnostic settings on all critical resources, send to
+    Log Analytics
+  provider_check_ref:
+    azure: b6a28450-dd5f-11e6-bf01-fe55135034f3
+    aws: cloud-trail-cloud-watch-logs-enabled
+  framework_mappings:
+    soc2:
+    - CC7.2
+    - CC7.3
+    nist:
+    - AU-2
+    - AU-3
+    - AU-12
+    iso27001:
+    - A.8.15
+    - A.8.16
+- code: CIS-AZ-05
+  name: Activity log alert for security policy changes
+  description: An activity log alert should exist for specific policy operations
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create Activity Log alerts for Create/Update Security Policy operations
+  provider_check_ref:
+    azure: b1bb3e54-0b9d-4f74-8c21-26d0b88e0e89
+    aws: cloudwatch-alarm-action-check
+  framework_mappings:
+    soc2:
+    - CC7.2
+    - CC7.3
+    nist:
+    - AU-6
+    - SI-4
+    iso27001:
+    - A.8.15
+    - A.8.16
+    - A.5.25
+- code: CIS-AZ-06
+  name: Flow logs configured for NSGs
+  description: Network Security Group flow logs should be enabled
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable NSG flow logs and send to Storage Account or Log Analytics
+  provider_check_ref:
+    azure: f1ef8cd2-7b09-4e39-b6d4-54ea5ef0ceac
+    aws: vpc-flow-logs-enabled
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.2
+    nist:
+    - AU-2
+    - AU-12
+    - SI-4
+    iso27001:
+    - A.8.15
+    - A.8.16
+    - A.8.20
+- code: CIS-AZ-07
+  name: Storage account encryption with CMK
+  description: Storage accounts should use customer-managed keys for encryption
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure storage account encryption with customer-managed keys
+    from Key Vault
+  provider_check_ref:
+    azure: 2b23c215-9507-4590-88fd-de5dbb3806be
+    aws: s3-bucket-server-side-encryption-enabled
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-08
+  name: SQL DB transparent data encryption
+  description: Transparent data encryption on SQL databases should be enabled
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable TDE on all SQL databases
+  provider_check_ref:
+    azure: 094b92ef-df89-4e2c-b957-587a6a4e8811
+    aws: rds-storage-encrypted
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-09
+  name: HTTPS-only access to storage
+  description: Secure transfer to storage accounts should be enabled
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set 'Secure transfer required' to enabled on storage accounts
+  provider_check_ref:
+    azure: 1a4e1739-0a3b-4d32-85f5-4b7c1234abcd
+    aws: s3-bucket-ssl-requests-only
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-8(1)
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-10
+  name: HTTPS enforced on web apps
+  description: Web applications should only be accessible over HTTPS
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable HTTPS Only in App Service configuration
+  provider_check_ref:
+    azure: cb080eec-5e28-4ac6-b0f2-22ab2c7e6740
+    aws: alb-http-to-https-redirection-check
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - SC-8
+    - SC-8(1)
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-11
+  name: Storage account public access disabled
+  description: Public access should be disabled on storage accounts
+  severity: high
+  framework: cis-lite
+  remediation_hint: Disable blob public access on storage accounts
+  provider_check_ref:
+    azure: 51fd8bb1-0db4-4353-8033-9f540bfba3a8
+    aws: s3-bucket-public-read-prohibited
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    - CC6.7
+    nist:
+    - AC-3
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.3
+    - A.5.15
+    - A.8.20
+- code: CIS-AZ-12
+  name: No publicly accessible blob containers
+  description: Storage blob containers should not allow anonymous public access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set container access level to Private for all blob containers
+  provider_check_ref:
+    azure: 34c877a2-cafe-4a14-a4c7-4f4a2cedc96a
+    aws: s3-bucket-public-write-prohibited
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    - CC6.7
+    nist:
+    - AC-3
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.3
+    - A.5.15
+    - A.8.20
+- code: CIS-AZ-13
+  name: Restrict SSH access from internet
+  description: Management ports should not be open to the internet (SSH/22)
+  severity: high
+  framework: cis-lite
+  remediation_hint: Remove or restrict NSG rules allowing inbound SSH from 0.0.0.0/0
+  provider_check_ref:
+    azure: 805861e4-1a5a-4298-b3e5-3c7a8aee9573
+    aws: restricted-ssh
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    - SC-7(5)
+    iso27001:
+    - A.8.20
+    - A.8.21
+    - A.8.22
+- code: CIS-AZ-14
+  name: Restrict RDP access from internet
+  description: Management ports should not be open to the internet (RDP/3389)
+  severity: high
+  framework: cis-lite
+  remediation_hint: Remove or restrict NSG rules allowing inbound RDP from 0.0.0.0/0
+  provider_check_ref:
+    azure: 9c4269b6-3ee5-4556-b7c1-29e8503ab3c3
+    aws: restricted-common-ports
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    - SC-7(5)
+    iso27001:
+    - A.8.20
+    - A.8.21
+    - A.8.22
+- code: CIS-AZ-15
+  name: No unrestricted network access to storage
+  description: Storage accounts should restrict network access using virtual network
+    rules
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure storage firewall rules to allow access only from specific
+    VNets/IPs
+  provider_check_ref:
+    azure: 8c122334-9d20-9b6f-ec10-45632662e04a
+    aws: s3-account-level-public-access-blocks
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    - CC6.7
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+    - A.8.3
+- code: CIS-AZ-16
+  name: Key Vault purge protection enabled
+  description: Key vaults should have purge protection enabled
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable purge protection on all Key Vaults
+  provider_check_ref:
+    azure: a2e13842-2e79-4d70-b6f1-0e1be2b3a6e0
+    aws: kms-cmk-not-scheduled-for-deletion
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-12(1)
+    iso27001:
+    - A.8.24
+    - A.5.33
+- code: CIS-AZ-17
+  name: Key Vault soft delete enabled
+  description: Key vaults should have soft delete enabled
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable soft delete on all Key Vaults
+  provider_check_ref:
+    azure: 78211c20-b4f3-11e8-96f8-529269fb1459
+    aws: cmk-backing-key-rotation-enabled
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-12(1)
+    iso27001:
+    - A.8.24
+    - A.5.33
+- code: CIS-AZ-18
+  name: Key expiration set
+  description: Keys should have an expiration date set
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set expiration date on all Key Vault keys
+  provider_check_ref:
+    azure: c1a46e3a-2078-4e67-ab8d-6de0f0842946
+    aws: iam-expired-certificates
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-12(3)
+    iso27001:
+    - A.8.24
+    - A.5.17
+- code: CIS-AZ-19
+  name: VM endpoint protection installed
+  description: Endpoint protection solution should be installed on virtual machines
+  severity: high
+  framework: cis-lite
+  remediation_hint: Install Microsoft Antimalware or compatible endpoint protection
+    on all VMs
+  provider_check_ref:
+    azure: 83f577bd-a1b6-b7e1-0891-12ca19d1e6df
+    aws: ec2-instance-managed-by-systems-manager
+  framework_mappings:
+    soc2:
+    - CC6.8
+    - CC7.1
+    nist:
+    - SI-3
+    - SI-3(1)
+    iso27001:
+    - A.8.7
+    - A.8.8
+- code: CIS-AZ-20
+  name: System updates should be installed
+  description: System updates should be installed on machines
+  severity: high
+  framework: cis-lite
+  remediation_hint: Apply pending system updates via Azure Update Management
+  provider_check_ref:
+    azure: 4ab6e3c5-74dd-8b35-9ab9-36f3d6f16c27
+    aws: ec2-managedinstance-patch-compliance-status-check
+  framework_mappings:
+    soc2:
+    - CC6.8
+    - CC7.1
+    nist:
+    - SI-2
+    - SI-2(2)
+    iso27001:
+    - A.8.8
+    - A.8.19
+- code: CIS-AZ-21
+  name: Key Vault network access restricted
+  description: Key vaults should restrict network access using firewall rules
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set Key Vault firewall default action to Deny and add allowed
+    networks
+  provider_check_ref:
+    azure: 2c8bfb3a-3e21-4c5d-9b1a-7e8f4a2b1c3d
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    - CC6.7
+    nist:
+    - AC-4
+    - SC-7
+    - SC-12
+    iso27001:
+    - A.8.20
+    - A.8.24
+    - A.8.21
+- code: CIS-AZ-22
+  name: Key Vault RBAC authorization enabled
+  description: Key vaults should use RBAC for data plane authorization
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable RBAC authorization on Key Vault and migrate from access
+    policies
+  provider_check_ref:
+    azure: d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - AC-2
+    - AC-3
+    - AC-6
+    iso27001:
+    - A.5.15
+    - A.8.2
+    - A.5.18
+- code: CIS-AZ-23
+  name: Web app minimum TLS 1.2
+  description: Web apps should require minimum TLS version 1.2
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set minimum TLS version to 1.2 in App Service TLS/SSL settings
+  provider_check_ref:
+    azure: e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-8(1)
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-24
+  name: Remote debugging disabled on web apps
+  description: Remote debugging should be turned off for web applications
+  severity: high
+  framework: cis-lite
+  remediation_hint: Disable remote debugging in App Service Configuration > General
+    Settings
+  provider_check_ref:
+    azure: f2a3b4c5-d6e7-8f9a-0b1c-2d3e4f5a6b7c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - CM-7
+    - CM-7(1)
+    iso27001:
+    - A.8.9
+    - A.8.26
+- code: CIS-AZ-25
+  name: FTP disabled on web apps
+  description: FTPS or disabling FTP should be enforced on web apps
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set FTP state to Disabled or FTPS Only in App Service configuration
+  provider_check_ref:
+    azure: a3b4c5d6-e7f8-9a0b-1c2d-3e4f5a6b7c8d
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - CM-7
+    - SC-8
+    iso27001:
+    - A.8.9
+    - A.8.24
+- code: CIS-AZ-26
+  name: Web app managed identity configured
+  description: Web apps should use managed identity for authentication
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable system-assigned or user-assigned managed identity on the
+    App Service
+  provider_check_ref:
+    azure: b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9e
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - IA-2
+    - IA-5
+    iso27001:
+    - A.8.5
+    - A.5.17
+    - A.5.16
+- code: CIS-AZ-27
+  name: SQL Server public network access disabled
+  description: SQL servers should disable public network access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set public network access to Disabled and use private endpoints
+  provider_check_ref:
+    azure: c5d6e7f8-a9b0-1c2d-3e4f-5a6b7c8d9e0f
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-28
+  name: SQL Server minimum TLS 1.2
+  description: SQL servers should require minimum TLS version 1.2
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set minimal TLS version to 1.2 on SQL Server
+  provider_check_ref:
+    azure: d6e7f8a9-b0c1-2d3e-4f5a-6b7c8d9e0f1a
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-8(1)
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-29
+  name: SQL Server Azure AD admin configured
+  description: An Azure Active Directory administrator should be provisioned for SQL
+    servers
+  severity: high
+  framework: cis-lite
+  remediation_hint: Configure an Azure AD administrator for the SQL Server
+  provider_check_ref:
+    azure: e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.2
+    nist:
+    - AC-2
+    - IA-2
+    iso27001:
+    - A.8.5
+    - A.5.16
+    - A.5.18
+- code: CIS-AZ-30
+  name: SQL Server auditing enabled
+  description: Auditing should be enabled on SQL servers
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable auditing on the SQL Server and send logs to Log Analytics
+    or storage
+  provider_check_ref:
+    azure: f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC7.2
+    nist:
+    - AU-2
+    - AU-3
+    - AU-12
+    iso27001:
+    - A.8.15
+    - A.8.16
+- code: CIS-AZ-31
+  name: VM uses managed disks
+  description: Virtual machines should use managed disks
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Migrate VM disks to Azure Managed Disks
+  provider_check_ref:
+    azure: a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4d
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.8
+    nist:
+    - CM-6
+    - SC-28
+    iso27001:
+    - A.8.9
+    - A.8.10
+- code: CIS-AZ-32
+  name: VM disk encryption enabled
+  description: Virtual machine disks should be encrypted
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable Azure Disk Encryption or encryption at host for VM disks
+  provider_check_ref:
+    azure: b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5e
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-33
+  name: VM boot diagnostics enabled
+  description: Boot diagnostics should be enabled on virtual machines
+  severity: low
+  framework: cis-lite
+  remediation_hint: Enable boot diagnostics in VM diagnostics settings
+  provider_check_ref:
+    azure: c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f
+  framework_mappings:
+    soc2:
+    - CC7.2
+    nist:
+    - AU-2
+    - AU-12
+    iso27001:
+    - A.8.15
+    - A.8.16
+- code: CIS-AZ-34
+  name: VM secure boot enabled
+  description: Secure boot should be enabled on supported virtual machines
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable secure boot via trusted launch configuration on the VM
+  provider_check_ref:
+    azure: d2e3f4a5-b6c7-8d9e-0f1a-2b3c4d5e6f7a
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.8
+    nist:
+    - SI-7
+    - SI-7(1)
+    iso27001:
+    - A.8.9
+    - A.8.27
+- code: CIS-AZ-35
+  name: Cosmos DB public access disabled
+  description: Cosmos DB accounts should disable public network access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Disable public network access and use private endpoints
+  provider_check_ref:
+    azure: e3f4a5b6-c7d8-9e0f-1a2b-3c4d5e6f7a8b
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-36
+  name: Cosmos DB VNet filter enabled
+  description: Cosmos DB accounts should enable virtual network filtering
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable virtual network filter on the Cosmos DB account
+  provider_check_ref:
+    azure: f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-37
+  name: PostgreSQL SSL enforcement
+  description: SSL enforcement should be enabled for PostgreSQL flexible servers
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable SSL enforcement or require secure transport on PostgreSQL
+    server
+  provider_check_ref:
+    azure: a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0d
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-8(1)
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-38
+  name: PostgreSQL log checkpoints enabled
+  description: Log checkpoints should be enabled for PostgreSQL servers
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set log_checkpoints server parameter to ON
+  provider_check_ref:
+    azure: b6c7d8e9-f0a1-2b3c-4d5e-6f7a8b9c0d1e
+  framework_mappings:
+    soc2:
+    - CC7.2
+    nist:
+    - AU-2
+    - AU-12
+    iso27001:
+    - A.8.15
+    - A.8.16
+- code: CIS-AZ-39
+  name: Container registry admin user disabled
+  description: Container registries should not have the admin user enabled
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Disable admin user and use Azure AD service principal for authentication
+  provider_check_ref:
+    azure: c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2f
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - AC-2
+    - AC-6
+    - IA-2
+    iso27001:
+    - A.5.15
+    - A.8.5
+    - A.5.16
+- code: CIS-AZ-40
+  name: Container registry public access disabled
+  description: Container registries should disable public network access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Disable public network access and use private endpoints
+  provider_check_ref:
+    azure: d8e9f0a1-b2c3-4d5e-6f7a-8b9c0d1e2f3a
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-41
+  name: AKS RBAC enabled
+  description: AKS clusters should have Kubernetes RBAC enabled
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable Kubernetes RBAC on the AKS cluster
+  provider_check_ref:
+    azure: e9f0a1b2-c3d4-5e6f-7a8b-9c0d1e2f3a4b
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - AC-2
+    - AC-3
+    - AC-6
+    iso27001:
+    - A.5.15
+    - A.8.2
+    - A.5.18
+- code: CIS-AZ-42
+  name: AKS network policy configured
+  description: AKS clusters should have a network policy configured
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure Azure or Calico network policy on the AKS cluster
+  provider_check_ref:
+    azure: f0a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AZ-43
+  name: App Gateway WAF enabled
+  description: Application Gateway should have Web Application Firewall enabled
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable WAF on Application Gateway or attach a WAF policy
+  provider_check_ref:
+    azure: 01a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.1
+    nist:
+    - SC-7
+    - SI-3
+    iso27001:
+    - A.8.20
+    - A.8.23
+- code: CIS-AZ-44
+  name: App Gateway WAF v2 SKU
+  description: Application Gateway should use WAF_v2 SKU tier
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Upgrade Application Gateway to WAF_v2 tier
+  provider_check_ref:
+    azure: 02a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.1
+    nist:
+    - SC-7
+    - SI-3
+    iso27001:
+    - A.8.20
+    - A.8.23
+- code: CIS-AZ-45
+  name: Public IP DDoS protection
+  description: Public IP addresses should have DDoS protection enabled
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable DDoS Protection Standard on public IP addresses
+  provider_check_ref:
+    azure: 03a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - A1.2
+    nist:
+    - SC-5
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.5.29
+- code: CIS-AZ-46
+  name: VNet DDoS protection plan
+  description: Virtual networks should have DDoS protection plan enabled
+  severity: high
+  framework: cis-lite
+  remediation_hint: Attach a DDoS Protection Standard plan to the virtual network
+  provider_check_ref:
+    azure: 04a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - A1.2
+    nist:
+    - SC-5
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.5.29
+- code: CIS-AZ-47
+  name: Network Watcher enabled
+  description: Network Watcher should be enabled in all regions
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable Network Watcher in each Azure region used
+  provider_check_ref:
+    azure: 05a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC7.2
+    nist:
+    - AU-2
+    - SI-4
+    iso27001:
+    - A.8.15
+    - A.8.16
+- code: CIS-AZ-48
+  name: VPN Gateway non-basic SKU
+  description: VPN Gateway should not use Basic SKU
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Upgrade VPN Gateway from Basic to VpnGw1 or higher
+  provider_check_ref:
+    azure: 06a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - SC-8
+    iso27001:
+    - A.8.20
+    - A.8.24
+- code: CIS-AZ-49
+  name: Front Door WAF policy
+  description: Front Door should have WAF policy attached
+  severity: high
+  framework: cis-lite
+  remediation_hint: Attach a WAF policy to Front Door frontend endpoints
+  provider_check_ref:
+    azure: 07a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.1
+    nist:
+    - SC-7
+    - SI-3
+    iso27001:
+    - A.8.20
+    - A.8.23
+- code: CIS-AZ-50
+  name: Front Door HTTPS redirect
+  description: Front Door should redirect HTTP to HTTPS
+  severity: high
+  framework: cis-lite
+  remediation_hint: Add an HTTP to HTTPS redirect routing rule on Front Door
+  provider_check_ref:
+    azure: 08a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-8(1)
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-51
+  name: MySQL SSL enforcement
+  description: SSL enforcement should be enabled for MySQL flexible servers
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable SSL enforcement or require secure transport on MySQL server
+  provider_check_ref:
+    azure: 09a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-8(1)
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-52
+  name: MySQL public access disabled
+  description: MySQL servers should disable public network access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Disable public network access and use private endpoints
+  provider_check_ref:
+    azure: 10a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-53
+  name: MySQL minimum TLS 1.2
+  description: MySQL servers should require minimum TLS version 1.2
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set minimum TLS version to 1.2 on MySQL server
+  provider_check_ref:
+    azure: 11a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-8(1)
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-54
+  name: Redis minimum TLS 1.2
+  description: Redis Cache should require minimum TLS version 1.2
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set minimum TLS version to 1.2 on Redis Cache
+  provider_check_ref:
+    azure: 12a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-8(1)
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-55
+  name: Redis public access disabled
+  description: Redis Cache should disable public network access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Disable public network access and use private endpoints
+  provider_check_ref:
+    azure: 13a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-56
+  name: Redis non-SSL port disabled
+  description: Redis Cache should disable non-SSL port 6379
+  severity: high
+  framework: cis-lite
+  remediation_hint: Disable non-SSL port in Redis Cache configuration
+  provider_check_ref:
+    azure: 14a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-8
+    - CM-7
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-57
+  name: Event Hub CMK encryption
+  description: Event Hub namespaces should use customer-managed key encryption
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure CMK encryption on Event Hub namespace
+  provider_check_ref:
+    azure: 15a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-58
+  name: Event Hub public access disabled
+  description: Event Hub namespaces should disable public network access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Disable public network access and use private endpoints
+  provider_check_ref:
+    azure: 16a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-59
+  name: Service Bus CMK encryption
+  description: Service Bus namespaces should use customer-managed key encryption
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure CMK encryption on Service Bus namespace
+  provider_check_ref:
+    azure: 17a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-60
+  name: Service Bus public access disabled
+  description: Service Bus namespaces should disable public network access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Disable public network access and use private endpoints
+  provider_check_ref:
+    azure: 18a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-61
+  name: Log Analytics retention >= 90 days
+  description: Log Analytics workspace should retain logs for at least 90 days
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set workspace retention to at least 90 days
+  provider_check_ref:
+    azure: 19a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC7.2
+    - CC7.3
+    nist:
+    - AU-4
+    - AU-11
+    iso27001:
+    - A.8.15
+    - A.5.33
+- code: CIS-AZ-62
+  name: Log Analytics CMK encryption
+  description: Log Analytics workspace should use customer-managed key encryption
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure CMK encryption via dedicated cluster or direct key vault
+    reference
+  provider_check_ref:
+    azure: 20a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-63
+  name: Managed disk encryption
+  description: Managed disks should be encrypted
+  severity: high
+  framework: cis-lite
+  remediation_hint: Ensure disk encryption is configured on managed disks
+  provider_check_ref:
+    azure: 21a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-64
+  name: Managed disk network access restricted
+  description: Managed disks should restrict network access
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set disk network access policy to DenyAll or AllowPrivate
+  provider_check_ref:
+    azure: 22a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-65
+  name: NIC no public IP
+  description: Network interfaces should not have public IPs directly attached
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Remove direct public IP associations and use load balancer or
+    NAT gateway
+  provider_check_ref:
+    azure: 23a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AZ-66
+  name: NIC IP forwarding disabled
+  description: IP forwarding should be disabled on NICs unless used for NVA
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Disable IP forwarding unless the NIC is attached to a network
+    virtual appliance
+  provider_check_ref:
+    azure: 24a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - AC-4
+    - CM-7
+    iso27001:
+    - A.8.20
+    - A.8.9
+- code: CIS-AZ-67
+  name: Web app client certificate auth
+  description: Web apps should require client certificate authentication
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable client certificate mode on the App Service
+  provider_check_ref:
+    azure: 25a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - IA-2
+    - IA-5
+    iso27001:
+    - A.8.5
+    - A.5.17
+- code: CIS-AZ-68
+  name: Web app Always On enabled
+  description: Web apps should have Always On enabled to avoid cold starts
+  severity: low
+  framework: cis-lite
+  remediation_hint: Enable Always On in App Service general settings
+  provider_check_ref:
+    azure: 26a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - SC-5
+    - CP-10
+    iso27001:
+    - A.8.14
+    - A.5.29
+- code: CIS-AZ-69
+  name: Web app HTTP/2 enabled
+  description: Web apps should have HTTP/2 protocol enabled
+  severity: low
+  framework: cis-lite
+  remediation_hint: Enable HTTP 2.0 in App Service general settings
+  provider_check_ref:
+    azure: 27a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.7
+    nist:
+    - SC-8
+    iso27001:
+    - A.8.26
+    - A.8.24
+- code: CIS-AZ-70
+  name: Web app VNet integration
+  description: Web apps should have VNet integration for outbound traffic
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure regional VNet integration on the App Service
+  provider_check_ref:
+    azure: 28a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AZ-71
+  name: Web app authentication configured
+  description: Web apps should have authentication configured
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable App Service Authentication (EasyAuth) or configure identity
+    provider
+  provider_check_ref:
+    azure: 29a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - AC-3
+    - IA-2
+    iso27001:
+    - A.8.5
+    - A.5.15
+    - A.5.16
+- code: CIS-AZ-72
+  name: Storage minimum TLS 1.2
+  description: Storage accounts should require minimum TLS version 1.2
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set minimum TLS version to TLS1_2 on storage account
+  provider_check_ref:
+    azure: 30a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-8(1)
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-73
+  name: Storage infrastructure encryption
+  description: Storage accounts should have infrastructure encryption (double encryption)
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable infrastructure encryption on storage account creation
+  provider_check_ref:
+    azure: 31a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-74
+  name: Storage shared key access disabled
+  description: Storage accounts should disable shared key access
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Disable shared key access and use Azure AD authentication
+  provider_check_ref:
+    azure: 32a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - AC-2
+    - IA-2
+    iso27001:
+    - A.8.5
+    - A.5.17
+    - A.5.15
+- code: CIS-AZ-75
+  name: Storage blob versioning enabled
+  description: Storage accounts should have blob versioning enabled for data protection
+  severity: low
+  framework: cis-lite
+  remediation_hint: Enable blob versioning on the storage account
+  provider_check_ref:
+    azure: 33a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - CP-9
+    - CP-10
+    iso27001:
+    - A.8.13
+    - A.5.29
+- code: CIS-AZ-76
+  name: Key Vault secret expiration set
+  description: Key Vault secrets should have an expiration date
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set expiration date on all Key Vault secrets
+  provider_check_ref:
+    azure: 34a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-12(3)
+    iso27001:
+    - A.8.24
+    - A.5.17
+- code: CIS-AZ-77
+  name: Key Vault certificate expiration set
+  description: Key Vault certificates should have an expiration date
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Ensure certificates have renewal/expiration policies configured
+  provider_check_ref:
+    azure: 35a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-12(3)
+    iso27001:
+    - A.8.24
+    - A.5.17
+- code: CIS-AZ-78
+  name: Key Vault private endpoint
+  description: Key Vault should use private endpoints
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure private endpoint connections for the Key Vault
+  provider_check_ref:
+    azure: 36a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    - CC6.7
+    nist:
+    - AC-4
+    - SC-7
+    - SC-12
+    iso27001:
+    - A.8.20
+    - A.8.24
+    - A.8.21
+- code: CIS-AZ-79
+  name: Batch account public access disabled
+  description: Batch accounts should disable public network access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Disable public network access and use private endpoints
+  provider_check_ref:
+    azure: 37a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-80
+  name: Batch account CMK encryption
+  description: Batch accounts should use customer-managed key encryption
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure CMK encryption on Batch account
+  provider_check_ref:
+    azure: 38a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-81
+  name: Cosmos DB CMK encryption
+  description: Cosmos DB should use customer-managed key encryption
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure CMK encryption with Key Vault on Cosmos DB account
+  provider_check_ref:
+    azure: 39a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AZ-82
+  name: Cosmos DB automatic failover
+  description: Cosmos DB should have automatic failover enabled
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable automatic failover on Cosmos DB account
+  provider_check_ref:
+    azure: 40a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - CP-7
+    - CP-10
+    iso27001:
+    - A.8.14
+    - A.5.29
+- code: CIS-AZ-83
+  name: AKS private cluster
+  description: AKS clusters should be configured as private clusters
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable private cluster mode to restrict API server access
+  provider_check_ref:
+    azure: 41a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AZ-84
+  name: AKS Azure AD integration
+  description: AKS clusters should have Azure AD integration enabled
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable Azure AD integration on the AKS cluster
+  provider_check_ref:
+    azure: 42a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - AC-2
+    - IA-2
+    iso27001:
+    - A.8.5
+    - A.5.16
+    - A.5.15
+
+# ── AWS CIS-lite controls ────────────────────────────────────────────
+- code: CIS-AWS-01
+  name: S3 Block Public Access
+  description: Ensure S3 buckets have block public access enabled at the bucket level
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable all four Block Public Access settings on the S3 bucket
+  provider_check_ref:
+    aws: s3-bucket-public-access-prohibited
+  resource_types:
+  - aws.s3.bucket
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-3
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.3
+    - A.5.15
+    - A.8.20
+- code: CIS-AWS-02
+  name: S3 Default Encryption
+  description: Ensure S3 buckets have default server-side encryption enabled
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable default encryption (AES-256 or AWS KMS) on the S3 bucket
+  provider_check_ref:
+    aws: s3-bucket-server-side-encryption-enabled
+  resource_types:
+  - aws.s3.bucket
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AWS-03
+  name: S3 Versioning
+  description: Ensure S3 bucket versioning is enabled for data protection
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable versioning on the S3 bucket to protect against accidental
+    deletion
+  provider_check_ref:
+    aws: s3-bucket-versioning-enabled
+  resource_types:
+  - aws.s3.bucket
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - CP-9
+    - CP-10
+    iso27001:
+    - A.8.13
+    - A.5.29
+- code: CIS-AWS-04
+  name: S3 Logging
+  description: Ensure S3 bucket server access logging is enabled
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable server access logging and direct logs to a dedicated logging
+    bucket
+  provider_check_ref:
+    aws: s3-bucket-logging-enabled
+  resource_types:
+  - aws.s3.bucket
+  framework_mappings:
+    soc2:
+    - CC7.2
+    - CC7.3
+    nist:
+    - AU-2
+    - AU-3
+    - AU-12
+    iso27001:
+    - A.8.15
+    - A.8.16
+- code: CIS-AWS-05
+  name: EC2 IMDSv2
+  description: Ensure EC2 instances use Instance Metadata Service Version 2 (IMDSv2)
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set HttpTokens to required in the instance metadata options to
+    enforce IMDSv2
+  provider_check_ref:
+    aws: ec2-imdsv2-check
+  resource_types:
+  - aws.ec2.instance
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - AC-3
+    - AC-6
+    iso27001:
+    - A.8.5
+    - A.5.15
+- code: CIS-AWS-06
+  name: EC2 Public IP
+  description: Ensure EC2 instances do not have public IP addresses
+  severity: high
+  framework: cis-lite
+  remediation_hint: Launch instances in private subnets and use NAT gateways or load
+    balancers for internet access
+  provider_check_ref:
+    aws: ec2-instance-no-public-ip
+  resource_types:
+  - aws.ec2.instance
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AWS-07
+  name: Security Group SSH Restricted
+  description: Ensure no security group allows unrestricted ingress to SSH (port 22)
+  severity: high
+  framework: cis-lite
+  remediation_hint: Restrict SSH access to known IP ranges instead of 0.0.0.0/0
+  provider_check_ref:
+    aws: restricted-ssh
+  resource_types:
+  - aws.ec2.security-group
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    - SC-7(5)
+    iso27001:
+    - A.8.20
+    - A.8.21
+    - A.8.22
+- code: CIS-AWS-08
+  name: Security Group RDP Restricted
+  description: Ensure no security group allows unrestricted ingress to RDP (port 3389)
+  severity: high
+  framework: cis-lite
+  remediation_hint: Restrict RDP access to known IP ranges instead of 0.0.0.0/0
+  provider_check_ref:
+    aws: restricted-common-ports
+  resource_types:
+  - aws.ec2.security-group
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    - SC-7(5)
+    iso27001:
+    - A.8.20
+    - A.8.21
+    - A.8.22
+- code: CIS-AWS-09
+  name: IAM Root MFA
+  description: Ensure MFA is enabled for the root account
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable hardware MFA on the root account from IAM Security Credentials
+  provider_check_ref:
+    aws: root-account-mfa-enabled
+  resource_types:
+  - aws.iam.account-summary
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.2
+    - CC6.3
+    nist:
+    - IA-2
+    - IA-2(1)
+    - IA-2(2)
+    iso27001:
+    - A.8.5
+    - A.5.17
+    - A.5.15
+- code: CIS-AWS-10
+  name: IAM User MFA
+  description: Ensure MFA is enabled for all IAM users with console access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable virtual or hardware MFA for all IAM users with console
+    password
+  provider_check_ref:
+    aws: iam-user-mfa-enabled
+  resource_types:
+  - aws.iam.user
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.2
+    - CC6.3
+    nist:
+    - IA-2
+    - IA-2(1)
+    iso27001:
+    - A.8.5
+    - A.5.17
+- code: CIS-AWS-11
+  name: IAM Password Policy
+  description: Ensure IAM password policy meets minimum complexity and rotation requirements
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure password policy with minimum 14 characters, require
+    uppercase, lowercase, numbers, symbols, max age 90 days, and 24 password memory
+  provider_check_ref:
+    aws: iam-password-policy
+  resource_types:
+  - aws.iam.password-policy
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.2
+    nist:
+    - IA-5
+    - IA-5(1)
+    iso27001:
+    - A.8.5
+    - A.5.17
+- code: CIS-AWS-12
+  name: IAM Access Key Rotation
+  description: Ensure IAM access keys are rotated within 90 days
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Rotate access keys older than 90 days and consider using IAM roles
+    instead
+  provider_check_ref:
+    aws: access-keys-rotated
+  resource_types:
+  - aws.iam.user
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.2
+    nist:
+    - IA-5
+    - IA-5(1)
+    iso27001:
+    - A.8.5
+    - A.5.17
+- code: CIS-AWS-13
+  name: RDS Encryption
+  description: Ensure RDS DB instances have encryption at rest enabled
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable encryption at rest when creating the RDS instance (cannot
+    be changed after creation)
+  provider_check_ref:
+    aws: rds-storage-encrypted
+  resource_types:
+  - aws.rds.instance
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AWS-14
+  name: RDS Public Access
+  description: Ensure RDS DB instances are not publicly accessible
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set PubliclyAccessible to false and use VPC security groups to
+    control access
+  provider_check_ref:
+    aws: rds-instance-public-access-check
+  resource_types:
+  - aws.rds.instance
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.8.21
+- code: CIS-AWS-15
+  name: RDS Backup Retention
+  description: Ensure RDS DB instances have backup retention period of at least 7
+    days
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set BackupRetentionPeriod to at least 7 days in RDS instance configuration
+  provider_check_ref:
+    aws: db-instance-backup-enabled
+  resource_types:
+  - aws.rds.instance
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - CP-9
+    - CP-10
+    iso27001:
+    - A.8.13
+    - A.5.29
+- code: CIS-AWS-16
+  name: Lambda Public Access
+  description: Ensure Lambda function resource-based policies do not grant public
+    access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Remove resource-based policy statements with Principal set to
+    * without conditions
+  provider_check_ref:
+    aws: lambda-function-public-access-prohibited
+  resource_types:
+  - aws.lambda.function
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-3
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.3
+    - A.5.15
+    - A.8.20
+- code: CIS-AWS-17
+  name: EBS Encryption
+  description: Ensure EBS volumes are encrypted at rest
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable EBS encryption by default in account settings or encrypt
+    individual volumes
+  provider_check_ref:
+    aws: encrypted-volumes
+  resource_types:
+  - aws.ec2.volume
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+    - A.8.9
+- code: CIS-AWS-18
+  name: VPC Flow Logs
+  description: Ensure VPC flow logs are enabled for network monitoring
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable VPC Flow Logs and send to CloudWatch Logs or S3 for analysis
+  provider_check_ref:
+    aws: vpc-flow-logs-enabled
+  resource_types:
+  - aws.ec2.vpc
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.2
+    nist:
+    - AU-2
+    - AU-12
+    - SI-4
+    iso27001:
+    - A.8.15
+    - A.8.16
+    - A.8.20
+- code: CIS-AWS-19
+  name: CloudTrail Enabled
+  description: Ensure CloudTrail is enabled in all regions with multi-region trail
+  severity: high
+  framework: cis-lite
+  remediation_hint: Create a multi-region CloudTrail trail with log file validation
+    enabled
+  provider_check_ref:
+    aws: multi-region-cloudtrail-enabled
+  resource_types:
+  - aws.cloudtrail.trail
+  framework_mappings:
+    soc2:
+    - CC7.2
+    - CC7.3
+    nist:
+    - AU-2
+    - AU-3
+    - AU-12
+    iso27001:
+    - A.8.15
+    - A.8.16
+- code: CIS-AWS-20
+  name: GuardDuty Enabled
+  description: Ensure GuardDuty is enabled for threat detection
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable GuardDuty in all regions and configure findings export
+    to S3
+  provider_check_ref:
+    aws: guardduty-enabled-centralized
+  resource_types:
+  - aws.guardduty.detector
+  framework_mappings:
+    soc2:
+    - CC6.8
+    - CC7.1
+    nist:
+    - SI-3
+    - SI-4
+    iso27001:
+    - A.8.7
+    - A.8.16
