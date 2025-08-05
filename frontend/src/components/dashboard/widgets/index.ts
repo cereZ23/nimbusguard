@@ -1,0 +1,9 @@
+export { default as WidgetWrapper } from "./widget-wrapper";
+export { default as SecureScoreWidget } from "./secure-score-widget";
+export { default as SeverityBreakdownWidget } from "./severity-breakdown-widget";
+export { default as FindingsCountWidget } from "./findings-count-widget";
+export { default as RecentFindingsWidget } from "./recent-findings-widget";
+export { default as ComplianceWidget } from "./compliance-widget";
+export { default as TrendWidget } from "./trend-widget";
+export { default as TopControlsWidget } from "./top-controls-widget";
+export { default as AssetsByTypeWidget } from "./assets-by-type-widget";
