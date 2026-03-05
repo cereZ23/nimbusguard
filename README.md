@@ -18,6 +18,14 @@
   <img src="https://img.shields.io/badge/Celery-37814a?logo=celery&logoColor=white" alt="Celery" />
   <img src="https://img.shields.io/badge/tests-803_passing-brightgreen" alt="Tests" />
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
+  <br/>
+  <a href="https://github.com/cereZ23/nimbusguard/actions"><img src="https://github.com/cereZ23/nimbusguard/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <img src="https://img.shields.io/badge/code%20style-ruff-261230?logo=ruff&logoColor=d7ff64" alt="Ruff" />
+  <img src="https://img.shields.io/badge/type%20checked-mypy-blue?logo=python&logoColor=white" alt="Type Checked" />
+  <img src="https://img.shields.io/badge/security-CIS%20Benchmarks-00b4d8" alt="CIS Benchmarks" />
+  <img src="https://img.shields.io/badge/coverage-84%25-brightgreen" alt="Coverage" />
+  <img src="https://img.shields.io/badge/checks-100+-0ea5e9" alt="Security Checks" />
+  <img src="https://img.shields.io/badge/maintainability-A-brightgreen" alt="Maintainability" />
 </p>
 
 ---
