@@ -1,11 +1,12 @@
 """Webhook dispatcher — sends event notifications to registered webhook URLs."""
+
 from __future__ import annotations
 
 import hashlib
 import hmac
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from sqlalchemy import select
@@ -50,15 +51,13 @@ async def dispatch_webhooks(
             body_bytes = json.dumps(payload).encode()
 
             if wh.secret:
-                sig = hmac.new(
-                    wh.secret.encode(), body_bytes, hashlib.sha256
-                ).hexdigest()
+                sig = hmac.new(wh.secret.encode(), body_bytes, hashlib.sha256).hexdigest()
                 headers["X-CSPM-Signature"] = f"sha256={sig}"
 
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
                 resp = await client.post(wh.url, content=body_bytes, headers=headers)
 
-            wh.last_triggered_at = datetime.now(timezone.utc)
+            wh.last_triggered_at = datetime.now(UTC)
             wh.last_status_code = resp.status_code
             logger.info(
                 "Webhook %s delivered to %s — status %d",
@@ -68,7 +67,7 @@ async def dispatch_webhooks(
             )
         except Exception:
             logger.exception("Webhook delivery failed for %s → %s", wh.id, wh.url)
-            wh.last_triggered_at = datetime.now(timezone.utc)
+            wh.last_triggered_at = datetime.now(UTC)
             wh.last_status_code = 0
 
     if dispatched:
@@ -82,7 +81,7 @@ async def send_test_webhook(webhook: Webhook) -> tuple[int, str]:
     payload = {
         "event": "test",
         "message": "This is a test webhook from CSPM.",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
     headers = {
@@ -92,9 +91,7 @@ async def send_test_webhook(webhook: Webhook) -> tuple[int, str]:
     body_bytes = json.dumps(payload).encode()
 
     if webhook.secret:
-        sig = hmac.new(
-            webhook.secret.encode(), body_bytes, hashlib.sha256
-        ).hexdigest()
+        sig = hmac.new(webhook.secret.encode(), body_bytes, hashlib.sha256).hexdigest()
         headers["X-CSPM-Signature"] = f"sha256={sig}"
 
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:

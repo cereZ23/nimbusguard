@@ -165,9 +165,7 @@ async def test_delete_webhook_not_found(client: AsyncClient, auth_headers: dict)
     "(same as test_accounts.py::test_tenant_isolation). Code is correct — SQL queries filter by tenant_id."
 )
 @pytest.mark.asyncio
-async def test_webhook_tenant_isolation(
-    client: AsyncClient, auth_headers: dict, second_auth_headers: dict
-) -> None:
+async def test_webhook_tenant_isolation(client: AsyncClient, auth_headers: dict, second_auth_headers: dict) -> None:
     # User A creates a webhook
     create_res = await client.post(
         "/api/v1/webhooks",
@@ -191,9 +189,7 @@ async def test_webhook_tenant_isolation(
     assert update_res.status_code == 404
 
     # User B cannot delete it
-    delete_res = await client.delete(
-        f"/api/v1/webhooks/{webhook_id}", headers=second_auth_headers
-    )
+    delete_res = await client.delete(f"/api/v1/webhooks/{webhook_id}", headers=second_auth_headers)
     assert delete_res.status_code == 404
 
 

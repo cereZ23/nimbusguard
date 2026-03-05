@@ -1,4 +1,5 @@
 """IAM checks (CIS-AWS-09, 10, 11, 12)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -135,10 +136,12 @@ def check_access_key_rotation(asset: Asset) -> EvalResult:
                 create_date = datetime.fromisoformat(create_date_str.replace("Z", "+00:00"))
             age_days = (now - create_date).days
             if age_days > 90:
-                stale_keys.append({
-                    "AccessKeyId": key.get("AccessKeyId"),
-                    "age_days": age_days,
-                })
+                stale_keys.append(
+                    {
+                        "AccessKeyId": key.get("AccessKeyId"),
+                        "age_days": age_days,
+                    }
+                )
         except (ValueError, TypeError):
             stale_keys.append({"AccessKeyId": key.get("AccessKeyId"), "reason": "unparseable date"})
 

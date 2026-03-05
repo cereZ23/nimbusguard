@@ -114,9 +114,7 @@ async def test_list_api_keys(client: AsyncClient, auth_headers: dict) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_api_keys_does_not_expose_full_key(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_list_api_keys_does_not_expose_full_key(client: AsyncClient, auth_headers: dict) -> None:
     create_res = await client.post(
         "/api/v1/api-keys",
         headers=auth_headers,
@@ -173,9 +171,7 @@ async def test_authenticate_with_api_key(client: AsyncClient, auth_headers: dict
 
 
 @pytest.mark.asyncio
-async def test_authenticate_with_revoked_api_key(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_authenticate_with_revoked_api_key(client: AsyncClient, auth_headers: dict) -> None:
     """Revoked API key should be rejected."""
     create_res = await client.post(
         "/api/v1/api-keys",
@@ -210,9 +206,7 @@ async def test_authenticate_with_invalid_api_key(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_api_key_multiple_scopes(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_api_key_multiple_scopes(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.post(
         "/api/v1/api-keys",
         headers=auth_headers,
@@ -224,9 +218,7 @@ async def test_create_api_key_multiple_scopes(
 
 
 @pytest.mark.asyncio
-async def test_create_api_key_default_scopes(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_api_key_default_scopes(client: AsyncClient, auth_headers: dict) -> None:
     """If scopes not specified, defaults to ['read']."""
     res = await client.post(
         "/api/v1/api-keys",
@@ -239,9 +231,7 @@ async def test_create_api_key_default_scopes(
 
 
 @pytest.mark.asyncio
-async def test_create_api_key_expiry_too_long(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_api_key_expiry_too_long(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.post(
         "/api/v1/api-keys",
         headers=auth_headers,

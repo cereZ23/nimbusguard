@@ -1,4 +1,5 @@
 """Tests for SCIM 2.0 provisioning endpoints (/scim/v2/)."""
+
 from __future__ import annotations
 
 import uuid
@@ -10,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.api_key import ApiKey
 from app.models.user import User
-
 
 # ── Helpers ───────────────────────────────────────────────────────────
 
@@ -514,7 +514,12 @@ async def test_patch_user_no_path_value_dict(client: AsyncClient, scim_headers: 
 
 
 @pytest.mark.asyncio
-async def test_scim_tenant_isolation(client: AsyncClient, auth_headers: dict, second_auth_headers: dict, db: AsyncSession) -> None:
+async def test_scim_tenant_isolation(
+    client: AsyncClient,
+    auth_headers: dict,
+    second_auth_headers: dict,
+    db: AsyncSession,
+) -> None:
     """SCIM token for tenant A should not see users from tenant B."""
     # Create SCIM token for first tenant
     tenant_a_id, user_a_id = await _get_tenant_and_user(db, "usera@test.com")

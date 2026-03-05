@@ -30,9 +30,7 @@ async def test_list_findings_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_findings_filter_severity(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_list_findings_filter_severity(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/findings",
         headers=auth_headers,
@@ -44,9 +42,7 @@ async def test_list_findings_filter_severity(
 
 
 @pytest.mark.asyncio
-async def test_list_findings_filter_status(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_list_findings_filter_status(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/findings",
         headers=auth_headers,
@@ -58,9 +54,7 @@ async def test_list_findings_filter_status(
 
 
 @pytest.mark.asyncio
-async def test_list_findings_empty_filter(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_list_findings_empty_filter(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/findings",
         headers=auth_headers,
@@ -105,9 +99,7 @@ async def test_findings_tenant_isolation(
 
 
 @pytest.mark.asyncio
-async def test_get_remediation_with_snippets(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_get_remediation_with_snippets(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     """Remediation endpoint returns IaC snippets when control code has matching entries."""
     from app.models.asset import Asset
     from app.models.control import Control
@@ -179,9 +171,7 @@ async def test_get_remediation_with_snippets(
 
 
 @pytest.mark.asyncio
-async def test_get_remediation_without_snippets(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_get_remediation_without_snippets(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     """Remediation endpoint returns null snippets when control code has no matching entries."""
     finding_id = seed_data["finding_id"]
     res = await client.get(f"/api/v1/findings/{finding_id}/remediation", headers=auth_headers)
@@ -196,9 +186,7 @@ async def test_get_remediation_without_snippets(
 
 
 @pytest.mark.asyncio
-async def test_get_remediation_not_found(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_get_remediation_not_found(client: AsyncClient, auth_headers: dict) -> None:
     """Remediation endpoint returns 404 for non-existent finding."""
     fake_id = str(uuid.uuid4())
     res = await client.get(f"/api/v1/findings/{fake_id}/remediation", headers=auth_headers)

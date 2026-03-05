@@ -1,4 +1,5 @@
 """Unit tests for AWS Security Group checks (CIS-AWS-07, 08)."""
+
 from __future__ import annotations
 
 import uuid
@@ -29,41 +30,53 @@ class TestCheckSshRestricted:
     """CIS-AWS-07: Security groups should not allow unrestricted SSH access."""
 
     def test_pass_when_ssh_restricted(self):
-        asset = _make_asset({
-            "IpPermissions": [{
-                "FromPort": 22,
-                "ToPort": 22,
-                "IpProtocol": "tcp",
-                "IpRanges": [{"CidrIp": "10.0.0.0/8"}],
-                "Ipv6Ranges": [],
-            }]
-        })
+        asset = _make_asset(
+            {
+                "IpPermissions": [
+                    {
+                        "FromPort": 22,
+                        "ToPort": 22,
+                        "IpProtocol": "tcp",
+                        "IpRanges": [{"CidrIp": "10.0.0.0/8"}],
+                        "Ipv6Ranges": [],
+                    }
+                ]
+            }
+        )
         result = check_ssh_restricted(asset)
         assert result.status == "pass"
 
     def test_fail_when_ssh_open_ipv4(self):
-        asset = _make_asset({
-            "IpPermissions": [{
-                "FromPort": 22,
-                "ToPort": 22,
-                "IpProtocol": "tcp",
-                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-                "Ipv6Ranges": [],
-            }]
-        })
+        asset = _make_asset(
+            {
+                "IpPermissions": [
+                    {
+                        "FromPort": 22,
+                        "ToPort": 22,
+                        "IpProtocol": "tcp",
+                        "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+                        "Ipv6Ranges": [],
+                    }
+                ]
+            }
+        )
         result = check_ssh_restricted(asset)
         assert result.status == "fail"
 
     def test_fail_when_ssh_open_ipv6(self):
-        asset = _make_asset({
-            "IpPermissions": [{
-                "FromPort": 22,
-                "ToPort": 22,
-                "IpProtocol": "tcp",
-                "IpRanges": [],
-                "Ipv6Ranges": [{"CidrIpv6": "::/0"}],
-            }]
-        })
+        asset = _make_asset(
+            {
+                "IpPermissions": [
+                    {
+                        "FromPort": 22,
+                        "ToPort": 22,
+                        "IpProtocol": "tcp",
+                        "IpRanges": [],
+                        "Ipv6Ranges": [{"CidrIpv6": "::/0"}],
+                    }
+                ]
+            }
+        )
         result = check_ssh_restricted(asset)
         assert result.status == "fail"
 
@@ -78,15 +91,19 @@ class TestCheckSshRestricted:
         assert result.status == "pass"
 
     def test_fail_when_all_traffic_open(self):
-        asset = _make_asset({
-            "IpPermissions": [{
-                "FromPort": -1,
-                "ToPort": -1,
-                "IpProtocol": "-1",
-                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-                "Ipv6Ranges": [],
-            }]
-        })
+        asset = _make_asset(
+            {
+                "IpPermissions": [
+                    {
+                        "FromPort": -1,
+                        "ToPort": -1,
+                        "IpProtocol": "-1",
+                        "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+                        "Ipv6Ranges": [],
+                    }
+                ]
+            }
+        )
         result = check_ssh_restricted(asset)
         assert result.status == "fail"
 
@@ -95,28 +112,36 @@ class TestCheckRdpRestricted:
     """CIS-AWS-08: Security groups should not allow unrestricted RDP access."""
 
     def test_pass_when_rdp_restricted(self):
-        asset = _make_asset({
-            "IpPermissions": [{
-                "FromPort": 3389,
-                "ToPort": 3389,
-                "IpProtocol": "tcp",
-                "IpRanges": [{"CidrIp": "192.168.1.0/24"}],
-                "Ipv6Ranges": [],
-            }]
-        })
+        asset = _make_asset(
+            {
+                "IpPermissions": [
+                    {
+                        "FromPort": 3389,
+                        "ToPort": 3389,
+                        "IpProtocol": "tcp",
+                        "IpRanges": [{"CidrIp": "192.168.1.0/24"}],
+                        "Ipv6Ranges": [],
+                    }
+                ]
+            }
+        )
         result = check_rdp_restricted(asset)
         assert result.status == "pass"
 
     def test_fail_when_rdp_open(self):
-        asset = _make_asset({
-            "IpPermissions": [{
-                "FromPort": 3389,
-                "ToPort": 3389,
-                "IpProtocol": "tcp",
-                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-                "Ipv6Ranges": [],
-            }]
-        })
+        asset = _make_asset(
+            {
+                "IpPermissions": [
+                    {
+                        "FromPort": 3389,
+                        "ToPort": 3389,
+                        "IpProtocol": "tcp",
+                        "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+                        "Ipv6Ranges": [],
+                    }
+                ]
+            }
+        )
         result = check_rdp_restricted(asset)
         assert result.status == "fail"
 

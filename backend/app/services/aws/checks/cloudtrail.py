@@ -1,4 +1,5 @@
 """CloudTrail checks (CIS-AWS-19)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

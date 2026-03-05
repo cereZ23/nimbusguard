@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from httpx import AsyncClient
 
-
 TEST_CONNECTION_URL = "/api/v1/accounts/test-connection"
 
 
@@ -25,9 +24,7 @@ async def test_test_connection_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_test_connection_unsupported_provider(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_test_connection_unsupported_provider(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.post(
         TEST_CONNECTION_URL,
         headers=auth_headers,
@@ -45,9 +42,7 @@ async def test_test_connection_unsupported_provider(
 
 
 @pytest.mark.asyncio
-async def test_test_connection_validation_errors(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_test_connection_validation_errors(client: AsyncClient, auth_headers: dict) -> None:
     # Missing required fields
     res = await client.post(
         TEST_CONNECTION_URL,
@@ -58,9 +53,7 @@ async def test_test_connection_validation_errors(
 
 
 @pytest.mark.asyncio
-async def test_test_connection_invalid_provider_pattern(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_test_connection_invalid_provider_pattern(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.post(
         TEST_CONNECTION_URL,
         headers=auth_headers,
@@ -76,9 +69,7 @@ async def test_test_connection_invalid_provider_pattern(
 
 
 @pytest.mark.asyncio
-async def test_test_connection_success_mock(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_test_connection_success_mock(client: AsyncClient, auth_headers: dict) -> None:
     """Test successful connection with mocked Azure SDK."""
     mock_result = MagicMock()
     mock_result.data = [{"count_": 42}]
@@ -86,6 +77,19 @@ async def test_test_connection_success_mock(
     mock_client_instance = MagicMock()
     mock_client_instance.resources.return_value = mock_result
 
+    mock_modules = {
+        "azure.identity": MagicMock(
+            ClientSecretCredential=MagicMock(return_value=MagicMock()),
+        ),
+        "azure.mgmt.resourcegraph": MagicMock(
+            ResourceGraphClient=MagicMock(
+                return_value=mock_client_instance,
+            ),
+        ),
+        "azure.mgmt.resourcegraph.models": MagicMock(
+            QueryRequest=MagicMock(),
+        ),
+    }
     with (
         patch(
             "app.api.accounts.ClientSecretCredential",
@@ -100,27 +104,19 @@ async def test_test_connection_success_mock(
             "app.api.accounts.QueryRequest",
             create=True,
         ),
+        patch.dict("sys.modules", mock_modules),
     ):
-        # Patch the imports inside the try block
-        import app.api.accounts as accounts_module
-
-        # We need to mock at the module level since the endpoint uses local imports
-        with patch.dict("sys.modules", {
-            "azure.identity": MagicMock(ClientSecretCredential=MagicMock(return_value=MagicMock())),
-            "azure.mgmt.resourcegraph": MagicMock(ResourceGraphClient=MagicMock(return_value=mock_client_instance)),
-            "azure.mgmt.resourcegraph.models": MagicMock(QueryRequest=MagicMock()),
-        }):
-            res = await client.post(
-                TEST_CONNECTION_URL,
-                headers=auth_headers,
-                json={
-                    "provider": "azure",
-                    "tenant_id": "test-tenant",
-                    "client_id": "test-client",
-                    "client_secret": "test-secret",
-                    "subscription_id": "test-sub",
-                },
-            )
+        res = await client.post(
+            TEST_CONNECTION_URL,
+            headers=auth_headers,
+            json={
+                "provider": "azure",
+                "tenant_id": "test-tenant",
+                "client_id": "test-client",
+                "client_secret": "test-secret",
+                "subscription_id": "test-sub",
+            },
+        )
 
     assert res.status_code == 200
     data = res.json()["data"]
@@ -130,17 +126,18 @@ async def test_test_connection_success_mock(
 
 
 @pytest.mark.asyncio
-async def test_test_connection_failure_mock(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_test_connection_failure_mock(client: AsyncClient, auth_headers: dict) -> None:
     """Test connection failure with mocked Azure SDK raising an error."""
-    with patch.dict("sys.modules", {
-        "azure.identity": MagicMock(
-            ClientSecretCredential=MagicMock(side_effect=Exception("Authentication failed"))
-        ),
-        "azure.mgmt.resourcegraph": MagicMock(),
-        "azure.mgmt.resourcegraph.models": MagicMock(),
-    }):
+    with patch.dict(
+        "sys.modules",
+        {
+            "azure.identity": MagicMock(
+                ClientSecretCredential=MagicMock(side_effect=Exception("Authentication failed"))
+            ),
+            "azure.mgmt.resourcegraph": MagicMock(),
+            "azure.mgmt.resourcegraph.models": MagicMock(),
+        },
+    ):
         res = await client.post(
             TEST_CONNECTION_URL,
             headers=auth_headers,
@@ -161,9 +158,7 @@ async def test_test_connection_failure_mock(
 
 
 @pytest.mark.asyncio
-async def test_test_connection_envelope_format(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_test_connection_envelope_format(client: AsyncClient, auth_headers: dict) -> None:
     """Verify the response follows API envelope convention."""
     res = await client.post(
         TEST_CONNECTION_URL,

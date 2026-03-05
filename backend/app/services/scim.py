@@ -1,4 +1,5 @@
 """SCIM 2.0 service — maps between SCIM User resources and internal User model."""
+
 from __future__ import annotations
 
 import logging

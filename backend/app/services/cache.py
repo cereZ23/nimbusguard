@@ -1,4 +1,5 @@
 """Redis cache utility for dashboard and other cacheable endpoints."""
+
 from __future__ import annotations
 
 import json

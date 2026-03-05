@@ -2,6 +2,7 @@
 
 Falls back to logging when SMTP is not configured.
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,21 +34,35 @@ async def send_invitation_email(
         return
 
     subject = f"You've been invited to join {tenant_name} on CSPM"
+    body_style = (
+        "font-family: -apple-system, BlinkMacSystemFont,"
+        " 'Segoe UI', Roboto, sans-serif;"
+        " max-width: 600px; margin: 0 auto; padding: 20px;"
+    )
+    card_style = (
+        "background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; text-align: center;"
+    )
+    btn_style = (
+        "display: inline-block;"
+        " background: linear-gradient(135deg, #6366f1, #3b82f6);"
+        " color: white; text-decoration: none;"
+        " padding: 12px 32px; border-radius: 8px;"
+        " font-weight: 600; font-size: 15px;"
+    )
     html_body = f"""\
 <html>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+<body style="{body_style}">
     <div style="text-align: center; padding: 30px 0;">
         <h1 style="color: #1e1b4b; font-size: 24px; margin-bottom: 8px;">CSPM Platform</h1>
         <p style="color: #64748b; font-size: 14px;">Cloud Security Posture Management</p>
     </div>
-    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; text-align: center;">
+    <div style="{card_style}">
         <h2 style="color: #1e293b; font-size: 20px; margin-bottom: 12px;">You've been invited!</h2>
         <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
             You've been invited to join <strong>{tenant_name}</strong> on the CSPM platform.
             Click the button below to set your password and activate your account.
         </p>
-        <a href="{invite_url}"
-           style="display: inline-block; background: linear-gradient(135deg, #6366f1, #3b82f6); color: white; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+        <a href="{invite_url}" style="{btn_style}">
             Accept Invitation
         </a>
         <p style="color: #94a3b8; font-size: 13px; margin-top: 24px;">

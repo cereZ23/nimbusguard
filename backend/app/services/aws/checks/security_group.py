@@ -1,4 +1,5 @@
 """Security Group checks (CIS-AWS-07, 08)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

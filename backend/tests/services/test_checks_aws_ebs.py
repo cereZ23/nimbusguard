@@ -1,4 +1,5 @@
 """Unit tests for AWS EBS checks (CIS-AWS-17)."""
+
 from __future__ import annotations
 
 import uuid

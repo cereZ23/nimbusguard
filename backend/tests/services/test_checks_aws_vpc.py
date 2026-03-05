@@ -1,4 +1,5 @@
 """Unit tests for AWS VPC checks (CIS-AWS-18)."""
+
 from __future__ import annotations
 
 import uuid
@@ -26,16 +27,12 @@ class TestCheckFlowLogs:
     """CIS-AWS-18: VPC Flow Logs must be enabled."""
 
     def test_pass_when_active(self):
-        asset = _make_asset({
-            "FlowLogs": [{"FlowLogId": "fl-12345678", "FlowLogStatus": "ACTIVE"}]
-        })
+        asset = _make_asset({"FlowLogs": [{"FlowLogId": "fl-12345678", "FlowLogStatus": "ACTIVE"}]})
         result = check_flow_logs(asset)
         assert result.status == "pass"
 
     def test_fail_when_inactive(self):
-        asset = _make_asset({
-            "FlowLogs": [{"FlowLogId": "fl-12345678", "FlowLogStatus": "INACTIVE"}]
-        })
+        asset = _make_asset({"FlowLogs": [{"FlowLogId": "fl-12345678", "FlowLogStatus": "INACTIVE"}]})
         result = check_flow_logs(asset)
         assert result.status == "fail"
 

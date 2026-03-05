@@ -1,4 +1,5 @@
 """Managed Disk checks (CIS-AZ-63, 64)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

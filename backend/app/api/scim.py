@@ -4,6 +4,7 @@ These endpoints sit at ``/scim/v2/`` (outside the ``/api/v1/`` prefix) and use
 their own bearer-token auth backed by API keys with the ``scim`` scope.
 Responses use ``application/scim+json`` content type per the RFC.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -90,9 +91,7 @@ async def get_scim_tenant(
         )
 
     key_hash = hashlib.sha256(token.encode()).hexdigest()
-    result = await db.execute(
-        select(ApiKey).where(ApiKey.key_hash == key_hash)
-    )
+    result = await db.execute(select(ApiKey).where(ApiKey.key_hash == key_hash))
     api_key = result.scalar_one_or_none()
 
     if api_key is None:
@@ -264,9 +263,7 @@ async def get_user(
     """Get a single user (SCIM RFC 7644 Section 3.4.1)."""
     base_url = str(request.base_url).rstrip("/")
 
-    result = await db.execute(
-        select(User).where(User.id == user_id, User.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(User).where(User.id == user_id, User.tenant_id == tenant_id))
     user = result.scalar_one_or_none()
     if user is None:
         return _scim_error(404, "User not found")
@@ -294,9 +291,7 @@ async def create_user(
         return _scim_error(400, "userName (email) is required", scim_type="invalidValue")
 
     # Check for existing user with same email
-    existing = await db.execute(
-        select(User).where(User.email == user_data["email"])
-    )
+    existing = await db.execute(select(User).where(User.email == user_data["email"]))
     if existing.scalar_one_or_none() is not None:
         return _scim_error(409, f"User with email {user_data['email']} already exists", scim_type="uniqueness")
 
@@ -334,9 +329,7 @@ async def replace_user(
     """Replace a user (SCIM RFC 7644 Section 3.5.1)."""
     base_url = str(request.base_url).rstrip("/")
 
-    result = await db.execute(
-        select(User).where(User.id == user_id, User.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(User).where(User.id == user_id, User.tenant_id == tenant_id))
     user = result.scalar_one_or_none()
     if user is None:
         return _scim_error(404, "User not found")
@@ -347,9 +340,7 @@ async def replace_user(
     if user_data.get("email"):
         # Check uniqueness for new email
         if user_data["email"] != user.email:
-            existing = await db.execute(
-                select(User).where(User.email == user_data["email"])
-            )
+            existing = await db.execute(select(User).where(User.email == user_data["email"]))
             if existing.scalar_one_or_none() is not None:
                 return _scim_error(409, f"User with email {user_data['email']} already exists", scim_type="uniqueness")
         user.email = user_data["email"]
@@ -385,9 +376,7 @@ async def patch_user(
     """Partially update a user (SCIM RFC 7644 Section 3.5.2)."""
     base_url = str(request.base_url).rstrip("/")
 
-    result = await db.execute(
-        select(User).where(User.id == user_id, User.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(User).where(User.id == user_id, User.tenant_id == tenant_id))
     user = result.scalar_one_or_none()
     if user is None:
         return _scim_error(404, "User not found")
@@ -416,9 +405,7 @@ async def delete_user(
 
     Sets ``is_active=False`` instead of hard-deleting.
     """
-    result = await db.execute(
-        select(User).where(User.id == user_id, User.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(User).where(User.id == user_id, User.tenant_id == tenant_id))
     user = result.scalar_one_or_none()
     if user is None:
         return _scim_error(404, "User not found")

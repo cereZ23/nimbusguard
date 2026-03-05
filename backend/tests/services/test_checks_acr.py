@@ -1,4 +1,5 @@
 """Unit tests for Container Registry checks."""
+
 from __future__ import annotations
 
 import uuid

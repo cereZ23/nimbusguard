@@ -1,4 +1,5 @@
 """Event Hub checks (CIS-AZ-57, 58)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

@@ -1,4 +1,5 @@
 """Storage account checks (CIS-AZ-04, 07, 09, 11, 12, 15, 72, 73, 74, 75)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

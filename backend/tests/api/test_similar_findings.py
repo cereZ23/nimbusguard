@@ -13,9 +13,7 @@ from app.models.finding import Finding
 
 
 @pytest.fixture
-async def similar_seed(
-    db: AsyncSession, auth_headers: dict[str, str], client: AsyncClient
-) -> dict:
+async def similar_seed(db: AsyncSession, auth_headers: dict[str, str], client: AsyncClient) -> dict:
     """Seed data with multiple findings across assets and controls for similarity testing."""
     # Clear cookies so Bearer header (auth_headers) takes priority over stale cookie
     client.cookies.clear()
@@ -130,14 +128,10 @@ async def similar_seed(
 
 
 @pytest.mark.asyncio
-async def test_similar_findings_returns_both_types(
-    client: AsyncClient, auth_headers: dict, similar_seed: dict
-) -> None:
+async def test_similar_findings_returns_both_types(client: AsyncClient, auth_headers: dict, similar_seed: dict) -> None:
     """Should return similar findings grouped by same_control and same_asset."""
     target_id = similar_seed["target_finding_id"]
-    res = await client.get(
-        f"/api/v1/findings/{target_id}/similar", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{target_id}/similar", headers=auth_headers)
     assert res.status_code == 200
 
     data = res.json()["data"]
@@ -154,9 +148,7 @@ async def test_similar_findings_same_control_content(
 ) -> None:
     """Same-control similar findings should reference the correct asset and control."""
     target_id = similar_seed["target_finding_id"]
-    res = await client.get(
-        f"/api/v1/findings/{target_id}/similar", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{target_id}/similar", headers=auth_headers)
     data = res.json()["data"]
 
     same_ctrl = [f for f in data if f["similarity_type"] == "same_control"]
@@ -170,14 +162,10 @@ async def test_similar_findings_same_control_content(
 
 
 @pytest.mark.asyncio
-async def test_similar_findings_same_asset_content(
-    client: AsyncClient, auth_headers: dict, similar_seed: dict
-) -> None:
+async def test_similar_findings_same_asset_content(client: AsyncClient, auth_headers: dict, similar_seed: dict) -> None:
     """Same-asset similar findings should reference the correct control."""
     target_id = similar_seed["target_finding_id"]
-    res = await client.get(
-        f"/api/v1/findings/{target_id}/similar", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{target_id}/similar", headers=auth_headers)
     data = res.json()["data"]
 
     same_asset = [f for f in data if f["similarity_type"] == "same_asset"]
@@ -190,21 +178,15 @@ async def test_similar_findings_same_asset_content(
 
 
 @pytest.mark.asyncio
-async def test_similar_findings_not_found(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_similar_findings_not_found(client: AsyncClient, auth_headers: dict) -> None:
     """Should return 404 for a non-existent finding."""
     fake_id = str(uuid.uuid4())
-    res = await client.get(
-        f"/api/v1/findings/{fake_id}/similar", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{fake_id}/similar", headers=auth_headers)
     assert res.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_similar_findings_requires_auth(
-    client: AsyncClient, similar_seed: dict
-) -> None:
+async def test_similar_findings_requires_auth(client: AsyncClient, similar_seed: dict) -> None:
     """Should return 401 without authentication."""
     # Clear cookies to prevent cookie-based auth bleed from fixture setup
     client.cookies.clear()
@@ -226,36 +208,26 @@ async def test_similar_findings_tenant_isolation(
     client.cookies.clear()
 
     target_id = similar_seed["target_finding_id"]
-    res = await client.get(
-        f"/api/v1/findings/{target_id}/similar", headers=second_auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{target_id}/similar", headers=second_auth_headers)
     assert res.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_similar_findings_excludes_self(
-    client: AsyncClient, auth_headers: dict, similar_seed: dict
-) -> None:
+async def test_similar_findings_excludes_self(client: AsyncClient, auth_headers: dict, similar_seed: dict) -> None:
     """The target finding itself should never appear in the similar results."""
     target_id = similar_seed["target_finding_id"]
-    res = await client.get(
-        f"/api/v1/findings/{target_id}/similar", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{target_id}/similar", headers=auth_headers)
     data = res.json()["data"]
     ids = {f["id"] for f in data}
     assert target_id not in ids
 
 
 @pytest.mark.asyncio
-async def test_similar_findings_empty_when_no_matches(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_similar_findings_empty_when_no_matches(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     """Should return an empty list when there are no similar findings."""
     # seed_data has only one finding, so there are no similar ones
     finding_id = seed_data["finding_id"]
-    res = await client.get(
-        f"/api/v1/findings/{finding_id}/similar", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{finding_id}/similar", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()["data"]
     assert data == []

@@ -1,4 +1,5 @@
 """Service Bus checks (CIS-AZ-59, 60)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

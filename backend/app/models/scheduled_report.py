@@ -29,22 +29,14 @@ class ScheduledReport(Base, UUIDPrimaryKey, TimestampMixin):
     report_type: Mapped[str] = mapped_column(
         String(50), nullable=False
     )  # executive_summary, compliance, technical_detail
-    schedule: Mapped[str] = mapped_column(
-        String(20), nullable=False
-    )  # daily, weekly, monthly
+    schedule: Mapped[str] = mapped_column(String(20), nullable=False)  # daily, weekly, monthly
     config: Mapped[dict | None] = mapped_column(JSONB, default=dict)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    last_run_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    next_run_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     creator = relationship("User", lazy="noload")
-    history: Mapped[list[ReportHistory]] = relationship(
-        back_populates="scheduled_report", lazy="noload"
-    )
+    history: Mapped[list[ReportHistory]] = relationship(back_populates="scheduled_report", lazy="noload")
 
 
 class ReportHistory(Base, UUIDPrimaryKey, TimestampMixin):
@@ -61,16 +53,10 @@ class ReportHistory(Base, UUIDPrimaryKey, TimestampMixin):
         ForeignKey("tenants.id", ondelete="CASCADE"),
         nullable=False,
     )
-    status: Mapped[str] = mapped_column(
-        String(20), nullable=False
-    )  # completed, failed
+    status: Mapped[str] = mapped_column(String(20), nullable=False)  # completed, failed
     file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    generated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    scheduled_report: Mapped[ScheduledReport] = relationship(
-        back_populates="history", lazy="noload"
-    )
+    scheduled_report: Mapped[ScheduledReport] = relationship(back_populates="history", lazy="noload")

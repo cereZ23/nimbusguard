@@ -4,15 +4,15 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Query
-from sqlalchemy import case, cast, func, select, Date
+from sqlalchemy import Date, case, cast, func, select
 
 from app.deps import DB, CurrentUser
-from app.models.cloud_account import CloudAccount
 from app.models.asset import Asset
+from app.models.cloud_account import CloudAccount
 from app.models.control import Control
 from app.models.finding import Finding
-from app.schemas.common import ApiResponse
 from app.models.scan import Scan
+from app.schemas.common import ApiResponse
 from app.schemas.dashboard import (
     ComplianceTrendPoint,
     ComplianceTrendResponse,
@@ -52,15 +52,9 @@ async def dashboard_summary(db: DB, user: CurrentUser) -> dict:
             select(
                 func.count(Finding.id).label("total"),
                 func.count(case((Finding.status == "fail", 1))).label("fail_total"),
-                func.count(
-                    case(((Finding.status == "fail") & (Finding.severity == "high"), 1))
-                ).label("high"),
-                func.count(
-                    case(((Finding.status == "fail") & (Finding.severity == "medium"), 1))
-                ).label("medium"),
-                func.count(
-                    case(((Finding.status == "fail") & (Finding.severity == "low"), 1))
-                ).label("low"),
+                func.count(case(((Finding.status == "fail") & (Finding.severity == "high"), 1))).label("high"),
+                func.count(case(((Finding.status == "fail") & (Finding.severity == "medium"), 1))).label("medium"),
+                func.count(case(((Finding.status == "fail") & (Finding.severity == "low"), 1))).label("low"),
             )
             .join(CloudAccount)
             .where(CloudAccount.tenant_id == tenant_id)
@@ -108,10 +102,7 @@ async def dashboard_summary(db: DB, user: CurrentUser) -> dict:
         )
     ).all()
     top_failing = [
-        FailingControl(
-            code=r[0], name=r[1], severity=r[2], fail_count=r[3], total_count=r[4]
-        )
-        for r in control_rows
+        FailingControl(code=r[0], name=r[1], severity=r[2], fail_count=r[3], total_count=r[4]) for r in control_rows
     ]
 
     # Secure score (from first active cloud account metadata)
@@ -183,10 +174,7 @@ async def dashboard_trend(
         )
     ).all()
 
-    points = [
-        TrendPoint(date=str(r[0]), high=r[1], medium=r[2], low=r[3])
-        for r in rows
-    ]
+    points = [TrendPoint(date=str(r[0]), high=r[1], medium=r[2], low=r[3]) for r in rows]
 
     trend = TrendResponse(data=points, period=period)
     await cache_set(cache_key, trend.model_dump())
@@ -293,7 +281,11 @@ async def dashboard_cross_cloud(db: DB, user: CurrentUser) -> dict:
         empty_summary = CrossCloudSummary(
             providers=[],
             totals=CrossCloudTotals(
-                accounts=0, assets=0, findings=0, overall_score=None, findings_by_severity={},
+                accounts=0,
+                assets=0,
+                findings=0,
+                overall_score=None,
+                findings_by_severity={},
             ),
             comparison=CrossCloudComparison(best_provider=None, worst_provider=None, score_gap=0.0),
         )
@@ -323,18 +315,10 @@ async def dashboard_cross_cloud(db: DB, user: CurrentUser) -> dict:
             select(
                 CloudAccount.provider,
                 func.count(Finding.id).label("total"),
-                func.count(
-                    case(((Finding.status == "fail") & (Finding.severity == "critical"), 1))
-                ).label("critical"),
-                func.count(
-                    case(((Finding.status == "fail") & (Finding.severity == "high"), 1))
-                ).label("high"),
-                func.count(
-                    case(((Finding.status == "fail") & (Finding.severity == "medium"), 1))
-                ).label("medium"),
-                func.count(
-                    case(((Finding.status == "fail") & (Finding.severity == "low"), 1))
-                ).label("low"),
+                func.count(case(((Finding.status == "fail") & (Finding.severity == "critical"), 1))).label("critical"),
+                func.count(case(((Finding.status == "fail") & (Finding.severity == "high"), 1))).label("high"),
+                func.count(case(((Finding.status == "fail") & (Finding.severity == "medium"), 1))).label("medium"),
+                func.count(case(((Finding.status == "fail") & (Finding.severity == "low"), 1))).label("low"),
             )
             .select_from(Finding)
             .join(CloudAccount, CloudAccount.id == Finding.cloud_account_id)
@@ -367,8 +351,7 @@ async def dashboard_cross_cloud(db: DB, user: CurrentUser) -> dict:
             select(
                 CloudAccount.provider,
                 CloudAccount.metadata_,
-            )
-            .where(
+            ).where(
                 CloudAccount.tenant_id == tenant_id,
                 CloudAccount.status == "active",
             )

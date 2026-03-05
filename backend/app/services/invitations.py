@@ -1,4 +1,5 @@
 """Invitation service — create, accept, revoke, and resend invitations."""
+
 from __future__ import annotations
 
 import hashlib
@@ -84,9 +85,7 @@ async def accept_invitation(
     validate_password(password)
 
     token_hash = _hash_token(token)
-    result = await db.execute(
-        select(Invitation).where(Invitation.token_hash == token_hash)
-    )
+    result = await db.execute(select(Invitation).where(Invitation.token_hash == token_hash))
     invitation = result.scalar_one_or_none()
 
     if invitation is None:
@@ -203,8 +202,6 @@ async def list_invitations(
 ) -> list[Invitation]:
     """List all invitations for a tenant, ordered by creation date descending."""
     result = await db.execute(
-        select(Invitation)
-        .where(Invitation.tenant_id == tenant_id)
-        .order_by(Invitation.created_at.desc())
+        select(Invitation).where(Invitation.tenant_id == tenant_id).order_by(Invitation.created_at.desc())
     )
     return list(result.scalars().all())

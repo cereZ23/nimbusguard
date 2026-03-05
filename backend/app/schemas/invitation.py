@@ -35,11 +35,13 @@ class InvitationResponse(BaseModel):
 
 class InvitationCreatedResponse(BaseModel):
     """Returned after creating an invitation, includes the one-time invite URL."""
+
     invitation: InvitationResponse
     invite_url: str
 
 
 class InvitationResendResponse(BaseModel):
     """Returned after resending an invitation, includes the new invite URL."""
+
     invitation: InvitationResponse
     invite_url: str

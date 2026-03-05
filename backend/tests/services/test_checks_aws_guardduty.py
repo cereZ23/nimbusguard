@@ -1,4 +1,5 @@
 """Unit tests for AWS GuardDuty checks (CIS-AWS-20)."""
+
 from __future__ import annotations
 
 import uuid

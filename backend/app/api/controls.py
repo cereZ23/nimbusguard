@@ -86,9 +86,7 @@ async def list_controls(
             count_base = count_base.where(fw_filter)
 
     total = (await db.execute(count_base)).scalar() or 0
-    result = await db.execute(
-        base.order_by(Control.code).offset((page - 1) * size).limit(size)
-    )
+    result = await db.execute(base.order_by(Control.code).offset((page - 1) * size).limit(size))
     rows = result.all()
 
     controls = []
@@ -174,9 +172,7 @@ async def list_control_findings(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Control not found")
 
     base = (
-        select(Finding)
-        .join(CloudAccount)
-        .where(Finding.control_id == control_id, CloudAccount.tenant_id == tenant_id)
+        select(Finding).join(CloudAccount).where(Finding.control_id == control_id, CloudAccount.tenant_id == tenant_id)
     )
     count_q = (
         select(func.count(Finding.id))
@@ -185,9 +181,7 @@ async def list_control_findings(
     )
 
     total = (await db.execute(count_q)).scalar() or 0
-    result = await db.execute(
-        base.order_by(Finding.last_evaluated_at.desc()).offset((page - 1) * size).limit(size)
-    )
+    result = await db.execute(base.order_by(Finding.last_evaluated_at.desc()).offset((page - 1) * size).limit(size))
     findings = result.scalars().all()
 
     return {

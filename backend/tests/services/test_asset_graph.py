@@ -88,9 +88,7 @@ async def test_build_relationships_vm_nic(db: AsyncSession) -> None:
     count = await build_relationships(tenant_id, db)
     assert count == 1
 
-    result = await db.execute(
-        select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id))
     rels = result.scalars().all()
     assert len(rels) == 1
     assert rels[0].source_asset_id == nic.id
@@ -121,9 +119,7 @@ async def test_build_relationships_subnet_vnet(db: AsyncSession) -> None:
     count = await build_relationships(tenant_id, db)
     assert count == 1
 
-    result = await db.execute(
-        select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id))
     rels = result.scalars().all()
     assert len(rels) == 1
     assert rels[0].source_asset_id == vnet.id
@@ -159,9 +155,7 @@ async def test_build_relationships_nic_nsg(db: AsyncSession) -> None:
     count = await build_relationships(tenant_id, db)
     assert count == 1
 
-    result = await db.execute(
-        select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id))
     rels = result.scalars().all()
     assert len(rels) == 1
     assert rels[0].source_asset_id == nic.id
@@ -187,7 +181,13 @@ async def test_build_relationships_nsg_protects_subnet(db: AsyncSession) -> None
         "nsg-test",
         raw_properties={
             "subnets": [
-                {"id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1"}
+                {
+                    "id": (
+                        "/subscriptions/sub1/resourceGroups/rg1"
+                        "/providers/Microsoft.Network"
+                        "/virtualNetworks/vnet1/subnets/subnet1"
+                    ),
+                }
             ]
         },
     )
@@ -242,9 +242,7 @@ async def test_build_relationships_vm_managed_disk(db: AsyncSession) -> None:
     count = await build_relationships(tenant_id, db)
     assert count == 1
 
-    result = await db.execute(
-        select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id))
     rels = result.scalars().all()
     assert len(rels) == 1
     assert rels[0].source_asset_id == vm.id
@@ -278,9 +276,7 @@ async def test_build_relationships_webapp_serverfarm(db: AsyncSession) -> None:
     count = await build_relationships(tenant_id, db)
     assert count == 1
 
-    result = await db.execute(
-        select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id))
     rels = result.scalars().all()
     assert len(rels) == 1
     assert rels[0].relationship_type == "uses"
@@ -309,9 +305,7 @@ async def test_build_relationships_sql_server_database(db: AsyncSession) -> None
     count = await build_relationships(tenant_id, db)
     assert count == 1
 
-    result = await db.execute(
-        select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id))
     rels = result.scalars().all()
     assert len(rels) == 1
     assert rels[0].source_asset_id == server.id
@@ -343,9 +337,7 @@ async def test_build_relationships_idempotent(db: AsyncSession) -> None:
     count2 = await build_relationships(tenant_id, db)
     assert count1 == count2
 
-    result = await db.execute(
-        select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id))
     rels = result.scalars().all()
     assert len(rels) == 1  # Not duplicated
 
@@ -371,7 +363,13 @@ async def test_build_relationships_no_matching_targets(db: AsyncSession) -> None
         raw_properties={
             "networkProfile": {
                 "networkInterfaces": [
-                    {"id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/nonexistent"}
+                    {
+                        "id": (
+                            "/subscriptions/sub1/resourceGroups/rg1"
+                            "/providers/Microsoft.Network"
+                            "/networkInterfaces/nonexistent"
+                        ),
+                    }
                 ]
             }
         },
@@ -400,16 +398,15 @@ async def test_build_relationships_complex_graph(db: AsyncSession) -> None:
         "microsoft.network/virtualnetworks/subnets",
         "subnet-default",
     )
+    subnet_id = (
+        "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1"
+    )
     nsg = _make_asset(
         account_id,
         "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg1",
         "microsoft.network/networksecuritygroups",
         "nsg-test",
-        raw_properties={
-            "subnets": [
-                {"id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1"}
-            ]
-        },
+        raw_properties={"subnets": [{"id": subnet_id}]},
     )
     nic = _make_asset(
         account_id,
@@ -420,9 +417,7 @@ async def test_build_relationships_complex_graph(db: AsyncSession) -> None:
             "networkSecurityGroup": {
                 "id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg1"
             },
-            "ipConfigurations": [
-                {"subnet": {"id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1"}}
-            ],
+            "ipConfigurations": [{"subnet": {"id": subnet_id}}],
         },
     )
     vm = _make_asset(

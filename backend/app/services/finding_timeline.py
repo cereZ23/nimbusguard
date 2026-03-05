@@ -1,4 +1,5 @@
 """Finding timeline service — records events for finding history tracking."""
+
 from __future__ import annotations
 
 import logging

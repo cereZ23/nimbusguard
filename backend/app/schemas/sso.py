@@ -106,11 +106,13 @@ class SsoAuthorizeRequest(BaseModel):
 
 class SsoCallbackResponse(BaseModel):
     """Response after successful SSO login -- tokens delivered via cookies."""
+
     token_type: str = "bearer"
 
 
 class SsoPublicConfig(BaseModel):
     """Public SSO info for the login page (no secrets)."""
+
     provider: str
     is_active: bool
 

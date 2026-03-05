@@ -1,4 +1,5 @@
 """Virtual Machine checks (CIS-AZ-31, 32, 33, 34)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

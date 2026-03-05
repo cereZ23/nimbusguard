@@ -21,9 +21,7 @@ class Evidence(Base, UUIDPrimaryKey, TimestampMixin):
         index=True,
     )
     snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    collected_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     finding: Mapped[Finding] = relationship(back_populates="evidences", lazy="noload")
 

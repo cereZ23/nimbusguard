@@ -1,4 +1,5 @@
 """Unit tests for AWS S3 checks (CIS-AWS-01, 02, 03, 04)."""
+
 from __future__ import annotations
 
 import uuid
@@ -31,26 +32,30 @@ class TestCheckBlockPublicAccess:
     """CIS-AWS-01: S3 Block Public Access must be enabled."""
 
     def test_pass_when_all_blocked(self):
-        asset = _make_asset({
-            "PublicAccessBlockConfiguration": {
-                "BlockPublicAcls": True,
-                "IgnorePublicAcls": True,
-                "BlockPublicPolicy": True,
-                "RestrictPublicBuckets": True,
+        asset = _make_asset(
+            {
+                "PublicAccessBlockConfiguration": {
+                    "BlockPublicAcls": True,
+                    "IgnorePublicAcls": True,
+                    "BlockPublicPolicy": True,
+                    "RestrictPublicBuckets": True,
+                }
             }
-        })
+        )
         result = check_block_public_access(asset)
         assert result.status == "pass"
 
     def test_fail_when_one_disabled(self):
-        asset = _make_asset({
-            "PublicAccessBlockConfiguration": {
-                "BlockPublicAcls": False,
-                "IgnorePublicAcls": True,
-                "BlockPublicPolicy": True,
-                "RestrictPublicBuckets": True,
+        asset = _make_asset(
+            {
+                "PublicAccessBlockConfiguration": {
+                    "BlockPublicAcls": False,
+                    "IgnorePublicAcls": True,
+                    "BlockPublicPolicy": True,
+                    "RestrictPublicBuckets": True,
+                }
             }
-        })
+        )
         result = check_block_public_access(asset)
         assert result.status == "fail"
 
@@ -69,23 +74,25 @@ class TestCheckDefaultEncryption:
     """CIS-AWS-02: S3 default encryption must be enabled."""
 
     def test_pass_when_sse_configured(self):
-        asset = _make_asset({
-            "ServerSideEncryptionConfiguration": {
-                "Rules": [{
-                    "ApplyServerSideEncryptionByDefault": {
-                        "SSEAlgorithm": "aws:kms",
-                    }
-                }]
+        asset = _make_asset(
+            {
+                "ServerSideEncryptionConfiguration": {
+                    "Rules": [
+                        {
+                            "ApplyServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "aws:kms",
+                            }
+                        }
+                    ]
+                }
             }
-        })
+        )
         result = check_default_encryption(asset)
         assert result.status == "pass"
         assert result.evidence["algorithm"] == "aws:kms"
 
     def test_fail_when_no_rules(self):
-        asset = _make_asset({
-            "ServerSideEncryptionConfiguration": {"Rules": []}
-        })
+        asset = _make_asset({"ServerSideEncryptionConfiguration": {"Rules": []}})
         result = check_default_encryption(asset)
         assert result.status == "fail"
 
@@ -128,9 +135,7 @@ class TestCheckLogging:
     """CIS-AWS-04: S3 server access logging must be configured."""
 
     def test_pass_when_logging_enabled(self):
-        asset = _make_asset({
-            "LoggingEnabled": {"TargetBucket": "my-log-bucket"}
-        })
+        asset = _make_asset({"LoggingEnabled": {"TargetBucket": "my-log-bucket"}})
         result = check_logging(asset)
         assert result.status == "pass"
 

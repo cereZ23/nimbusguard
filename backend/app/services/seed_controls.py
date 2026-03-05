@@ -1,4 +1,5 @@
 """Seed CIS-lite controls from YAML mapping file into the database."""
+
 from __future__ import annotations
 
 import logging

@@ -5,12 +5,13 @@ Converts Finding objects into industry-standard SIEM ingestion formats:
 - LEEF (Log Event Extended Format): IBM QRadar
 - JSON Lines (NDJSON): Splunk HEC, Sentinel, Elastic
 """
+
 from __future__ import annotations
 
 import json
 import logging
 from collections.abc import Generator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.models.finding import Finding
 
@@ -40,7 +41,7 @@ def _epoch_ms(dt: datetime | None) -> int:
     if dt is None:
         return 0
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return int(dt.timestamp() * 1000)
 
 
@@ -49,12 +50,7 @@ def _cef_escape(value: str) -> str:
 
     CEF spec: backslash, equals, and newlines must be escaped in extension values.
     """
-    return (
-        value.replace("\\", "\\\\")
-        .replace("=", "\\=")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-    )
+    return value.replace("\\", "\\\\").replace("=", "\\=").replace("\n", "\\n").replace("\r", "\\r")
 
 
 def _cef_header_escape(value: str) -> str:
@@ -133,29 +129,25 @@ def format_leef(finding: Finding) -> str:
     if finding.last_evaluated_at:
         dt = finding.last_evaluated_at
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         dev_time = dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-    header = (
-        f"LEEF:2.0"
-        f"|{_VENDOR}"
-        f"|{_PRODUCT_NAME}"
-        f"|{_VERSION}"
-        f"|FindingDetected"
-    )
+    header = f"LEEF:2.0|{_VENDOR}|{_PRODUCT_NAME}|{_VERSION}|FindingDetected"
 
     # LEEF attributes are tab-separated key=value pairs
-    attrs = "\t".join([
-        f"src={_leef_escape(resource_id)}",
-        f"devTime={_leef_escape(dev_time)}",
-        f"sev={sev_num}",
-        f"controlCode={_leef_escape(control_code)}",
-        f"controlName={_leef_escape(control_name)}",
-        f"status={_leef_escape(finding.status)}",
-        f"resourceType={_leef_escape(resource_type)}",
-        f"resourceName={_leef_escape(resource_name)}",
-        f"region={_leef_escape(region)}",
-    ])
+    attrs = "\t".join(
+        [
+            f"src={_leef_escape(resource_id)}",
+            f"devTime={_leef_escape(dev_time)}",
+            f"sev={sev_num}",
+            f"controlCode={_leef_escape(control_code)}",
+            f"controlName={_leef_escape(control_name)}",
+            f"status={_leef_escape(finding.status)}",
+            f"resourceType={_leef_escape(resource_type)}",
+            f"resourceName={_leef_escape(resource_name)}",
+            f"region={_leef_escape(region)}",
+        ]
+    )
 
     return f"{header}|{attrs}"
 
@@ -180,7 +172,7 @@ def format_jsonl(finding: Finding) -> str:
     if finding.last_evaluated_at:
         dt = finding.last_evaluated_at
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         timestamp = dt.isoformat()
 
     record = {

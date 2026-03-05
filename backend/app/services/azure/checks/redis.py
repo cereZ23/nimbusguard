@@ -1,4 +1,5 @@
 """Redis Cache checks (CIS-AZ-54, 55, 56)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

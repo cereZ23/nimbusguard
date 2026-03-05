@@ -29,9 +29,7 @@ async def test_list_assets_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_assets_filter_by_type(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_list_assets_filter_by_type(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/assets",
         headers=auth_headers,
@@ -43,9 +41,7 @@ async def test_list_assets_filter_by_type(
 
 
 @pytest.mark.asyncio
-async def test_list_assets_filter_by_region(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_list_assets_filter_by_region(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/assets",
         headers=auth_headers,

@@ -64,6 +64,7 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
 
 # ── Auth helpers ──────────────────────────────────────────────────────
 
+
 async def _register_user(client: AsyncClient, email: str) -> str:
     """Register a user and return the access_token from the Set-Cookie header."""
     res = await client.post(
@@ -96,6 +97,7 @@ async def second_auth_headers(client: AsyncClient) -> dict[str, str]:
 
 # ── Factory helpers ───────────────────────────────────────────────────
 
+
 @pytest.fixture
 def make_account(auth_headers: dict[str, str], client: AsyncClient):
     async def _make(display_name: str = "Test Sub", provider: str = "azure") -> dict:
@@ -113,6 +115,7 @@ def make_account(auth_headers: dict[str, str], client: AsyncClient):
         )
         assert res.status_code == 201
         return res.json()["data"]
+
     return _make
 
 

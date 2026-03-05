@@ -26,9 +26,7 @@ async def test_get_branding_unauthenticated(client: AsyncClient) -> None:
     assert res.status_code == 401
 
 
-async def test_update_branding_company_name(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_update_branding_company_name(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PUT /branding updates company_name."""
     res = await client.put(
         "/api/v1/branding",
@@ -41,9 +39,7 @@ async def test_update_branding_company_name(
     assert data["primary_color"] == "#6366f1"  # unchanged
 
 
-async def test_update_branding_primary_color(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_update_branding_primary_color(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PUT /branding updates primary_color."""
     res = await client.put(
         "/api/v1/branding",
@@ -55,9 +51,7 @@ async def test_update_branding_primary_color(
     assert data["primary_color"] == "#ff5500"
 
 
-async def test_update_branding_invalid_color(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_update_branding_invalid_color(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PUT /branding rejects invalid hex color."""
     res = await client.put(
         "/api/v1/branding",
@@ -67,9 +61,7 @@ async def test_update_branding_invalid_color(
     assert res.status_code == 422
 
 
-async def test_update_branding_both_fields(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_update_branding_both_fields(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PUT /branding can update both fields at once."""
     res = await client.put(
         "/api/v1/branding",
@@ -82,9 +74,7 @@ async def test_update_branding_both_fields(
     assert data["primary_color"] == "#123456"
 
 
-async def test_update_branding_persists(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_update_branding_persists(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """Branding changes persist across GET requests."""
     await client.put(
         "/api/v1/branding",
@@ -98,9 +88,7 @@ async def test_update_branding_persists(
     assert data["primary_color"] == "#abcdef"
 
 
-async def test_upload_logo_png(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_upload_logo_png(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """POST /branding/logo accepts a PNG file and returns updated branding."""
     # Create a minimal 1x1 PNG
     png_bytes = (
@@ -120,9 +108,7 @@ async def test_upload_logo_png(
     assert "logo.png" in data["logo_url"]
 
 
-async def test_upload_logo_too_large(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_upload_logo_too_large(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """POST /branding/logo rejects files over 500 KB."""
     large_bytes = b"\x00" * (500 * 1024 + 1)
     res = await client.post(
@@ -134,9 +120,7 @@ async def test_upload_logo_too_large(
     assert "too large" in res.json()["detail"].lower()
 
 
-async def test_upload_logo_invalid_type(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_upload_logo_invalid_type(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """POST /branding/logo rejects non-image files."""
     res = await client.post(
         "/api/v1/branding/logo",

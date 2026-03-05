@@ -1,4 +1,5 @@
 """Unit tests for AWS Lambda checks (CIS-AWS-16)."""
+
 from __future__ import annotations
 
 import uuid
@@ -31,47 +32,55 @@ class TestCheckPublicAccess:
         assert result.status == "pass"
 
     def test_pass_when_restricted_principal(self):
-        asset = _make_asset({
-            "Policy": {
-                "Statement": [{
-                    "Effect": "Allow",
-                    "Principal": {"AWS": "arn:aws:iam::123456789012:root"},
-                    "Action": "lambda:InvokeFunction",
-                }]
+        asset = _make_asset(
+            {
+                "Policy": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {"AWS": "arn:aws:iam::123456789012:root"},
+                            "Action": "lambda:InvokeFunction",
+                        }
+                    ]
+                }
             }
-        })
+        )
         result = check_public_access(asset)
         assert result.status == "pass"
 
     def test_fail_when_wildcard_principal_no_condition(self):
-        asset = _make_asset({
-            "Policy": {
-                "Statement": [{
-                    "Sid": "PublicAccess",
-                    "Effect": "Allow",
-                    "Principal": "*",
-                    "Action": "lambda:InvokeFunction",
-                }]
+        asset = _make_asset(
+            {
+                "Policy": {
+                    "Statement": [
+                        {
+                            "Sid": "PublicAccess",
+                            "Effect": "Allow",
+                            "Principal": "*",
+                            "Action": "lambda:InvokeFunction",
+                        }
+                    ]
+                }
             }
-        })
+        )
         result = check_public_access(asset)
         assert result.status == "fail"
 
     def test_pass_when_wildcard_with_condition(self):
-        asset = _make_asset({
-            "Policy": {
-                "Statement": [{
-                    "Effect": "Allow",
-                    "Principal": "*",
-                    "Action": "lambda:InvokeFunction",
-                    "Condition": {
-                        "StringEquals": {
-                            "aws:SourceAccount": "123456789012"
+        asset = _make_asset(
+            {
+                "Policy": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": "*",
+                            "Action": "lambda:InvokeFunction",
+                            "Condition": {"StringEquals": {"aws:SourceAccount": "123456789012"}},
                         }
-                    },
-                }]
+                    ]
+                }
             }
-        })
+        )
         result = check_public_access(asset)
         assert result.status == "pass"
 
@@ -82,15 +91,19 @@ class TestCheckPublicAccess:
         assert result.status == "pass"
 
     def test_fail_when_aws_wildcard_principal(self):
-        asset = _make_asset({
-            "Policy": {
-                "Statement": [{
-                    "Sid": "AwsWildcard",
-                    "Effect": "Allow",
-                    "Principal": {"AWS": "*"},
-                    "Action": "lambda:InvokeFunction",
-                }]
+        asset = _make_asset(
+            {
+                "Policy": {
+                    "Statement": [
+                        {
+                            "Sid": "AwsWildcard",
+                            "Effect": "Allow",
+                            "Principal": {"AWS": "*"},
+                            "Action": "lambda:InvokeFunction",
+                        }
+                    ]
+                }
             }
-        })
+        )
         result = check_public_access(asset)
         assert result.status == "fail"

@@ -1,4 +1,5 @@
 """Key Vault checks (CIS-AZ-16, 17, 18, 21, 22, 76, 77, 78)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

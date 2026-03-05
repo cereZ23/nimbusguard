@@ -1,10 +1,11 @@
 """Normalizer engine — maps provider-specific assessment IDs to CIS-lite controls."""
+
 from __future__ import annotations
 
 import logging
 import uuid
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -33,9 +34,7 @@ async def build_control_map(db: AsyncSession, provider: str = "azure") -> dict[s
     return mapping
 
 
-def match_control(
-    assessment_id: str, control_map: dict[str, uuid.UUID]
-) -> uuid.UUID | None:
+def match_control(assessment_id: str, control_map: dict[str, uuid.UUID]) -> uuid.UUID | None:
     """Look up a single assessment ID against the control map."""
     return control_map.get(assessment_id.lower())
 

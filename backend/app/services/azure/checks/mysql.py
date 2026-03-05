@@ -1,4 +1,5 @@
 """MySQL Flexible Server checks (CIS-AZ-51, 52, 53)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset
@@ -11,10 +12,7 @@ def check_ssl_enforcement(asset: Asset) -> EvalResult:
     props = asset.raw_properties or {}
     ssl = props.get("sslEnforcement", "")
     require_ssl = props.get("requireSecureTransport", "")
-    is_enforced = (
-        str(ssl).lower() == "enabled"
-        or str(require_ssl).upper() == "ON"
-    )
+    is_enforced = str(ssl).lower() == "enabled" or str(require_ssl).upper() == "ON"
     return EvalResult(
         status="pass" if is_enforced else "fail",
         evidence={"sslEnforcement": ssl or None, "requireSecureTransport": require_ssl or None},

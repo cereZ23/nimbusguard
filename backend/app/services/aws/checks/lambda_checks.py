@@ -1,4 +1,5 @@
 """Lambda function checks (CIS-AWS-16)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset
@@ -39,11 +40,13 @@ def check_public_access(asset: Asset) -> EvalResult:
         if effect == "Allow" and principal in ("*", {"AWS": "*"}):
             condition = stmt.get("Condition")
             if not condition:
-                public_statements.append({
-                    "Sid": stmt.get("Sid", ""),
-                    "Principal": str(principal),
-                    "Action": stmt.get("Action", ""),
-                })
+                public_statements.append(
+                    {
+                        "Sid": stmt.get("Sid", ""),
+                        "Principal": str(principal),
+                        "Action": stmt.get("Action", ""),
+                    }
+                )
 
     is_public = len(public_statements) > 0
     return EvalResult(

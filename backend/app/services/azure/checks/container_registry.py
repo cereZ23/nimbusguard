@@ -1,4 +1,5 @@
 """Container Registry checks (CIS-AZ-39, 40)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

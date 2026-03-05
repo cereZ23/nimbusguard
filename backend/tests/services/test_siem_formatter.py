@@ -1,11 +1,10 @@
 """Unit tests for the SIEM formatter service."""
+
 from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
-
-import pytest
 
 from app.services.siem_formatter import (
     SEVERITY_MAP,

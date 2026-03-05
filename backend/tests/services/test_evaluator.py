@@ -1,4 +1,5 @@
 """Unit tests for the evaluation engine."""
+
 from __future__ import annotations
 
 import uuid
@@ -15,13 +16,6 @@ from app.models.control import Control
 from app.models.evidence import Evidence
 from app.models.finding import Finding
 from app.models.scan import Scan
-from app.services.evaluator import (
-    CheckRegistry,
-    EvalResult,
-    evaluate_all,
-    evaluate_asset,
-    registry,
-)
 from app.services.azure.checks.nsg import (
     check_flow_logs,
     check_rdp_restricted,
@@ -35,7 +29,11 @@ from app.services.azure.checks.storage import (
     check_no_public_containers,
     check_public_access_disabled,
 )
-
+from app.services.evaluator import (
+    evaluate_all,
+    evaluate_asset,
+    registry,
+)
 
 # ── Helper to build a mock Asset ─────────────────────────────────────
 
@@ -126,16 +124,12 @@ class TestCheckNoPublicContainers:
 
 class TestCheckNetworkAccessRestricted:
     def test_pass_when_deny(self):
-        asset = _make_asset(raw_properties={
-            "networkAcls": {"defaultAction": "Deny"}
-        })
+        asset = _make_asset(raw_properties={"networkAcls": {"defaultAction": "Deny"}})
         result = check_network_access_restricted(asset)
         assert result.status == "pass"
 
     def test_fail_when_allow(self):
-        asset = _make_asset(raw_properties={
-            "networkAcls": {"defaultAction": "Allow"}
-        })
+        asset = _make_asset(raw_properties={"networkAcls": {"defaultAction": "Allow"}})
         result = check_network_access_restricted(asset)
         assert result.status == "fail"
 
@@ -145,9 +139,7 @@ class TestCheckNetworkAccessRestricted:
         assert result.status == "fail"
 
     def test_pass_case_insensitive(self):
-        asset = _make_asset(raw_properties={
-            "networkAcls": {"defaultAction": "deny"}
-        })
+        asset = _make_asset(raw_properties={"networkAcls": {"defaultAction": "deny"}})
         result = check_network_access_restricted(asset)
         assert result.status == "pass"
 
@@ -157,16 +149,12 @@ class TestCheckNetworkAccessRestricted:
 
 class TestCheckCmkEncryption:
     def test_fail_when_microsoft_managed(self):
-        asset = _make_asset(raw_properties={
-            "encryption": {"keySource": "Microsoft.Storage"}
-        })
+        asset = _make_asset(raw_properties={"encryption": {"keySource": "Microsoft.Storage"}})
         result = check_cmk_encryption(asset)
         assert result.status == "fail"
 
     def test_pass_when_cmk(self):
-        asset = _make_asset(raw_properties={
-            "encryption": {"keySource": "Microsoft.Keyvault"}
-        })
+        asset = _make_asset(raw_properties={"encryption": {"keySource": "Microsoft.Keyvault"}})
         result = check_cmk_encryption(asset)
         assert result.status == "pass"
 
@@ -181,9 +169,7 @@ class TestCheckCmkEncryption:
 
 class TestCheckDiagnosticLogs:
     def test_pass_when_settings_present(self):
-        asset = _make_asset(raw_properties={
-            "diagnosticSettings": {"enabled": True}
-        })
+        asset = _make_asset(raw_properties={"diagnosticSettings": {"enabled": True}})
         result = check_diagnostic_logs(asset)
         assert result.status == "pass"
 
@@ -614,10 +600,7 @@ class TestEvaluateAsset:
                 "encryption": {"keySource": "Microsoft.Storage"},
             }
         )
-        controls_by_code = {
-            f"CIS-AZ-{n:02d}": MagicMock(spec=Control, code=f"CIS-AZ-{n:02d}")
-            for n in range(1, 21)
-        }
+        controls_by_code = {f"CIS-AZ-{n:02d}": MagicMock(spec=Control, code=f"CIS-AZ-{n:02d}") for n in range(1, 21)}
         results = evaluate_asset(asset, controls_by_code)
         codes = [code for code, _ in results]
         assert "CIS-AZ-09" in codes
@@ -708,9 +691,7 @@ async def test_evaluate_all_creates_findings(db: AsyncSession, auth_headers, cli
     assert stats["findings_created"] == 6
 
     # Verify findings
-    result = await db.execute(
-        select(Finding).where(Finding.cloud_account_id == account_id)
-    )
+    result = await db.execute(select(Finding).where(Finding.cloud_account_id == account_id))
     findings = result.scalars().all()
     assert len(findings) == 6
 
@@ -738,9 +719,7 @@ async def test_evaluate_all_creates_findings(db: AsyncSession, auth_headers, cli
     assert len(evidences) == 6
 
     # Verify secure score was calculated
-    result = await db.execute(
-        select(CloudAccount).where(CloudAccount.id == account_id)
-    )
+    result = await db.execute(select(CloudAccount).where(CloudAccount.id == account_id))
     account = result.scalar_one()
     metadata = account.metadata_ or {}
     assert "secure_score" in metadata
@@ -807,10 +786,6 @@ async def test_evaluate_all_updates_existing_findings(db: AsyncSession, auth_hea
     assert stats2["findings_created"] == 0
 
     # Verify finding status changed
-    result = await db.execute(
-        select(Finding).where(
-            Finding.dedup_key == f"eval:{provider_id}:CIS-AZ-09"
-        )
-    )
+    result = await db.execute(select(Finding).where(Finding.dedup_key == f"eval:{provider_id}:CIS-AZ-09"))
     finding = result.scalar_one()
     assert finding.status == "pass"

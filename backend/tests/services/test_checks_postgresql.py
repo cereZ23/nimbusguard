@@ -1,4 +1,5 @@
 """Unit tests for PostgreSQL checks."""
+
 from __future__ import annotations
 
 import uuid

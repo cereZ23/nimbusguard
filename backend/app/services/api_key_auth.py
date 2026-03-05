@@ -1,4 +1,5 @@
 """API key authentication service — validates API keys for programmatic access."""
+
 from __future__ import annotations
 
 import hashlib
@@ -22,11 +23,7 @@ async def authenticate_api_key(db: AsyncSession, api_key: str) -> User | None:
     """
     key_hash = hashlib.sha256(api_key.encode()).hexdigest()
 
-    result = await db.execute(
-        select(ApiKey)
-        .options(selectinload(ApiKey.user))
-        .where(ApiKey.key_hash == key_hash)
-    )
+    result = await db.execute(select(ApiKey).options(selectinload(ApiKey.user)).where(ApiKey.key_hash == key_hash))
     record = result.scalar_one_or_none()
 
     if record is None:

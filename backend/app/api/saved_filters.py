@@ -37,9 +37,7 @@ async def list_saved_filters(
     response_model=ApiResponse[SavedFilterResponse],
     status_code=status.HTTP_201_CREATED,
 )
-async def create_saved_filter(
-    body: SavedFilterCreate, db: DB, user: CurrentUser
-) -> dict:
+async def create_saved_filter(body: SavedFilterCreate, db: DB, user: CurrentUser) -> dict:
     sf = SavedFilter(
         tenant_id=user.tenant_id,
         user_id=user.id,
@@ -55,9 +53,7 @@ async def create_saved_filter(
 
 
 @router.delete("/{filter_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_saved_filter(
-    filter_id: uuid.UUID, db: DB, user: CurrentUser
-) -> None:
+async def delete_saved_filter(filter_id: uuid.UUID, db: DB, user: CurrentUser) -> None:
     result = await db.execute(
         select(SavedFilter).where(
             SavedFilter.id == filter_id,

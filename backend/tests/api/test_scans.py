@@ -36,9 +36,7 @@ async def test_create_scan_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_scan_account_not_found(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_scan_account_not_found(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.post(
         "/api/v1/scans",
         headers=auth_headers,
@@ -48,9 +46,7 @@ async def test_create_scan_account_not_found(
 
 
 @pytest.mark.asyncio
-async def test_create_scan_conflict(
-    client: AsyncClient, auth_headers: dict, make_account
-) -> None:
+async def test_create_scan_conflict(client: AsyncClient, auth_headers: dict, make_account) -> None:
     account = await make_account("Conflict Account")
 
     with patch("app.worker.tasks.run_scan") as mock_task:

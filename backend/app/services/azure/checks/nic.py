@@ -1,4 +1,5 @@
 """Network Interface checks (CIS-AZ-65, 66)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

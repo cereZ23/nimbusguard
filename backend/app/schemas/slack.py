@@ -32,9 +32,7 @@ class SlackIntegrationCreate(BaseModel):
     @classmethod
     def validate_webhook_url(cls, v: str) -> str:
         if not v.startswith("https://hooks.slack.com/"):
-            raise ValueError(
-                "Slack webhook URL must start with https://hooks.slack.com/"
-            )
+            raise ValueError("Slack webhook URL must start with https://hooks.slack.com/")
         return v
 
 
@@ -58,9 +56,7 @@ class SlackIntegrationUpdate(BaseModel):
     @classmethod
     def validate_webhook_url(cls, v: str | None) -> str | None:
         if v is not None and not v.startswith("https://hooks.slack.com/"):
-            raise ValueError(
-                "Slack webhook URL must start with https://hooks.slack.com/"
-            )
+            raise ValueError("Slack webhook URL must start with https://hooks.slack.com/")
         return v
 
 

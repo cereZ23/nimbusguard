@@ -3,16 +3,13 @@ from __future__ import annotations
 import pytest
 from httpx import AsyncClient
 
-
 # ---------------------------------------------------------------------------
 # Executive Summary
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_executive_summary_pdf(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_executive_summary_pdf(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/reports/executive-summary",
         headers=auth_headers,
@@ -24,9 +21,7 @@ async def test_executive_summary_pdf(
 
 
 @pytest.mark.asyncio
-async def test_executive_summary_empty(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_executive_summary_empty(client: AsyncClient, auth_headers: dict) -> None:
     """Report should generate even with no findings."""
     res = await client.get(
         "/api/v1/reports/executive-summary",
@@ -48,9 +43,7 @@ async def test_executive_summary_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_compliance_report_pdf(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_compliance_report_pdf(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/reports/compliance",
         headers=auth_headers,
@@ -63,9 +56,7 @@ async def test_compliance_report_pdf(
 
 
 @pytest.mark.asyncio
-async def test_compliance_report_default_framework(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_compliance_report_default_framework(client: AsyncClient, auth_headers: dict) -> None:
     """Default framework should be cis_azure."""
     res = await client.get(
         "/api/v1/reports/compliance",
@@ -76,9 +67,7 @@ async def test_compliance_report_default_framework(
 
 
 @pytest.mark.asyncio
-async def test_compliance_report_soc2(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_compliance_report_soc2(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.get(
         "/api/v1/reports/compliance",
         headers=auth_headers,
@@ -89,9 +78,7 @@ async def test_compliance_report_soc2(
 
 
 @pytest.mark.asyncio
-async def test_compliance_report_nist(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_compliance_report_nist(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.get(
         "/api/v1/reports/compliance",
         headers=auth_headers,
@@ -102,9 +89,7 @@ async def test_compliance_report_nist(
 
 
 @pytest.mark.asyncio
-async def test_compliance_report_iso27001(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_compliance_report_iso27001(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.get(
         "/api/v1/reports/compliance",
         headers=auth_headers,
@@ -115,9 +100,7 @@ async def test_compliance_report_iso27001(
 
 
 @pytest.mark.asyncio
-async def test_compliance_report_invalid_framework(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_compliance_report_invalid_framework(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.get(
         "/api/v1/reports/compliance",
         headers=auth_headers,
@@ -138,9 +121,7 @@ async def test_compliance_report_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_technical_detail_pdf(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_technical_detail_pdf(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/reports/technical-detail",
         headers=auth_headers,
@@ -152,9 +133,7 @@ async def test_technical_detail_pdf(
 
 
 @pytest.mark.asyncio
-async def test_technical_detail_filter_severity(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_technical_detail_filter_severity(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/reports/technical-detail",
         headers=auth_headers,
@@ -165,9 +144,7 @@ async def test_technical_detail_filter_severity(
 
 
 @pytest.mark.asyncio
-async def test_technical_detail_filter_status(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_technical_detail_filter_status(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/reports/technical-detail",
         headers=auth_headers,
@@ -178,9 +155,7 @@ async def test_technical_detail_filter_status(
 
 
 @pytest.mark.asyncio
-async def test_technical_detail_filter_combined(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_technical_detail_filter_combined(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/reports/technical-detail",
         headers=auth_headers,
@@ -191,9 +166,7 @@ async def test_technical_detail_filter_combined(
 
 
 @pytest.mark.asyncio
-async def test_technical_detail_empty(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_technical_detail_empty(client: AsyncClient, auth_headers: dict) -> None:
     """Report generates even with no findings."""
     res = await client.get(
         "/api/v1/reports/technical-detail",
@@ -204,9 +177,7 @@ async def test_technical_detail_empty(
 
 
 @pytest.mark.asyncio
-async def test_technical_detail_invalid_severity(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_technical_detail_invalid_severity(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.get(
         "/api/v1/reports/technical-detail",
         headers=auth_headers,
@@ -216,9 +187,7 @@ async def test_technical_detail_invalid_severity(
 
 
 @pytest.mark.asyncio
-async def test_technical_detail_invalid_status(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_technical_detail_invalid_status(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.get(
         "/api/v1/reports/technical-detail",
         headers=auth_headers,

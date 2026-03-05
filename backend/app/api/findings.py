@@ -8,7 +8,8 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.deps import DB, AdminUser, CurrentUser
+from app.config.remediation_snippets import get_remediation_for_control
+from app.deps import DB, CurrentUser
 from app.models.cloud_account import CloudAccount
 from app.models.exception import Exception_
 from app.models.finding import Finding
@@ -17,7 +18,6 @@ from app.models.finding_event import FindingEvent
 from app.models.user import User
 from app.schemas.common import ApiResponse, PaginationMeta
 from app.schemas.finding_event import FindingEventResponse
-from app.config.remediation_snippets import get_remediation_for_control
 from app.schemas.findings import (
     AssignRequest,
     BulkWaiveRequest,
@@ -75,20 +75,14 @@ def _finding_detail_with_assignee(finding: Finding) -> dict:
     return data
 
 
-async def _get_tenant_finding(
-    db: DB, finding_id: uuid.UUID, tenant_id: uuid.UUID
-) -> Finding:
+async def _get_tenant_finding(db: DB, finding_id: uuid.UUID, tenant_id: uuid.UUID) -> Finding:
     """Fetch a finding ensuring it belongs to the given tenant."""
     result = await db.execute(
-        select(Finding)
-        .join(CloudAccount)
-        .where(Finding.id == finding_id, CloudAccount.tenant_id == tenant_id)
+        select(Finding).join(CloudAccount).where(Finding.id == finding_id, CloudAccount.tenant_id == tenant_id)
     )
     finding = result.scalar_one_or_none()
     if finding is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found")
     return finding
 
 
@@ -122,11 +116,7 @@ async def list_findings(
         .where(CloudAccount.tenant_id == user.tenant_id)
         .options(selectinload(Finding.assignee))
     )
-    count_base = (
-        select(func.count(Finding.id))
-        .join(CloudAccount)
-        .where(CloudAccount.tenant_id == user.tenant_id)
-    )
+    count_base = select(func.count(Finding.id)).join(CloudAccount).where(CloudAccount.tenant_id == user.tenant_id)
 
     if search:
         like = f"%{search}%"
@@ -163,9 +153,7 @@ async def list_findings(
 
     sort_col = getattr(Finding, sort_by)
     order = sort_col.desc() if sort_order == "desc" else sort_col.asc()
-    result = await db.execute(
-        base.order_by(order).offset((page - 1) * size).limit(size)
-    )
+    result = await db.execute(base.order_by(order).offset((page - 1) * size).limit(size))
     findings = result.scalars().all()
 
     return {
@@ -193,9 +181,7 @@ async def get_finding(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     )
     finding = result.scalar_one_or_none()
     if finding is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found")
     return {"data": _finding_detail_with_assignee(finding), "error": None, "meta": None}
 
 
@@ -206,9 +192,7 @@ async def get_finding(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     "/{finding_id}/remediation",
     response_model=ApiResponse[RemediationResponse],
 )
-async def get_finding_remediation(
-    finding_id: uuid.UUID, db: DB, user: CurrentUser
-) -> dict:
+async def get_finding_remediation(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     """Return IaC remediation snippets (Terraform, Bicep, Azure CLI) for a finding's control."""
     from app.models.control import Control
 
@@ -220,9 +204,7 @@ async def get_finding_remediation(
     )
     finding = result.scalar_one_or_none()
     if finding is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found")
 
     control: Control | None = finding.control
     if control is None:
@@ -260,21 +242,15 @@ async def get_finding_remediation(
     "/{finding_id}/similar",
     response_model=ApiResponse[list[SimilarFindingResponse]],
 )
-async def get_similar_findings(
-    finding_id: uuid.UUID, db: DB, user: CurrentUser
-) -> dict:
+async def get_similar_findings(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     """Return up to 10 similar findings: same control on other assets, or same asset with other controls."""
     # Validate that the finding belongs to the tenant
     result = await db.execute(
-        select(Finding)
-        .join(CloudAccount)
-        .where(Finding.id == finding_id, CloudAccount.tenant_id == user.tenant_id)
+        select(Finding).join(CloudAccount).where(Finding.id == finding_id, CloudAccount.tenant_id == user.tenant_id)
     )
     finding = result.scalar_one_or_none()
     if finding is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found")
 
     similar: list[SimilarFindingResponse] = []
 
@@ -353,9 +329,7 @@ async def get_similar_findings(
                 )
             )
 
-    logger.info(
-        "Found %d similar findings for finding %s", len(similar), finding_id
-    )
+    logger.info("Found %d similar findings for finding %s", len(similar), finding_id)
     return {"data": similar, "error": None, "meta": None}
 
 
@@ -363,9 +337,7 @@ async def get_similar_findings(
 
 
 @router.put("/{finding_id}/assign", response_model=ApiResponse[FindingResponse])
-async def assign_finding(
-    finding_id: uuid.UUID, body: AssignRequest, db: DB, user: CurrentUser
-) -> dict:
+async def assign_finding(finding_id: uuid.UUID, body: AssignRequest, db: DB, user: CurrentUser) -> dict:
     finding = await _get_tenant_finding(db, finding_id, user.tenant_id)
 
     if body.user_id is not None:
@@ -403,9 +375,7 @@ async def assign_finding(
 
     # Eagerly load assignee for the response
     if finding.assigned_to:
-        assignee_result = await db.execute(
-            select(User).where(User.id == finding.assigned_to)
-        )
+        assignee_result = await db.execute(select(User).where(User.id == finding.assigned_to))
         assignee_user = assignee_result.scalar_one_or_none()
     else:
         assignee_user = None
@@ -454,9 +424,7 @@ async def assign_finding(
 @router.post("/bulk-waive", response_model=ApiResponse[BulkWaiveResult])
 async def bulk_waive_findings(body: BulkWaiveRequest, db: DB, user: CurrentUser) -> dict:
     if not body.finding_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="No finding IDs provided"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No finding IDs provided")
 
     # Verify all findings belong to tenant
     result = await db.execute(
@@ -505,12 +473,8 @@ async def bulk_waive_findings(body: BulkWaiveRequest, db: DB, user: CurrentUser)
 # ── Comments ─────────────────────────────────────────────────────────
 
 
-@router.get(
-    "/{finding_id}/comments", response_model=ApiResponse[list[CommentResponse]]
-)
-async def list_comments(
-    finding_id: uuid.UUID, db: DB, user: CurrentUser
-) -> dict:
+@router.get("/{finding_id}/comments", response_model=ApiResponse[list[CommentResponse]])
+async def list_comments(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     # Validate finding belongs to tenant
     await _get_tenant_finding(db, finding_id, user.tenant_id)
 
@@ -541,9 +505,7 @@ async def list_comments(
     response_model=ApiResponse[CommentResponse],
     status_code=status.HTTP_201_CREATED,
 )
-async def add_comment(
-    finding_id: uuid.UUID, body: CommentCreate, db: DB, user: CurrentUser
-) -> dict:
+async def add_comment(finding_id: uuid.UUID, body: CommentCreate, db: DB, user: CurrentUser) -> dict:
     # Validate finding belongs to tenant
     await _get_tenant_finding(db, finding_id, user.tenant_id)
 
@@ -614,9 +576,7 @@ async def delete_comment(
     )
     comment = result.scalar_one_or_none()
     if comment is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
 
     # Only comment author or admin can delete
     if comment.user_id != user.id and user.role != "admin":
@@ -653,9 +613,7 @@ async def delete_comment(
     "/{finding_id}/timeline",
     response_model=ApiResponse[list[FindingEventResponse]],
 )
-async def get_finding_timeline(
-    finding_id: uuid.UUID, db: DB, user: CurrentUser
-) -> dict:
+async def get_finding_timeline(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     # Validate finding belongs to tenant
     await _get_tenant_finding(db, finding_id, user.tenant_id)
 

@@ -1,4 +1,5 @@
 """Tests for incremental scan creation and scan_type handling."""
+
 from __future__ import annotations
 
 import pytest
@@ -6,9 +7,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_create_incremental_scan(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_create_incremental_scan(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     account_id = seed_data["account_id"]
     res = await client.post(
         "/api/v1/scans",
@@ -22,9 +21,7 @@ async def test_create_incremental_scan(
 
 
 @pytest.mark.asyncio
-async def test_create_full_scan(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_create_full_scan(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     account_id = seed_data["account_id"]
     res = await client.post(
         "/api/v1/scans",
@@ -37,9 +34,7 @@ async def test_create_full_scan(
 
 
 @pytest.mark.asyncio
-async def test_scan_default_type_is_full(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_scan_default_type_is_full(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     account_id = seed_data["account_id"]
     res = await client.post(
         "/api/v1/scans",
@@ -51,9 +46,7 @@ async def test_scan_default_type_is_full(
 
 
 @pytest.mark.asyncio
-async def test_concurrent_scan_conflict(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_concurrent_scan_conflict(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     account_id = seed_data["account_id"]
     # First scan
     res1 = await client.post(

@@ -1,4 +1,5 @@
 """Request middleware for logging context."""
+
 from __future__ import annotations
 
 import uuid

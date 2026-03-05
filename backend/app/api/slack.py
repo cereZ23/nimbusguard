@@ -53,9 +53,7 @@ async def list_slack_integrations(
     response_model=ApiResponse[SlackIntegrationResponse],
     status_code=status.HTTP_201_CREATED,
 )
-async def create_slack_integration(
-    body: SlackIntegrationCreate, db: DB, user: AdminUser
-) -> dict:
+async def create_slack_integration(body: SlackIntegrationCreate, db: DB, user: AdminUser) -> dict:
     """Create a new Slack integration for the current tenant."""
     integration = SlackIntegration(
         tenant_id=user.tenant_id,
@@ -133,9 +131,7 @@ async def update_slack_integration(
 
 
 @router.delete("/{integration_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_slack_integration(
-    integration_id: uuid.UUID, db: DB, user: AdminUser
-) -> None:
+async def delete_slack_integration(integration_id: uuid.UUID, db: DB, user: AdminUser) -> None:
     """Delete a Slack integration."""
     result = await db.execute(
         select(SlackIntegration).where(
@@ -165,9 +161,7 @@ async def delete_slack_integration(
 
 
 @router.post("/{integration_id}/test", response_model=ApiResponse[dict])
-async def test_slack_integration(
-    integration_id: uuid.UUID, db: DB, user: AdminUser
-) -> dict:
+async def test_slack_integration(integration_id: uuid.UUID, db: DB, user: AdminUser) -> dict:
     """Send a test message to a Slack integration."""
     result = await db.execute(
         select(SlackIntegration).where(
@@ -183,9 +177,7 @@ async def test_slack_integration(
         )
 
     try:
-        success, response_body = await send_test_slack_notification(
-            integration.webhook_url
-        )
+        success, response_body = await send_test_slack_notification(integration.webhook_url)
 
         return {
             "data": {
@@ -196,9 +188,7 @@ async def test_slack_integration(
             "meta": None,
         }
     except Exception as exc:
-        logger.exception(
-            "Test Slack notification failed for integration %s", integration_id
-        )
+        logger.exception("Test Slack notification failed for integration %s", integration_id)
         return {
             "data": {
                 "success": False,

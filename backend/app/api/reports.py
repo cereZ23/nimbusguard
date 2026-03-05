@@ -66,27 +66,18 @@ FRAMEWORK_MAPPING_KEY: dict[str, str] = {
 
 
 def _sev_color(severity: str) -> str:
-    return {"high": "#dc2626", "medium": "#ea580c", "low": "#2563eb"}.get(
-        severity, "#6b7280"
-    )
+    return {"high": "#dc2626", "medium": "#ea580c", "low": "#2563eb"}.get(severity, "#6b7280")
 
 
 def _xml_escape(text: str) -> str:
     """Escape XML special characters for reportlab Paragraph."""
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
 def _build_styles() -> dict:
     styles = getSampleStyleSheet()
     return {
-        "title": ParagraphStyle(
-            "ReportTitle", parent=styles["Title"], fontSize=22, spaceAfter=6
-        ),
+        "title": ParagraphStyle("ReportTitle", parent=styles["Title"], fontSize=22, spaceAfter=6),
         "subtitle": ParagraphStyle(
             "ReportSubtitle",
             parent=styles["Normal"],
@@ -109,9 +100,7 @@ def _build_styles() -> dict:
             spaceAfter=4,
         ),
         "normal": styles["Normal"],
-        "small": ParagraphStyle(
-            "ReportSmall", parent=styles["Normal"], fontSize=8, leading=10
-        ),
+        "small": ParagraphStyle("ReportSmall", parent=styles["Normal"], fontSize=8, leading=10),
         "footer": ParagraphStyle(
             "ReportFooter",
             parent=styles["Normal"],
@@ -170,14 +159,10 @@ def _title_page(
         elements.append(Paragraph(subtitle, s["subtitle"]))
     elements.append(Spacer(1, 1 * cm))
     now = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
-    elements.append(
-        Paragraph(f"<b>Organization:</b> {_xml_escape(tenant_name)}", s["normal"])
-    )
+    elements.append(Paragraph(f"<b>Organization:</b> {_xml_escape(tenant_name)}", s["normal"]))
     elements.append(Paragraph(f"<b>Generated:</b> {now}", s["normal"]))
     elements.append(Spacer(1, 0.5 * cm))
-    elements.append(
-        Paragraph("CONFIDENTIAL", s["footer"])
-    )
+    elements.append(Paragraph("CONFIDENTIAL", s["footer"]))
     elements.append(PageBreak())
 
 
@@ -231,8 +216,7 @@ async def executive_summary_report(
                 func.count(
                     case(
                         (
-                            (Finding.status == "fail")
-                            & (Finding.severity == "medium"),
+                            (Finding.status == "fail") & (Finding.severity == "medium"),
                             1,
                         )
                     )
@@ -260,11 +244,7 @@ async def executive_summary_report(
 
     # -- Total assets --
     total_assets = (
-        await db.execute(
-            select(func.count(Asset.id))
-            .join(CloudAccount)
-            .where(CloudAccount.tenant_id == tenant_id)
-        )
+        await db.execute(select(func.count(Asset.id)).join(CloudAccount).where(CloudAccount.tenant_id == tenant_id))
     ).scalar() or 0
 
     # -- Secure score --
@@ -317,25 +297,23 @@ async def executive_summary_report(
     elements.append(Paragraph("Security Posture Overview", s["heading"]))
     if secure_score is not None:
         score_display = f"{secure_score:.1f}%"
-        score_color = (
-            "#16a34a" if secure_score >= 80 else "#ea580c" if secure_score >= 50 else "#dc2626"
-        )
+        score_color = "#16a34a" if secure_score >= 80 else "#ea580c" if secure_score >= 50 else "#dc2626"
         elements.append(
             Paragraph(
                 f'<font size="28" color="{score_color}"><b>{score_display}</b></font>',
                 ParagraphStyle("ScoreDisplay", parent=s["normal"], alignment=1),
             )
         )
-        elements.append(
-            Paragraph("Secure Score", s["kpi_label"])
-        )
+        elements.append(Paragraph("Secure Score", s["kpi_label"]))
         elements.append(Spacer(1, 0.5 * cm))
 
         # Score gauge bar (text-based)
         filled = int(secure_score / 5)  # 0-20 blocks
         empty = 20 - filled
-        gauge = f'<font face="Courier" size="10" color="{score_color}">{"#" * filled}</font>' \
-                f'<font face="Courier" size="10" color="#e5e7eb">{"." * empty}</font>'
+        gauge = (
+            f'<font face="Courier" size="10" color="{score_color}">{"#" * filled}</font>'
+            f'<font face="Courier" size="10" color="#e5e7eb">{"." * empty}</font>'
+        )
         elements.append(Paragraph(gauge, ParagraphStyle("Gauge", parent=s["normal"], alignment=1)))
         elements.append(Spacer(1, 0.5 * cm))
     else:
@@ -413,22 +391,22 @@ async def executive_summary_report(
     if control_rows:
         ctrl_data = [["#", "Code", "Name", "Severity", "Failures", "Total"]]
         for idx, row in enumerate(control_rows, 1):
-            ctrl_data.append([
-                str(idx),
-                row[0],
-                Paragraph(_xml_escape(row[1][:60]), s["small"]),
-                row[2].capitalize(),
-                str(row[3]),
-                str(row[4]),
-            ])
+            ctrl_data.append(
+                [
+                    str(idx),
+                    row[0],
+                    Paragraph(_xml_escape(row[1][:60]), s["small"]),
+                    row[2].capitalize(),
+                    str(row[3]),
+                    str(row[4]),
+                ]
+            )
         col_widths = [0.5 * cm, 2 * cm, 7.5 * cm, 2 * cm, 2 * cm, 2 * cm]
         ctrl_table = Table(ctrl_data, colWidths=col_widths)
         ctrl_table.setStyle(_header_table_style())
         elements.append(ctrl_table)
     else:
-        elements.append(
-            Paragraph("No control data available. Run a scan to populate controls.", s["normal"])
-        )
+        elements.append(Paragraph("No control data available. Run a scan to populate controls.", s["normal"]))
 
     elements.append(Spacer(1, 1 * cm))
 
@@ -458,9 +436,7 @@ async def executive_summary_report(
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": "attachment; filename=executive-summary.pdf"
-        },
+        headers={"Content-Disposition": "attachment; filename=executive-summary.pdf"},
     )
 
 
@@ -500,9 +476,7 @@ async def compliance_report(
             )
             .outerjoin(Finding, Finding.control_id == Control.id)
             .outerjoin(CloudAccount, CloudAccount.id == Finding.cloud_account_id)
-            .where(
-                (CloudAccount.tenant_id == tenant_id) | (Finding.id.is_(None))
-            )
+            .where((CloudAccount.tenant_id == tenant_id) | (Finding.id.is_(None)))
             .group_by(Control.id)
             .order_by(Control.code)
         )
@@ -511,42 +485,34 @@ async def compliance_report(
     # Filter controls relevant to the selected framework
     if framework == "cis_azure":
         # All controls with CIS-AZ codes are part of cis_azure
-        relevant_controls = [
-            r for r in control_rows if r[1].startswith("CIS-AZ")
-        ]
+        relevant_controls = [r for r in control_rows if r[1].startswith("CIS-AZ")]
     else:
         # Controls that have a mapping for this framework
-        relevant_controls = [
-            r
-            for r in control_rows
-            if r[6] and isinstance(r[6], dict) and mapping_key in r[6]
-        ]
+        relevant_controls = [r for r in control_rows if r[6] and isinstance(r[6], dict) and mapping_key in r[6]]
 
     # Compute overall compliance
     total_controls = len(relevant_controls)
     passing_controls = sum(
-        1 for r in relevant_controls if r[8] == 0 and r[7] > 0  # fail_count==0 and has findings
+        1
+        for r in relevant_controls
+        if r[8] == 0 and r[7] > 0  # fail_count==0 and has findings
     )
-    compliance_pct = (
-        (passing_controls / total_controls * 100) if total_controls > 0 else 0
-    )
+    compliance_pct = (passing_controls / total_controls * 100) if total_controls > 0 else 0
 
     # For per-control detail, fetch failing findings with assets
     failing_findings_by_control: dict[str, list] = {}
     if relevant_controls:
         control_ids = [r[0] for r in relevant_controls]
-        failing_q = (
-            await db.execute(
-                select(Finding)
-                .join(CloudAccount)
-                .where(
-                    CloudAccount.tenant_id == tenant_id,
-                    Finding.control_id.in_(control_ids),
-                    Finding.status == "fail",
-                )
-                .options(selectinload(Finding.asset))
-                .order_by(Finding.severity.desc())
+        failing_q = await db.execute(
+            select(Finding)
+            .join(CloudAccount)
+            .where(
+                CloudAccount.tenant_id == tenant_id,
+                Finding.control_id.in_(control_ids),
+                Finding.status == "fail",
             )
+            .options(selectinload(Finding.asset))
+            .order_by(Finding.severity.desc())
         )
         for f in failing_q.scalars().all():
             cid = str(f.control_id)
@@ -576,9 +542,7 @@ async def compliance_report(
 
     # Overall compliance
     elements.append(Paragraph("Overall Compliance", s["heading"]))
-    comp_color = (
-        "#16a34a" if compliance_pct >= 80 else "#ea580c" if compliance_pct >= 50 else "#dc2626"
-    )
+    comp_color = "#16a34a" if compliance_pct >= 80 else "#ea580c" if compliance_pct >= 50 else "#dc2626"
     elements.append(
         Paragraph(
             f'<font size="28" color="{comp_color}"><b>{compliance_pct:.1f}%</b></font>',
@@ -604,14 +568,16 @@ async def compliance_report(
             total = r[7]
             fails = r[8]
             ctrl_status = "PASS" if fails == 0 and total > 0 else ("FAIL" if fails > 0 else "N/A")
-            tbl_data.append([
-                code,
-                Paragraph(_xml_escape(name[:50]), s["small"]),
-                severity,
-                ctrl_status,
-                str(total),
-                str(fails),
-            ])
+            tbl_data.append(
+                [
+                    code,
+                    Paragraph(_xml_escape(name[:50]), s["small"]),
+                    severity,
+                    ctrl_status,
+                    str(total),
+                    str(fails),
+                ]
+            )
 
         col_widths = [2 * cm, 6.5 * cm, 1.8 * cm, 1.5 * cm, 1.8 * cm, 1.8 * cm]
         tbl = Table(tbl_data, colWidths=col_widths)
@@ -653,33 +619,31 @@ async def compliance_report(
 
         elements.append(
             Paragraph(
-                f'<b>{_xml_escape(code)}: {_xml_escape(name)}</b> '
+                f"<b>{_xml_escape(code)}: {_xml_escape(name)}</b> "
                 f'<font color="{_sev_color(severity)}">[{severity.upper()}]</font>',
                 s["heading3"],
             )
         )
 
         if description:
-            elements.append(
-                Paragraph(_xml_escape(description[:300]), s["small"])
-            )
+            elements.append(Paragraph(_xml_escape(description[:300]), s["small"]))
 
         failing = failing_findings_by_control.get(control_id_str, [])
         if failing:
-            elements.append(
-                Paragraph(f"<b>Affected resources ({len(failing)}):</b>", s["small"])
-            )
+            elements.append(Paragraph(f"<b>Affected resources ({len(failing)}):</b>", s["small"]))
             res_data = [["Resource", "Type", "Region", "Severity"]]
             for f in failing[:20]:  # Limit to 20 per control
                 asset_name = f.asset.name if f.asset else "Unknown"
                 asset_type = f.asset.resource_type if f.asset else "Unknown"
                 asset_region = f.asset.region if f.asset else "Unknown"
-                res_data.append([
-                    Paragraph(_xml_escape(asset_name[:40]), s["small"]),
-                    Paragraph(_xml_escape(asset_type[:30]), s["small"]),
-                    asset_region or "-",
-                    f.severity.capitalize(),
-                ])
+                res_data.append(
+                    [
+                        Paragraph(_xml_escape(asset_name[:40]), s["small"]),
+                        Paragraph(_xml_escape(asset_type[:30]), s["small"]),
+                        asset_region or "-",
+                        f.severity.capitalize(),
+                    ]
+                )
             res_widths = [5 * cm, 4 * cm, 3 * cm, 2 * cm]
             res_tbl = Table(res_data, colWidths=res_widths)
             res_tbl.setStyle(_header_table_style())
@@ -699,9 +663,7 @@ async def compliance_report(
                 )
             )
         else:
-            elements.append(
-                Paragraph("No affected resources found.", s["small"])
-            )
+            elements.append(Paragraph("No affected resources found.", s["small"]))
 
         if remediation:
             elements.append(
@@ -754,16 +716,12 @@ async def compliance_report(
     doc.build(elements)
     pdf_bytes = buf.getvalue()
 
-    logger.info(
-        "Compliance report (%s) generated for tenant %s", framework, tenant_id
-    )
+    logger.info("Compliance report (%s) generated for tenant %s", framework, tenant_id)
 
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": f"attachment; filename=compliance-{framework}.pdf"
-        },
+        headers={"Content-Disposition": f"attachment; filename=compliance-{framework}.pdf"},
     )
 
 
@@ -906,18 +864,20 @@ async def technical_detail_report(
             ["Severity", "Status", "Title", "Control", "Resource", "Region", "Last Evaluated"],
         ]
         for f in findings:
-            tbl_data.append([
-                f.severity.upper(),
-                f.status.upper(),
-                Paragraph(_xml_escape((f.title or "Untitled")[:60]), s["small"]),
-                f.control.code if f.control else "-",
-                Paragraph(
-                    _xml_escape((f.asset.name if f.asset else "Unknown")[:40]),
-                    s["small"],
-                ),
-                f.asset.region if f.asset else "-",
-                f.last_evaluated_at.strftime("%Y-%m-%d %H:%M") if f.last_evaluated_at else "-",
-            ])
+            tbl_data.append(
+                [
+                    f.severity.upper(),
+                    f.status.upper(),
+                    Paragraph(_xml_escape((f.title or "Untitled")[:60]), s["small"]),
+                    f.control.code if f.control else "-",
+                    Paragraph(
+                        _xml_escape((f.asset.name if f.asset else "Unknown")[:40]),
+                        s["small"],
+                    ),
+                    f.asset.region if f.asset else "-",
+                    f.last_evaluated_at.strftime("%Y-%m-%d %H:%M") if f.last_evaluated_at else "-",
+                ]
+            )
 
         col_widths = [1.8 * cm, 1.5 * cm, 7 * cm, 2.2 * cm, 6 * cm, 3 * cm, 3.5 * cm]
         findings_tbl = Table(tbl_data, colWidths=col_widths, repeatRows=1)
@@ -928,9 +888,7 @@ async def technical_detail_report(
         for row_idx in range(1, len(tbl_data)):
             sev_val = tbl_data[row_idx][0]
             status_val = tbl_data[row_idx][1]
-            sev_c = {"HIGH": _RED, "MEDIUM": _ORANGE, "LOW": colors.HexColor("#2563eb")}.get(
-                sev_val, _GRAY
-            )
+            sev_c = {"HIGH": _RED, "MEDIUM": _ORANGE, "LOW": colors.HexColor("#2563eb")}.get(sev_val, _GRAY)
             stat_c = _RED if status_val == "FAIL" else _GREEN if status_val == "PASS" else _GRAY
             extra_styles.append(("TEXTCOLOR", (0, row_idx), (0, row_idx), sev_c))
             extra_styles.append(("TEXTCOLOR", (1, row_idx), (1, row_idx), stat_c))
@@ -939,9 +897,7 @@ async def technical_detail_report(
         elements.append(findings_tbl)
 
         # Evidence details (for failing findings only, limit to 50)
-        failing_with_evidence = [
-            f for f in findings if f.status == "fail" and f.evidences
-        ][:50]
+        failing_with_evidence = [f for f in findings if f.status == "fail" and f.evidences][:50]
 
         if failing_with_evidence:
             elements.append(PageBreak())
@@ -961,15 +917,14 @@ async def technical_detail_report(
 
                 elements.append(
                     Paragraph(
-                        f'<b>{_xml_escape(title_text[:80])}</b> '
+                        f"<b>{_xml_escape(title_text[:80])}</b> "
                         f'<font color="{_sev_color(f.severity)}">[{f.severity.upper()}]</font>',
                         s["heading3"],
                     )
                 )
                 elements.append(
                     Paragraph(
-                        f"Control: {_xml_escape(control_code)} | "
-                        f"Resource: {_xml_escape(asset_name[:60])}",
+                        f"Control: {_xml_escape(control_code)} | Resource: {_xml_escape(asset_name[:60])}",
                         s["small"],
                     )
                 )
@@ -989,16 +944,13 @@ async def technical_detail_report(
                     evidence_str = evidence_str[:600] + "\n..."
                 elements.append(
                     Paragraph(
-                        f"<b>Evidence:</b><br/>"
-                        f"<font face='Courier' size='6'>{_xml_escape(evidence_str)}</font>",
+                        f"<b>Evidence:</b><br/><font face='Courier' size='6'>{_xml_escape(evidence_str)}</font>",
                         s["small"],
                     )
                 )
                 elements.append(Spacer(1, 0.4 * cm))
     else:
-        elements.append(
-            Paragraph("No findings match the selected filters.", s["normal"])
-        )
+        elements.append(Paragraph("No findings match the selected filters.", s["normal"]))
 
     _add_footer(elements, s)
     doc.build(elements)
@@ -1014,7 +966,5 @@ async def technical_detail_report(
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": "attachment; filename=technical-detail.pdf"
-        },
+        headers={"Content-Disposition": "attachment; filename=technical-detail.pdf"},
     )

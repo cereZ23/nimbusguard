@@ -18,7 +18,7 @@ async def _create_graph_data(db: AsyncSession, account_id: str, tenant_id: str) 
     # Create a VNet
     vnet = Asset(
         cloud_account_id=account_id,
-        provider_id=f"/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1",
+        provider_id="/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1",
         resource_type="microsoft.network/virtualnetworks",
         name="vnet-prod",
         region="westeurope",
@@ -28,7 +28,7 @@ async def _create_graph_data(db: AsyncSession, account_id: str, tenant_id: str) 
     # Create a Subnet
     subnet = Asset(
         cloud_account_id=account_id,
-        provider_id=f"/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1",
+        provider_id="/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1",
         resource_type="microsoft.network/virtualnetworks/subnets",
         name="subnet-default",
         region="westeurope",
@@ -38,7 +38,7 @@ async def _create_graph_data(db: AsyncSession, account_id: str, tenant_id: str) 
     # Create a VM
     vm = Asset(
         cloud_account_id=account_id,
-        provider_id=f"/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm1",
+        provider_id="/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm1",
         resource_type="microsoft.compute/virtualmachines",
         name="vm-web-01",
         region="westeurope",
@@ -48,7 +48,7 @@ async def _create_graph_data(db: AsyncSession, account_id: str, tenant_id: str) 
     # Create a NIC
     nic = Asset(
         cloud_account_id=account_id,
-        provider_id=f"/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/nic1",
+        provider_id="/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/nic1",
         resource_type="microsoft.network/networkinterfaces",
         name="nic-vm-web-01",
         region="westeurope",
@@ -138,9 +138,7 @@ async def graph_data(db: AsyncSession, auth_headers: dict, client: AsyncClient) 
 
 
 @pytest.mark.asyncio
-async def test_get_asset_graph(
-    client: AsyncClient, auth_headers: dict, graph_data: dict
-) -> None:
+async def test_get_asset_graph(client: AsyncClient, auth_headers: dict, graph_data: dict) -> None:
     res = await client.get("/api/v1/assets/graph", headers=auth_headers)
     assert res.status_code == 200
 
@@ -156,9 +154,7 @@ async def test_get_asset_graph(
 
 
 @pytest.mark.asyncio
-async def test_get_asset_graph_empty(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_get_asset_graph_empty(client: AsyncClient, auth_headers: dict) -> None:
     """Graph with no assets should return empty."""
     res = await client.get("/api/v1/assets/graph", headers=auth_headers)
     assert res.status_code == 200
@@ -177,9 +173,7 @@ async def test_get_asset_graph_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_asset_graph_with_provider_filter(
-    client: AsyncClient, auth_headers: dict, graph_data: dict
-) -> None:
+async def test_get_asset_graph_with_provider_filter(client: AsyncClient, auth_headers: dict, graph_data: dict) -> None:
     res = await client.get(
         "/api/v1/assets/graph",
         headers=auth_headers,
@@ -192,9 +186,7 @@ async def test_get_asset_graph_with_provider_filter(
 
 
 @pytest.mark.asyncio
-async def test_get_asset_graph_with_root_asset(
-    client: AsyncClient, auth_headers: dict, graph_data: dict
-) -> None:
+async def test_get_asset_graph_with_root_asset(client: AsyncClient, auth_headers: dict, graph_data: dict) -> None:
     """Subgraph from VM should include connected NIC and transitively connected subnet/vnet."""
     res = await client.get(
         "/api/v1/assets/graph",
@@ -208,9 +200,7 @@ async def test_get_asset_graph_with_root_asset(
 
 
 @pytest.mark.asyncio
-async def test_get_asset_graph_subgraph_depth_1(
-    client: AsyncClient, auth_headers: dict, graph_data: dict
-) -> None:
+async def test_get_asset_graph_subgraph_depth_1(client: AsyncClient, auth_headers: dict, graph_data: dict) -> None:
     """Subgraph from VM at depth 1 should include only directly connected nodes."""
     res = await client.get(
         "/api/v1/assets/graph",
@@ -227,9 +217,7 @@ async def test_get_asset_graph_subgraph_depth_1(
 
 
 @pytest.mark.asyncio
-async def test_get_asset_graph_finding_counts(
-    client: AsyncClient, auth_headers: dict, graph_data: dict
-) -> None:
+async def test_get_asset_graph_finding_counts(client: AsyncClient, auth_headers: dict, graph_data: dict) -> None:
     """Nodes should include finding_count and highest_severity."""
     res = await client.get("/api/v1/assets/graph", headers=auth_headers)
     assert res.status_code == 200
@@ -251,9 +239,7 @@ async def test_get_asset_graph_finding_counts(
 
 
 @pytest.mark.asyncio
-async def test_get_graph_stats(
-    client: AsyncClient, auth_headers: dict, graph_data: dict
-) -> None:
+async def test_get_graph_stats(client: AsyncClient, auth_headers: dict, graph_data: dict) -> None:
     res = await client.get("/api/v1/assets/graph/stats", headers=auth_headers)
     assert res.status_code == 200
 
@@ -275,9 +261,7 @@ async def test_get_graph_stats_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_asset_relationships(
-    client: AsyncClient, auth_headers: dict, graph_data: dict
-) -> None:
+async def test_get_asset_relationships(client: AsyncClient, auth_headers: dict, graph_data: dict) -> None:
     """NIC should have 3 relationships: attached_to VM, attached_to Subnet."""
     nic_id = graph_data["nic_id"]
     res = await client.get(
@@ -303,9 +287,7 @@ async def test_get_asset_relationships(
 
 
 @pytest.mark.asyncio
-async def test_get_asset_relationships_vm(
-    client: AsyncClient, auth_headers: dict, graph_data: dict
-) -> None:
+async def test_get_asset_relationships_vm(client: AsyncClient, auth_headers: dict, graph_data: dict) -> None:
     """VM should have 1 incoming relationship from NIC."""
     vm_id = graph_data["vm_id"]
     res = await client.get(
@@ -322,9 +304,7 @@ async def test_get_asset_relationships_vm(
 
 
 @pytest.mark.asyncio
-async def test_get_asset_relationships_not_found(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_get_asset_relationships_not_found(client: AsyncClient, auth_headers: dict) -> None:
     fake_id = str(uuid.uuid4())
     res = await client.get(
         f"/api/v1/assets/{fake_id}/relationships",

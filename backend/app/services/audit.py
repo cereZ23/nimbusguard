@@ -1,4 +1,5 @@
 """Audit log service — records user actions for compliance."""
+
 from __future__ import annotations
 
 import logging
@@ -38,6 +39,10 @@ async def record_audit(
     await db.flush()
     logger.info(
         "Audit: %s by user=%s tenant=%s resource=%s/%s",
-        action, user_id, tenant_id, resource_type, resource_id,
+        action,
+        user_id,
+        tenant_id,
+        resource_type,
+        resource_id,
     )
     return entry

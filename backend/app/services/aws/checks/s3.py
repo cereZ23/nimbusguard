@@ -1,4 +1,5 @@
 """S3 bucket checks (CIS-AWS-01, 02, 03, 04)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset
@@ -81,7 +82,5 @@ def check_logging(asset: Asset) -> EvalResult:
             "LoggingEnabled": is_enabled,
             "TargetBucket": target_bucket or None,
         },
-        description="Server access logging is enabled"
-        if is_enabled
-        else "Server access logging is NOT enabled",
+        description="Server access logging is enabled" if is_enabled else "Server access logging is NOT enabled",
     )

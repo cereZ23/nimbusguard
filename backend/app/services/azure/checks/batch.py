@@ -1,4 +1,5 @@
 """Batch Account checks (CIS-AZ-79, 80)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

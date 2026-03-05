@@ -1,4 +1,5 @@
 """SSO/OIDC service -- handles OAuth2 Authorization Code flow with external IdPs."""
+
 from __future__ import annotations
 
 import logging

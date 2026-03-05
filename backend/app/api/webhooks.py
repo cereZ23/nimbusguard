@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from datetime import UTC
 
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -74,9 +75,7 @@ async def create_webhook(body: WebhookCreate, db: DB, user: AdminUser) -> dict:
 
 
 @router.put("/{webhook_id}", response_model=ApiResponse[WebhookResponse])
-async def update_webhook(
-    webhook_id: uuid.UUID, body: WebhookUpdate, db: DB, user: AdminUser
-) -> dict:
+async def update_webhook(webhook_id: uuid.UUID, body: WebhookUpdate, db: DB, user: AdminUser) -> dict:
     """Update an existing webhook."""
     result = await db.execute(
         select(Webhook).where(
@@ -161,9 +160,9 @@ async def test_webhook(webhook_id: uuid.UUID, db: DB, user: AdminUser) -> dict:
         status_code, response_body = await send_test_webhook(webhook)
 
         # Update last triggered info
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        webhook.last_triggered_at = datetime.now(timezone.utc)
+        webhook.last_triggered_at = datetime.now(UTC)
         webhook.last_status_code = status_code
         await db.commit()
 

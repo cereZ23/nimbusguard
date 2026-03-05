@@ -69,15 +69,9 @@ class Finding(Base, UUIDPrimaryKey, TimestampMixin):
     control: Mapped[Control | None] = relationship(back_populates="findings", lazy="noload")
     scan: Mapped[Scan | None] = relationship(back_populates="findings", lazy="noload")
     evidences: Mapped[list[Evidence]] = relationship(back_populates="finding", lazy="noload")
-    remediation: Mapped[Remediation | None] = relationship(
-        back_populates="finding", uselist=False, lazy="noload"
-    )
-    exception: Mapped[Exception_ | None] = relationship(
-        back_populates="finding", uselist=False, lazy="noload"
-    )
-    assignee: Mapped[User | None] = relationship(
-        "User", foreign_keys=[assigned_to], lazy="noload"
-    )
+    remediation: Mapped[Remediation | None] = relationship(back_populates="finding", uselist=False, lazy="noload")
+    exception: Mapped[Exception_ | None] = relationship(back_populates="finding", uselist=False, lazy="noload")
+    assignee: Mapped[User | None] = relationship("User", foreign_keys=[assigned_to], lazy="noload")
     comments: Mapped[list[FindingComment]] = relationship(
         back_populates="finding", cascade="all, delete-orphan", lazy="noload"
     )
@@ -88,10 +82,10 @@ class Finding(Base, UUIDPrimaryKey, TimestampMixin):
 
 from app.models.asset import Asset  # noqa: E402
 from app.models.control import Control  # noqa: E402
-from app.models.scan import Scan  # noqa: E402
 from app.models.evidence import Evidence  # noqa: E402
-from app.models.remediation import Remediation  # noqa: E402
 from app.models.exception import Exception_  # noqa: E402
 from app.models.finding_comment import FindingComment  # noqa: E402
 from app.models.finding_event import FindingEvent  # noqa: E402
+from app.models.remediation import Remediation  # noqa: E402
+from app.models.scan import Scan  # noqa: E402
 from app.models.user import User  # noqa: E402

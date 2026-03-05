@@ -1,4 +1,5 @@
 """GuardDuty checks (CIS-AWS-20)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

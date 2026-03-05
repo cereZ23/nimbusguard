@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import uuid
 from unittest.mock import patch
 
 import pytest
@@ -8,9 +7,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_update_scan_schedule(
-    client: AsyncClient, auth_headers: dict, make_account
-) -> None:
+async def test_update_scan_schedule(client: AsyncClient, auth_headers: dict, make_account) -> None:
     """Should set a cron schedule on a cloud account."""
     account = await make_account("Schedule Test")
     account_id = account["id"]
@@ -25,9 +22,7 @@ async def test_update_scan_schedule(
 
 
 @pytest.mark.asyncio
-async def test_clear_scan_schedule(
-    client: AsyncClient, auth_headers: dict, make_account
-) -> None:
+async def test_clear_scan_schedule(client: AsyncClient, auth_headers: dict, make_account) -> None:
     """Should clear a scan schedule."""
     account = await make_account("Clear Schedule")
     account_id = account["id"]
@@ -49,9 +44,7 @@ async def test_clear_scan_schedule(
 
 
 @pytest.mark.asyncio
-async def test_check_scheduled_scans_triggers(
-    client: AsyncClient, auth_headers: dict, make_account, db
-) -> None:
+async def test_check_scheduled_scans_triggers(client: AsyncClient, auth_headers: dict, make_account, db) -> None:
     """check_scheduled_scans should trigger scans for due accounts."""
     account = await make_account("Cron Account")
     account_id = account["id"]
@@ -63,9 +56,8 @@ async def test_check_scheduled_scans_triggers(
         json={"scan_schedule": "* * * * *"},
     )
 
-    from tests.conftest import TestSession
-
     from app.worker.tasks import _check_scheduled_scans_async
+    from tests.conftest import TestSession
 
     with (
         patch("app.worker.tasks.run_scan") as mock_run,

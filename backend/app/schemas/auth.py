@@ -25,6 +25,7 @@ class TokenResponse(BaseModel):
 
 class AuthCookieResponse(BaseModel):
     """Response body when tokens are delivered via httpOnly cookies."""
+
     token_type: str = "bearer"
 
 
@@ -59,6 +60,7 @@ class MfaLoginRequest(BaseModel):
 
 class MfaLoginResponse(BaseModel):
     """Response after successful MFA verification — tokens delivered via cookies."""
+
     token_type: str = "bearer"
 
 

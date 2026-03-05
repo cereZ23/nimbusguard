@@ -1,4 +1,5 @@
 """EC2 instance checks (CIS-AWS-05, 06)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

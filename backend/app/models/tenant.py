@@ -16,11 +16,9 @@ class Tenant(Base, UUIDPrimaryKey, TimestampMixin):
     branding: Mapped[dict | None] = mapped_column(JSON, default=dict, nullable=True)
 
     users: Mapped[list[User]] = relationship(back_populates="tenant", lazy="noload")
-    cloud_accounts: Mapped[list[CloudAccount]] = relationship(
-        back_populates="tenant", lazy="noload"
-    )
+    cloud_accounts: Mapped[list[CloudAccount]] = relationship(back_populates="tenant", lazy="noload")
 
 
 # Avoid circular imports — resolved at module level
-from app.models.user import User  # noqa: E402
 from app.models.cloud_account import CloudAccount  # noqa: E402
+from app.models.user import User  # noqa: E402

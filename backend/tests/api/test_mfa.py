@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import pytest
 import pyotp
+import pytest
 from httpx import AsyncClient
 
 # ---------------------------------------------------------------------------

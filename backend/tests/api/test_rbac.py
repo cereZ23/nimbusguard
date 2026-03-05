@@ -31,9 +31,7 @@ async def _register_and_get_viewer(client: AsyncClient, admin_headers: dict) -> 
 
 
 @pytest.mark.asyncio
-async def test_viewer_cannot_create_account(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_viewer_cannot_create_account(client: AsyncClient, auth_headers: dict) -> None:
     viewer_headers = await _register_and_get_viewer(client, auth_headers)
     res = await client.post(
         "/api/v1/accounts",
@@ -49,21 +47,15 @@ async def test_viewer_cannot_create_account(
 
 
 @pytest.mark.asyncio
-async def test_viewer_cannot_delete_account(
-    client: AsyncClient, auth_headers: dict, make_account
-) -> None:
+async def test_viewer_cannot_delete_account(client: AsyncClient, auth_headers: dict, make_account) -> None:
     account = await make_account("Admin Account")
     viewer_headers = await _register_and_get_viewer(client, auth_headers)
-    res = await client.delete(
-        f"/api/v1/accounts/{account['id']}", headers=viewer_headers
-    )
+    res = await client.delete(f"/api/v1/accounts/{account['id']}", headers=viewer_headers)
     assert res.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_viewer_can_list_accounts(
-    client: AsyncClient, auth_headers: dict, make_account
-) -> None:
+async def test_viewer_can_list_accounts(client: AsyncClient, auth_headers: dict, make_account) -> None:
     await make_account("Visible Account")
     viewer_headers = await _register_and_get_viewer(client, auth_headers)
     res = await client.get("/api/v1/accounts", headers=viewer_headers)
@@ -72,9 +64,7 @@ async def test_viewer_can_list_accounts(
 
 
 @pytest.mark.asyncio
-async def test_viewer_cannot_trigger_scan(
-    client: AsyncClient, auth_headers: dict, make_account
-) -> None:
+async def test_viewer_cannot_trigger_scan(client: AsyncClient, auth_headers: dict, make_account) -> None:
     account = await make_account("Scan Account")
     viewer_headers = await _register_and_get_viewer(client, auth_headers)
     res = await client.post(
@@ -86,9 +76,7 @@ async def test_viewer_cannot_trigger_scan(
 
 
 @pytest.mark.asyncio
-async def test_admin_can_create_and_read(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_admin_can_create_and_read(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.post(
         "/api/v1/accounts",
         headers=auth_headers,

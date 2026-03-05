@@ -5,7 +5,7 @@ import uuid
 from collections import defaultdict
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import case, func, literal, or_, select, union_all
+from sqlalchemy import case, func, literal, select, union_all
 from sqlalchemy.orm import aliased
 
 from app.deps import DB, CurrentUser
@@ -52,13 +52,9 @@ async def get_asset_graph(
     # Otherwise we return all (filtered) assets + their relationships.
 
     if root_asset_id:
-        nodes, edges = await _get_subgraph(
-            db, tenant_id, root_asset_id, max_depth, provider, resource_type, region
-        )
+        nodes, edges = await _get_subgraph(db, tenant_id, root_asset_id, max_depth, provider, resource_type, region)
     else:
-        nodes, edges = await _get_full_graph(
-            db, tenant_id, provider, resource_type, region
-        )
+        nodes, edges = await _get_full_graph(db, tenant_id, provider, resource_type, region)
 
     # Build stats
     nodes_by_provider: dict[str, int] = defaultdict(int)
@@ -307,8 +303,7 @@ async def _get_full_graph(
                 AssetRelationship.source_asset_id,
                 AssetRelationship.target_asset_id,
                 AssetRelationship.relationship_type,
-            )
-            .where(
+            ).where(
                 AssetRelationship.tenant_id == tenant_id,
                 AssetRelationship.source_asset_id.in_(node_ids),
                 AssetRelationship.target_asset_id.in_(node_ids),
@@ -351,19 +346,13 @@ async def _get_subgraph(
             break
 
         # Find all neighbors (both directions)
-        outgoing = (
-            select(AssetRelationship.target_asset_id.label("neighbor_id"))
-            .where(
-                AssetRelationship.tenant_id == tenant_id,
-                AssetRelationship.source_asset_id.in_(frontier),
-            )
+        outgoing = select(AssetRelationship.target_asset_id.label("neighbor_id")).where(
+            AssetRelationship.tenant_id == tenant_id,
+            AssetRelationship.source_asset_id.in_(frontier),
         )
-        incoming = (
-            select(AssetRelationship.source_asset_id.label("neighbor_id"))
-            .where(
-                AssetRelationship.tenant_id == tenant_id,
-                AssetRelationship.target_asset_id.in_(frontier),
-            )
+        incoming = select(AssetRelationship.source_asset_id.label("neighbor_id")).where(
+            AssetRelationship.tenant_id == tenant_id,
+            AssetRelationship.target_asset_id.in_(frontier),
         )
 
         neighbors_query = union_all(outgoing, incoming)
@@ -453,8 +442,7 @@ async def _get_subgraph(
                 AssetRelationship.source_asset_id,
                 AssetRelationship.target_asset_id,
                 AssetRelationship.relationship_type,
-            )
-            .where(
+            ).where(
                 AssetRelationship.tenant_id == tenant_id,
                 AssetRelationship.source_asset_id.in_(node_ids),
                 AssetRelationship.target_asset_id.in_(node_ids),
