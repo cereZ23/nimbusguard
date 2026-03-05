@@ -1,4 +1,5 @@
 """Unit tests for RBAC role definition checks."""
+
 from __future__ import annotations
 
 import uuid
@@ -32,29 +33,35 @@ class TestCheckNoCustomOwnerRoles:
         assert result.status == "pass"
 
     def test_fail_when_custom_with_wildcard_actions_at_sub_scope(self):
-        asset = _make_asset(raw_properties={
-            "type": "CustomRole",
-            "permissions": [{"actions": ["*"], "notActions": []}],
-            "assignableScopes": ["/subscriptions/00000000-0000-0000-0000-000000000000"],
-        })
+        asset = _make_asset(
+            raw_properties={
+                "type": "CustomRole",
+                "permissions": [{"actions": ["*"], "notActions": []}],
+                "assignableScopes": ["/subscriptions/00000000-0000-0000-0000-000000000000"],
+            }
+        )
         result = check_no_custom_owner_roles(asset)
         assert result.status == "fail"
 
     def test_pass_when_custom_without_wildcard(self):
-        asset = _make_asset(raw_properties={
-            "type": "CustomRole",
-            "permissions": [{"actions": ["Microsoft.Compute/*/read"], "notActions": []}],
-            "assignableScopes": ["/subscriptions/00000000-0000-0000-0000-000000000000"],
-        })
+        asset = _make_asset(
+            raw_properties={
+                "type": "CustomRole",
+                "permissions": [{"actions": ["Microsoft.Compute/*/read"], "notActions": []}],
+                "assignableScopes": ["/subscriptions/00000000-0000-0000-0000-000000000000"],
+            }
+        )
         result = check_no_custom_owner_roles(asset)
         assert result.status == "pass"
 
     def test_pass_when_custom_wildcard_but_rg_scope(self):
-        asset = _make_asset(raw_properties={
-            "type": "CustomRole",
-            "permissions": [{"actions": ["*"], "notActions": []}],
-            "assignableScopes": ["/subscriptions/sub1/resourceGroups/rg1"],
-        })
+        asset = _make_asset(
+            raw_properties={
+                "type": "CustomRole",
+                "permissions": [{"actions": ["*"], "notActions": []}],
+                "assignableScopes": ["/subscriptions/sub1/resourceGroups/rg1"],
+            }
+        )
         result = check_no_custom_owner_roles(asset)
         assert result.status == "pass"
 

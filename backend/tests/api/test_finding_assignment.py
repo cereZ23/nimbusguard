@@ -1,4 +1,5 @@
 """Tests for finding assignment (ADV-04) and comments (ADV-05)."""
+
 from __future__ import annotations
 
 import uuid
@@ -11,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.asset import Asset
 from app.models.control import Control
 from app.models.finding import Finding
-
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
@@ -80,9 +80,7 @@ async def _get_user_id(client: AsyncClient, headers: dict) -> str:
 
 
 @pytest.mark.asyncio
-async def test_assign_finding(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_assign_finding(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
     user_id = await _get_user_id(client, auth_headers)
@@ -100,9 +98,7 @@ async def test_assign_finding(
 
 
 @pytest.mark.asyncio
-async def test_unassign_finding(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_unassign_finding(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
     user_id = await _get_user_id(client, auth_headers)
@@ -128,9 +124,7 @@ async def test_unassign_finding(
 
 
 @pytest.mark.asyncio
-async def test_assign_finding_not_found(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_assign_finding_not_found(client: AsyncClient, auth_headers: dict) -> None:
     fake_id = str(uuid.uuid4())
     user_id = await _get_user_id(client, auth_headers)
 
@@ -143,9 +137,7 @@ async def test_assign_finding_not_found(
 
 
 @pytest.mark.asyncio
-async def test_assign_finding_invalid_user(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_assign_finding_invalid_user(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
 
@@ -191,9 +183,7 @@ async def test_assign_finding_tenant_isolation(
 
 
 @pytest.mark.asyncio
-async def test_list_findings_filter_assigned_to(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_list_findings_filter_assigned_to(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
     user_id = await _get_user_id(client, auth_headers)
@@ -219,9 +209,7 @@ async def test_list_findings_filter_assigned_to(
 
 
 @pytest.mark.asyncio
-async def test_get_finding_includes_assignee(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_get_finding_includes_assignee(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
     user_id = await _get_user_id(client, auth_headers)
@@ -234,9 +222,7 @@ async def test_get_finding_includes_assignee(
     )
 
     # Get detail
-    res = await client.get(
-        f"/api/v1/findings/{finding_id}", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{finding_id}", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()["data"]
     assert data["assigned_to"] == user_id
@@ -247,9 +233,7 @@ async def test_get_finding_includes_assignee(
 
 
 @pytest.mark.asyncio
-async def test_add_comment(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_add_comment(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
 
@@ -268,9 +252,7 @@ async def test_add_comment(
 
 
 @pytest.mark.asyncio
-async def test_list_comments(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_list_comments(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
 
@@ -286,9 +268,7 @@ async def test_list_comments(
         json={"content": "Second comment"},
     )
 
-    res = await client.get(
-        f"/api/v1/findings/{finding_id}/comments", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{finding_id}/comments", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()["data"]
     assert len(data) == 2
@@ -297,23 +277,17 @@ async def test_list_comments(
 
 
 @pytest.mark.asyncio
-async def test_list_comments_empty(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_list_comments_empty(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
 
-    res = await client.get(
-        f"/api/v1/findings/{finding_id}/comments", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{finding_id}/comments", headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["data"] == []
 
 
 @pytest.mark.asyncio
-async def test_delete_own_comment(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_delete_own_comment(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
 
@@ -333,16 +307,12 @@ async def test_delete_own_comment(
     assert res.status_code == 204
 
     # Verify it's gone
-    list_res = await client.get(
-        f"/api/v1/findings/{finding_id}/comments", headers=auth_headers
-    )
+    list_res = await client.get(f"/api/v1/findings/{finding_id}/comments", headers=auth_headers)
     assert len(list_res.json()["data"]) == 0
 
 
 @pytest.mark.asyncio
-async def test_delete_comment_not_found(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_delete_comment_not_found(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
 
@@ -386,9 +356,7 @@ async def test_comment_tenant_isolation(
 
 
 @pytest.mark.asyncio
-async def test_comment_content_validation(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_comment_content_validation(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
 
@@ -410,9 +378,7 @@ async def test_comment_content_validation(
 
 
 @pytest.mark.asyncio
-async def test_comment_requires_auth(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_comment_requires_auth(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
 

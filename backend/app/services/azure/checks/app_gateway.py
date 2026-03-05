@@ -1,4 +1,5 @@
 """Application Gateway checks (CIS-AZ-43, 44)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

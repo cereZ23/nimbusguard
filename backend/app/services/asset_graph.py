@@ -335,9 +335,7 @@ async def build_relationships(tenant_id: uuid.UUID, session: AsyncSession) -> in
     logger.info("Building asset relationships for tenant %s", tenant_id)
 
     # 1. Clear existing relationships for this tenant
-    await session.execute(
-        delete(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id)
-    )
+    await session.execute(delete(AssetRelationship).where(AssetRelationship.tenant_id == tenant_id))
 
     # 2. Load all assets for the tenant (via cloud accounts)
     result = await session.execute(

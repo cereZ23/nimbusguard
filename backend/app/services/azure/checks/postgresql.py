@@ -1,4 +1,5 @@
 """PostgreSQL Flexible Server checks (CIS-AZ-37, 38)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset
@@ -12,10 +13,7 @@ def check_ssl_enforcement(asset: Asset) -> EvalResult:
     # Flexible server uses requireSecureTransport parameter
     ssl = props.get("sslEnforcement", "")
     secure_transport = props.get("requireSecureTransport", "")
-    is_enforced = (
-        str(ssl).lower() == "enabled"
-        or str(secure_transport).upper() == "ON"
-    )
+    is_enforced = str(ssl).lower() == "enabled" or str(secure_transport).upper() == "ON"
     return EvalResult(
         status="pass" if is_enforced else "fail",
         evidence={

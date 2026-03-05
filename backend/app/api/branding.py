@@ -56,9 +56,7 @@ async def get_branding(user: CurrentUser, db: DB) -> dict:
 
 
 @router.put("", response_model=ApiResponse[BrandingResponse])
-async def update_branding(
-    body: BrandingUpdate, user: AdminUser, db: DB
-) -> dict:
+async def update_branding(body: BrandingUpdate, user: AdminUser, db: DB) -> dict:
     """Update tenant branding (admin only). Only provided fields are changed."""
     tenant = await _get_tenant(db, user.tenant_id)
     branding = dict(tenant.branding or {})

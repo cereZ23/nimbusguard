@@ -22,6 +22,7 @@ _EMAIL_MOCK_PATH = "app.api.invitations.send_invitation_email"
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 async def _create_invitation(
     client: AsyncClient,
     admin_headers: dict,
@@ -43,6 +44,7 @@ async def _create_invitation(
 # ---------------------------------------------------------------------------
 # test_create_invitation
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_create_invitation(client: AsyncClient, auth_headers: dict) -> None:
@@ -90,9 +92,7 @@ async def test_create_invitation_requires_admin(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_invitation_invalid_role(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_invitation_invalid_role(client: AsyncClient, auth_headers: dict) -> None:
     """POST /invitations with an invalid role value returns 422."""
     with patch(_EMAIL_MOCK_PATH, new_callable=AsyncMock):
         res = await client.post(
@@ -104,9 +104,7 @@ async def test_create_invitation_invalid_role(
 
 
 @pytest.mark.asyncio
-async def test_create_invitation_invalid_email(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_invitation_invalid_email(client: AsyncClient, auth_headers: dict) -> None:
     """POST /invitations with a malformed email returns 422."""
     with patch(_EMAIL_MOCK_PATH, new_callable=AsyncMock):
         res = await client.post(
@@ -120,6 +118,7 @@ async def test_create_invitation_invalid_email(
 # ---------------------------------------------------------------------------
 # test_list_invitations
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_list_invitations(client: AsyncClient, auth_headers: dict) -> None:
@@ -146,9 +145,7 @@ async def test_list_invitations_requires_admin(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_invitations_viewer_forbidden(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_list_invitations_viewer_forbidden(client: AsyncClient, auth_headers: dict) -> None:
     """A viewer user cannot list invitations (403)."""
     # Create a viewer user
     create_res = await client.post(
@@ -179,6 +176,7 @@ async def test_list_invitations_viewer_forbidden(
 # ---------------------------------------------------------------------------
 # test_accept_invitation
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_accept_invitation(client: AsyncClient, auth_headers: dict) -> None:
@@ -219,9 +217,7 @@ async def test_accept_invitation(client: AsyncClient, auth_headers: dict) -> Non
 
 
 @pytest.mark.asyncio
-async def test_accept_invitation_no_auth_required(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_accept_invitation_no_auth_required(client: AsyncClient, auth_headers: dict) -> None:
     """POST /invitations/accept does not require authentication."""
     with patch(_EMAIL_MOCK_PATH, new_callable=AsyncMock):
         create_res = await client.post(
@@ -247,6 +243,7 @@ async def test_accept_invitation_no_auth_required(
 # test_accept_invitation_invalid_token
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_accept_invitation_invalid_token(client: AsyncClient) -> None:
     """POST /invitations/accept with a bogus token returns 400."""
@@ -263,9 +260,7 @@ async def test_accept_invitation_invalid_token(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_accept_invitation_weak_password(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_accept_invitation_weak_password(client: AsyncClient, auth_headers: dict) -> None:
     """POST /invitations/accept with a password violating SEC-04 policy returns 422."""
     with patch(_EMAIL_MOCK_PATH, new_callable=AsyncMock):
         create_res = await client.post(
@@ -288,9 +283,7 @@ async def test_accept_invitation_weak_password(
 
 
 @pytest.mark.asyncio
-async def test_accept_invitation_already_accepted(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_accept_invitation_already_accepted(client: AsyncClient, auth_headers: dict) -> None:
     """Using the same invitation token twice returns 400 on the second attempt."""
     with patch(_EMAIL_MOCK_PATH, new_callable=AsyncMock):
         create_res = await client.post(
@@ -316,6 +309,7 @@ async def test_accept_invitation_already_accepted(
 # ---------------------------------------------------------------------------
 # test_revoke_invitation
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_revoke_invitation(client: AsyncClient, auth_headers: dict) -> None:
@@ -346,9 +340,7 @@ async def test_revoke_invitation(client: AsyncClient, auth_headers: dict) -> Non
 
 
 @pytest.mark.asyncio
-async def test_revoke_invitation_not_found(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_revoke_invitation_not_found(client: AsyncClient, auth_headers: dict) -> None:
     """DELETE /invitations/{id} for a non-existent ID returns 400."""
     res = await client.delete(
         f"/api/v1/invitations/{uuid.uuid4()}",
@@ -368,10 +360,9 @@ async def test_revoke_invitation_requires_admin(client: AsyncClient) -> None:
 # test_invitation_requires_admin
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_invitation_requires_admin(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_invitation_requires_admin(client: AsyncClient, auth_headers: dict) -> None:
     """A viewer user cannot create invitations (403)."""
     # Create a viewer inside tenant A
     viewer_create = await client.post(
@@ -408,6 +399,7 @@ async def test_invitation_requires_admin(
 # test_invitation_tenant_isolation
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_invitation_tenant_isolation(
     client: AsyncClient,
@@ -417,9 +409,7 @@ async def test_invitation_tenant_isolation(
     """Tenant B cannot list tenant A's invitations."""
     # Clear cookies to prevent cookie-based auth bleed (Bearer header takes priority)
     client.cookies.clear()
-    await _create_invitation(
-        client, auth_headers, email="tenant-a-invite@example.com"
-    )
+    await _create_invitation(client, auth_headers, email="tenant-a-invite@example.com")
 
     # Clear cookies again before tenant B request
     client.cookies.clear()
@@ -439,9 +429,7 @@ async def test_invitation_tenant_b_cannot_revoke_tenant_a_invite(
     """Tenant B cannot revoke an invitation that belongs to tenant A."""
     # Clear cookies to prevent cookie-based auth bleed
     client.cookies.clear()
-    payload = await _create_invitation(
-        client, auth_headers, email="cross-tenant-revoke@example.com"
-    )
+    payload = await _create_invitation(client, auth_headers, email="cross-tenant-revoke@example.com")
     invitation_id = payload["invitation"]["id"]
 
     # Clear cookies again before tenant B request
@@ -458,10 +446,9 @@ async def test_invitation_tenant_b_cannot_revoke_tenant_a_invite(
 # test_create_duplicate_invitation
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_create_duplicate_invitation(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_duplicate_invitation(client: AsyncClient, auth_headers: dict) -> None:
     """POST /invitations for the same email twice (while pending) returns 409."""
     with patch(_EMAIL_MOCK_PATH, new_callable=AsyncMock):
         first = await client.post(
@@ -482,9 +469,7 @@ async def test_create_duplicate_invitation(
 
 
 @pytest.mark.asyncio
-async def test_create_invitation_for_existing_user(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_invitation_for_existing_user(client: AsyncClient, auth_headers: dict) -> None:
     """POST /invitations for a user email that already has an account returns 409."""
     # usera@test.com is the registered admin user (created by auth_headers fixture)
     with patch(_EMAIL_MOCK_PATH, new_callable=AsyncMock):
@@ -500,12 +485,11 @@ async def test_create_invitation_for_existing_user(
 # test_resend_invitation
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_resend_invitation(client: AsyncClient, auth_headers: dict) -> None:
     """POST /invitations/resend generates a new token and returns a new invite_url."""
-    payload = await _create_invitation(
-        client, auth_headers, email="resend-me@example.com"
-    )
+    payload = await _create_invitation(client, auth_headers, email="resend-me@example.com")
     invitation_id = payload["invitation"]["id"]
     original_url = payload["invite_url"]
 
@@ -530,13 +514,9 @@ async def test_resend_invitation(client: AsyncClient, auth_headers: dict) -> Non
 
 
 @pytest.mark.asyncio
-async def test_resend_invitation_old_token_invalid(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_resend_invitation_old_token_invalid(client: AsyncClient, auth_headers: dict) -> None:
     """After resending, the original token must no longer be valid."""
-    payload = await _create_invitation(
-        client, auth_headers, email="resend-old-token@example.com"
-    )
+    payload = await _create_invitation(client, auth_headers, email="resend-old-token@example.com")
     invitation_id = payload["invitation"]["id"]
     old_token = payload["invite_url"].split("token=", 1)[1]
 

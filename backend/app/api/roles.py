@@ -69,17 +69,10 @@ async def list_permissions(user: CurrentUser) -> dict:
 async def list_roles(db: DB, user: CurrentUser) -> dict:
     """List all roles for the tenant, including system roles."""
     # Start with system roles
-    system_roles = [
-        _build_system_role_response(key, info)
-        for key, info in SYSTEM_ROLES.items()
-    ]
+    system_roles = [_build_system_role_response(key, info) for key, info in SYSTEM_ROLES.items()]
 
     # Fetch custom roles for this tenant
-    result = await db.execute(
-        select(Role)
-        .where(Role.tenant_id == user.tenant_id)
-        .order_by(Role.created_at)
-    )
+    result = await db.execute(select(Role).where(Role.tenant_id == user.tenant_id).order_by(Role.created_at))
     custom_roles = result.scalars().all()
 
     all_roles = system_roles + [r for r in custom_roles]
@@ -127,13 +120,9 @@ async def create_role(body: RoleCreate, db: DB, user: AdminUser) -> dict:
 
 
 @router.put("/{role_id}", response_model=ApiResponse[RoleResponse])
-async def update_role(
-    role_id: uuid.UUID, body: RoleUpdate, db: DB, user: AdminUser
-) -> dict:
+async def update_role(role_id: uuid.UUID, body: RoleUpdate, db: DB, user: AdminUser) -> dict:
     """Update a custom role. System roles cannot be modified."""
-    result = await db.execute(
-        select(Role).where(Role.id == role_id, Role.tenant_id == user.tenant_id)
-    )
+    result = await db.execute(select(Role).where(Role.id == role_id, Role.tenant_id == user.tenant_id))
     role = result.scalar_one_or_none()
     if role is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
@@ -182,9 +171,7 @@ async def update_role(
 @router.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_role(role_id: uuid.UUID, db: DB, user: AdminUser) -> None:
     """Delete a custom role. System roles cannot be deleted."""
-    result = await db.execute(
-        select(Role).where(Role.id == role_id, Role.tenant_id == user.tenant_id)
-    )
+    result = await db.execute(select(Role).where(Role.id == role_id, Role.tenant_id == user.tenant_id))
     role = result.scalar_one_or_none()
     if role is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")

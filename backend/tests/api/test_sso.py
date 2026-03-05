@@ -1,4 +1,5 @@
 """Tests for SSO admin endpoints at /api/v1/sso."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
@@ -28,9 +29,7 @@ _SSO_TEST_URL = "/api/v1/sso/test"
 # ── 1. GET with no existing config ────────────────────────────────────
 
 
-async def test_get_sso_config_no_config(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_get_sso_config_no_config(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """GET /sso/config returns null data when no config exists for the tenant."""
     res = await client.get(_SSO_CONFIG_URL, headers=auth_headers)
 
@@ -43,9 +42,7 @@ async def test_get_sso_config_no_config(
 # ── 2. PUT creates a config ───────────────────────────────────────────
 
 
-async def test_create_sso_config(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_create_sso_config(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PUT /sso/config creates a new SSO config and returns expected fields."""
     res = await client.put(_SSO_CONFIG_URL, headers=auth_headers, json=_VALID_SSO_PAYLOAD)
 
@@ -69,9 +66,7 @@ async def test_create_sso_config(
 # ── 3. GET returns config after PUT ──────────────────────────────────
 
 
-async def test_get_sso_config_after_create(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_get_sso_config_after_create(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """GET /sso/config returns the config previously created with PUT."""
     await client.put(_SSO_CONFIG_URL, headers=auth_headers, json=_VALID_SSO_PAYLOAD)
 
@@ -88,15 +83,11 @@ async def test_get_sso_config_after_create(
 # ── 4. PATCH enables the config ──────────────────────────────────────
 
 
-async def test_patch_sso_config_enable(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_patch_sso_config_enable(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PATCH /sso/config with is_active=true activates the config."""
     await client.put(_SSO_CONFIG_URL, headers=auth_headers, json=_VALID_SSO_PAYLOAD)
 
-    res = await client.patch(
-        _SSO_CONFIG_URL, headers=auth_headers, json={"is_active": True}
-    )
+    res = await client.patch(_SSO_CONFIG_URL, headers=auth_headers, json={"is_active": True})
 
     assert res.status_code == 200
     data = res.json()["data"]
@@ -109,9 +100,7 @@ async def test_patch_sso_config_enable(
 # ── 5. DELETE removes config ──────────────────────────────────────────
 
 
-async def test_delete_sso_config(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_delete_sso_config(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """DELETE /sso/config removes the config; subsequent GET returns null data."""
     await client.put(_SSO_CONFIG_URL, headers=auth_headers, json=_VALID_SSO_PAYLOAD)
 
@@ -140,9 +129,7 @@ async def test_sso_config_requires_auth(client: AsyncClient) -> None:
     ]
     for method, url in endpoints:
         res = await client.request(method, url, json=_VALID_SSO_PAYLOAD)
-        assert res.status_code == 401, (
-            f"Expected 401 for {method} {url}, got {res.status_code}"
-        )
+        assert res.status_code == 401, f"Expected 401 for {method} {url}, got {res.status_code}"
 
 
 # ── 7. Tenant isolation ───────────────────────────────────────────────
@@ -158,9 +145,7 @@ async def test_sso_config_tenant_isolation(
     client.cookies.clear()
 
     # Tenant A creates a config
-    put_res = await client.put(
-        _SSO_CONFIG_URL, headers=auth_headers, json=_VALID_SSO_PAYLOAD
-    )
+    put_res = await client.put(_SSO_CONFIG_URL, headers=auth_headers, json=_VALID_SSO_PAYLOAD)
     assert put_res.status_code == 200
 
     # Clear cookies again before tenant B request
@@ -175,9 +160,7 @@ async def test_sso_config_tenant_isolation(
 # ── 8. SSRF blocked — private IP ─────────────────────────────────────
 
 
-async def test_sso_config_ssrf_blocked(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_sso_config_ssrf_blocked(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PUT with issuer_url pointing to AWS metadata endpoint returns 422."""
     payload = {**_VALID_SSO_PAYLOAD, "issuer_url": "http://169.254.169.254/latest/meta-data"}
 
@@ -189,9 +172,7 @@ async def test_sso_config_ssrf_blocked(
 # ── 9. HTTP (non-HTTPS) blocked ───────────────────────────────────────
 
 
-async def test_sso_config_http_blocked(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_sso_config_http_blocked(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PUT with issuer_url using http:// (non-HTTPS) returns 422."""
     payload = {**_VALID_SSO_PAYLOAD, "issuer_url": "http://example.com/oauth/v2"}
 
@@ -203,13 +184,9 @@ async def test_sso_config_http_blocked(
 # ── 10. PATCH without existing config returns 404 ────────────────────
 
 
-async def test_patch_not_found(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_patch_not_found(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PATCH /sso/config returns 404 when no config has been created yet."""
-    res = await client.patch(
-        _SSO_CONFIG_URL, headers=auth_headers, json={"is_active": True}
-    )
+    res = await client.patch(_SSO_CONFIG_URL, headers=auth_headers, json={"is_active": True})
 
     assert res.status_code == 404
 
@@ -217,9 +194,7 @@ async def test_patch_not_found(
 # ── Additional: PUT is idempotent (update existing config) ────────────
 
 
-async def test_put_sso_config_overwrites_existing(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_put_sso_config_overwrites_existing(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """Second PUT with different fields replaces the existing config."""
     await client.put(_SSO_CONFIG_URL, headers=auth_headers, json=_VALID_SSO_PAYLOAD)
 
@@ -246,9 +221,7 @@ async def test_put_sso_config_overwrites_existing(
 # ── Additional: DELETE on non-existent config returns 404 ────────────
 
 
-async def test_delete_sso_config_not_found(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_delete_sso_config_not_found(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """DELETE /sso/config returns 404 when no config exists."""
     res = await client.delete(_SSO_CONFIG_URL, headers=auth_headers)
 
@@ -258,9 +231,7 @@ async def test_delete_sso_config_not_found(
 # ── Additional: POST /sso/test with no config returns 404 ────────────
 
 
-async def test_sso_test_no_config(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_sso_test_no_config(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """POST /sso/test returns 404 when no SSO config has been configured."""
     res = await client.post(_SSO_TEST_URL, headers=auth_headers)
 
@@ -270,9 +241,7 @@ async def test_sso_test_no_config(
 # ── Additional: POST /sso/test with unreachable IdP returns failure ──
 
 
-async def test_sso_test_discovery_failure(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_sso_test_discovery_failure(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """POST /sso/test returns success=false when OIDC discovery fails."""
     await client.put(_SSO_CONFIG_URL, headers=auth_headers, json=_VALID_SSO_PAYLOAD)
 
@@ -291,9 +260,7 @@ async def test_sso_test_discovery_failure(
 # ── Additional: POST /sso/test with reachable IdP returns success ─────
 
 
-async def test_sso_test_discovery_success(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_sso_test_discovery_success(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """POST /sso/test returns success=true when OIDC discovery succeeds."""
     await client.put(_SSO_CONFIG_URL, headers=auth_headers, json=_VALID_SSO_PAYLOAD)
 
@@ -321,9 +288,7 @@ async def test_sso_test_discovery_success(
 # ── Additional: validation — invalid provider value ───────────────────
 
 
-async def test_put_sso_config_invalid_provider(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_put_sso_config_invalid_provider(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PUT rejects an unrecognised provider value with 422."""
     payload = {**_VALID_SSO_PAYLOAD, "provider": "not_a_real_provider"}
 
@@ -335,9 +300,7 @@ async def test_put_sso_config_invalid_provider(
 # ── Additional: validation — invalid default_role value ──────────────
 
 
-async def test_put_sso_config_invalid_default_role(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_put_sso_config_invalid_default_role(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PUT rejects an unrecognised default_role value with 422."""
     payload = {**_VALID_SSO_PAYLOAD, "default_role": "superuser"}
 
@@ -349,9 +312,7 @@ async def test_put_sso_config_invalid_default_role(
 # ── Additional: metadata_url must also use https:// ──────────────────
 
 
-async def test_put_sso_config_metadata_url_http_blocked(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_put_sso_config_metadata_url_http_blocked(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PUT rejects metadata_url using http:// with 422."""
     payload = {
         **_VALID_SSO_PAYLOAD,
@@ -366,15 +327,11 @@ async def test_put_sso_config_metadata_url_http_blocked(
 # ── Additional: PATCH partial update preserves unset fields ──────────
 
 
-async def test_patch_sso_config_partial_update(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_patch_sso_config_partial_update(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     """PATCH with only auto_provision=false leaves all other fields unchanged."""
     await client.put(_SSO_CONFIG_URL, headers=auth_headers, json=_VALID_SSO_PAYLOAD)
 
-    res = await client.patch(
-        _SSO_CONFIG_URL, headers=auth_headers, json={"auto_provision": False}
-    )
+    res = await client.patch(_SSO_CONFIG_URL, headers=auth_headers, json={"auto_provision": False})
 
     assert res.status_code == 200
     data = res.json()["data"]

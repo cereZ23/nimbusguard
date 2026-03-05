@@ -1,4 +1,5 @@
 """Unit tests for Key Vault checks."""
+
 from __future__ import annotations
 
 import uuid

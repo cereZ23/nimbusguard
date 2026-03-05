@@ -68,8 +68,10 @@ jobs:
         run: uv pip install --system -e ".[dev]"
 
       - name: Lint — ruff check
-        run: ruff check app/ tests/ --select E,F,W --ignore E501
-        continue-on-error: true
+        run: ruff check app/ tests/
+
+      - name: Lint — ruff format check
+        run: ruff format --check app/ tests/
 
       - name: Run tests
         run: pytest --tb=short -q
@@ -109,7 +111,6 @@ jobs:
 
       - name: Lint
         run: pnpm lint
-        continue-on-error: true
 
       - name: Type check
         run: npx tsc --noEmit

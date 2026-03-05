@@ -53,9 +53,7 @@ async def _run_scan_async(scan_id: str) -> dict:
 
         try:
             # Determine provider to dispatch to the correct collector
-            acct_result = await db.execute(
-                select(CloudAccount).where(CloudAccount.id == scan.cloud_account_id)
-            )
+            acct_result = await db.execute(select(CloudAccount).where(CloudAccount.id == scan.cloud_account_id))
             scan_account = acct_result.scalar_one()
             provider = scan_account.provider
 
@@ -85,15 +83,11 @@ async def _run_scan_async(scan_id: str) -> dict:
             # Build asset relationship graph
             from app.services.asset_graph import build_relationships
 
-            acct_for_graph = await db.execute(
-                select(CloudAccount).where(CloudAccount.id == scan.cloud_account_id)
-            )
+            acct_for_graph = await db.execute(select(CloudAccount).where(CloudAccount.id == scan.cloud_account_id))
             graph_account = acct_for_graph.scalar_one_or_none()
             if graph_account:
                 try:
-                    rel_count = await build_relationships(
-                        graph_account.tenant_id, db
-                    )
+                    rel_count = await build_relationships(graph_account.tenant_id, db)
                     stats["relationships"] = rel_count
                 except Exception:
                     logger.exception(
@@ -107,9 +101,7 @@ async def _run_scan_async(scan_id: str) -> dict:
             await db.commit()
 
             # Capture compliance snapshots for all frameworks
-            acct = await db.execute(
-                select(CloudAccount).where(CloudAccount.id == scan.cloud_account_id)
-            )
+            acct = await db.execute(select(CloudAccount).where(CloudAccount.id == scan.cloud_account_id))
             account = acct.scalar_one_or_none()
             if account:
                 try:
@@ -229,9 +221,7 @@ async def _run_scan_async(scan_id: str) -> dict:
             try:
                 from app.services.webhook_dispatcher import dispatch_webhooks as _dispatch
 
-                acct_r = await db.execute(
-                    select(CloudAccount).where(CloudAccount.id == scan.cloud_account_id)
-                )
+                acct_r = await db.execute(select(CloudAccount).where(CloudAccount.id == scan.cloud_account_id))
                 failed_account = acct_r.scalar_one_or_none()
                 if failed_account:
                     scan_failed_payload = {
@@ -239,9 +229,7 @@ async def _run_scan_async(scan_id: str) -> dict:
                         "scan_id": str(scan.id),
                         "cloud_account_id": str(failed_account.id),
                         "cloud_account_name": failed_account.display_name,
-                        "finished_at": scan.finished_at.isoformat()
-                        if scan.finished_at
-                        else None,
+                        "finished_at": scan.finished_at.isoformat() if scan.finished_at else None,
                     }
                     await _dispatch(
                         db,

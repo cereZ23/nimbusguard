@@ -22,14 +22,10 @@ router = APIRouter()
     response_model=ApiResponse[ExceptionResponse],
     status_code=status.HTTP_201_CREATED,
 )
-async def create_exception(
-    finding_id: uuid.UUID, body: ExceptionCreateRequest, db: DB, user: CurrentUser
-) -> dict:
+async def create_exception(finding_id: uuid.UUID, body: ExceptionCreateRequest, db: DB, user: CurrentUser) -> dict:
     # Verify finding belongs to tenant
     result = await db.execute(
-        select(Finding)
-        .join(CloudAccount)
-        .where(Finding.id == finding_id, CloudAccount.tenant_id == user.tenant_id)
+        select(Finding).join(CloudAccount).where(Finding.id == finding_id, CloudAccount.tenant_id == user.tenant_id)
     )
     finding = result.scalar_one_or_none()
     if finding is None:
@@ -88,9 +84,7 @@ async def list_exceptions(
         count_base = count_base.where(Exception_.status == exc_status)
 
     total = (await db.execute(count_base)).scalar() or 0
-    result = await db.execute(
-        base.order_by(Exception_.created_at.desc()).offset((page - 1) * size).limit(size)
-    )
+    result = await db.execute(base.order_by(Exception_.created_at.desc()).offset((page - 1) * size).limit(size))
     exceptions = result.scalars().all()
 
     return {
@@ -104,9 +98,7 @@ async def list_exceptions(
     "/exceptions/{exception_id}/approve",
     response_model=ApiResponse[ExceptionResponse],
 )
-async def approve_exception(
-    exception_id: uuid.UUID, db: DB, user: AdminUser
-) -> dict:
+async def approve_exception(exception_id: uuid.UUID, db: DB, user: AdminUser) -> dict:
     result = await db.execute(
         select(Exception_)
         .join(Finding, Finding.id == Exception_.finding_id)
@@ -142,9 +134,7 @@ async def approve_exception(
     "/exceptions/{exception_id}/reject",
     response_model=ApiResponse[ExceptionResponse],
 )
-async def reject_exception(
-    exception_id: uuid.UUID, db: DB, user: AdminUser
-) -> dict:
+async def reject_exception(exception_id: uuid.UUID, db: DB, user: AdminUser) -> dict:
     result = await db.execute(
         select(Exception_)
         .join(Finding, Finding.id == Exception_.finding_id)
@@ -167,4 +157,3 @@ async def reject_exception(
 
     logger.info("Exception %s rejected by %s", exception_id, user.email)
     return {"data": exc, "error": None, "meta": None}
-

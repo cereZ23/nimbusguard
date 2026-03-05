@@ -1,4 +1,5 @@
 """Unit tests for Virtual Machine checks."""
+
 from __future__ import annotations
 
 import uuid
@@ -32,16 +33,12 @@ def _make_asset(
 
 class TestCheckManagedDisks:
     def test_pass_when_managed(self):
-        asset = _make_asset(raw_properties={
-            "storageProfile": {"osDisk": {"managedDisk": {"id": "/sub/disk1"}}}
-        })
+        asset = _make_asset(raw_properties={"storageProfile": {"osDisk": {"managedDisk": {"id": "/sub/disk1"}}}})
         result = check_managed_disks(asset)
         assert result.status == "pass"
 
     def test_fail_when_unmanaged(self):
-        asset = _make_asset(raw_properties={
-            "storageProfile": {"osDisk": {}}
-        })
+        asset = _make_asset(raw_properties={"storageProfile": {"osDisk": {}}})
         result = check_managed_disks(asset)
         assert result.status == "fail"
 
@@ -58,23 +55,17 @@ class TestCheckManagedDisks:
 
 class TestCheckDiskEncryption:
     def test_pass_when_encryption_at_host(self):
-        asset = _make_asset(raw_properties={
-            "securityProfile": {"encryptionAtHost": True}
-        })
+        asset = _make_asset(raw_properties={"securityProfile": {"encryptionAtHost": True}})
         result = check_disk_encryption(asset)
         assert result.status == "pass"
 
     def test_pass_when_disk_encryption_settings(self):
-        asset = _make_asset(raw_properties={
-            "storageProfile": {"osDisk": {"encryptionSettings": {"enabled": True}}}
-        })
+        asset = _make_asset(raw_properties={"storageProfile": {"osDisk": {"encryptionSettings": {"enabled": True}}}})
         result = check_disk_encryption(asset)
         assert result.status == "pass"
 
     def test_fail_when_no_encryption(self):
-        asset = _make_asset(raw_properties={
-            "securityProfile": {"encryptionAtHost": False}
-        })
+        asset = _make_asset(raw_properties={"securityProfile": {"encryptionAtHost": False}})
         result = check_disk_encryption(asset)
         assert result.status == "fail"
 
@@ -91,16 +82,12 @@ class TestCheckDiskEncryption:
 
 class TestCheckBootDiagnostics:
     def test_pass_when_enabled(self):
-        asset = _make_asset(raw_properties={
-            "diagnosticsProfile": {"bootDiagnostics": {"enabled": True}}
-        })
+        asset = _make_asset(raw_properties={"diagnosticsProfile": {"bootDiagnostics": {"enabled": True}}})
         result = check_boot_diagnostics(asset)
         assert result.status == "pass"
 
     def test_fail_when_disabled(self):
-        asset = _make_asset(raw_properties={
-            "diagnosticsProfile": {"bootDiagnostics": {"enabled": False}}
-        })
+        asset = _make_asset(raw_properties={"diagnosticsProfile": {"bootDiagnostics": {"enabled": False}}})
         result = check_boot_diagnostics(asset)
         assert result.status == "fail"
 
@@ -117,16 +104,12 @@ class TestCheckBootDiagnostics:
 
 class TestCheckSecureBoot:
     def test_pass_when_enabled(self):
-        asset = _make_asset(raw_properties={
-            "securityProfile": {"uefiSettings": {"secureBootEnabled": True}}
-        })
+        asset = _make_asset(raw_properties={"securityProfile": {"uefiSettings": {"secureBootEnabled": True}}})
         result = check_secure_boot(asset)
         assert result.status == "pass"
 
     def test_fail_when_disabled(self):
-        asset = _make_asset(raw_properties={
-            "securityProfile": {"uefiSettings": {"secureBootEnabled": False}}
-        })
+        asset = _make_asset(raw_properties={"securityProfile": {"uefiSettings": {"secureBootEnabled": False}}})
         result = check_secure_boot(asset)
         assert result.status == "fail"
 

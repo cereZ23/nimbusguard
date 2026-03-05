@@ -113,7 +113,13 @@ async def export_siem_cef(
 ) -> StreamingResponse:
     """Export findings in CEF (Common Event Format) for ArcSight, Splunk, Sentinel."""
     findings = await _query_findings_for_siem(
-        db, user, severity, finding_status, account_id, date_from, date_to,
+        db,
+        user,
+        severity,
+        finding_status,
+        account_id,
+        date_from,
+        date_to,
     )
     logger.info("SIEM CEF export: %d findings for tenant %s", len(findings), user.tenant_id)
     return StreamingResponse(
@@ -137,7 +143,13 @@ async def export_siem_leef(
 ) -> StreamingResponse:
     """Export findings in LEEF (Log Event Extended Format) for IBM QRadar."""
     findings = await _query_findings_for_siem(
-        db, user, severity, finding_status, account_id, date_from, date_to,
+        db,
+        user,
+        severity,
+        finding_status,
+        account_id,
+        date_from,
+        date_to,
     )
     logger.info("SIEM LEEF export: %d findings for tenant %s", len(findings), user.tenant_id)
     return StreamingResponse(
@@ -161,7 +173,13 @@ async def export_siem_jsonl(
 ) -> StreamingResponse:
     """Export findings in JSON Lines (NDJSON) for Splunk HEC, Sentinel, Elastic."""
     findings = await _query_findings_for_siem(
-        db, user, severity, finding_status, account_id, date_from, date_to,
+        db,
+        user,
+        severity,
+        finding_status,
+        account_id,
+        date_from,
+        date_to,
     )
     logger.info("SIEM JSONL export: %d findings for tenant %s", len(findings), user.tenant_id)
     return StreamingResponse(
@@ -204,10 +222,19 @@ def _export_json(findings: list[Finding]) -> StreamingResponse:
 def _export_csv(findings: list[Finding]) -> StreamingResponse:
     output = io.StringIO()
     headers = [
-        "ID", "Title", "Status", "Severity", "Waived",
-        "First Detected", "Last Evaluated",
-        "Asset Name", "Asset Type", "Asset Region",
-        "Control Code", "Control Name", "Control Severity",
+        "ID",
+        "Title",
+        "Status",
+        "Severity",
+        "Waived",
+        "First Detected",
+        "Last Evaluated",
+        "Asset Name",
+        "Asset Type",
+        "Asset Region",
+        "Control Code",
+        "Control Name",
+        "Control Severity",
         "Cloud Account ID",
     ]
     writer = csv.writer(output)
@@ -215,13 +242,24 @@ def _export_csv(findings: list[Finding]) -> StreamingResponse:
 
     for f in findings:
         d = _finding_to_dict(f)
-        writer.writerow([
-            d["id"], d["title"], d["status"], d["severity"], d["waived"],
-            d["first_detected_at"], d["last_evaluated_at"],
-            d["asset_name"], d["asset_type"], d["asset_region"],
-            d["control_code"], d["control_name"], d["control_severity"],
-            d["cloud_account_id"],
-        ])
+        writer.writerow(
+            [
+                d["id"],
+                d["title"],
+                d["status"],
+                d["severity"],
+                d["waived"],
+                d["first_detected_at"],
+                d["last_evaluated_at"],
+                d["asset_name"],
+                d["asset_type"],
+                d["asset_region"],
+                d["control_code"],
+                d["control_name"],
+                d["control_severity"],
+                d["cloud_account_id"],
+            ]
+        )
 
     output.seek(0)
     return StreamingResponse(
@@ -246,8 +284,9 @@ def _export_pdf(findings: list[Finding]) -> StreamingResponse:
     )
 
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=2 * cm, rightMargin=2 * cm,
-                            topMargin=2 * cm, bottomMargin=2 * cm)
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, leftMargin=2 * cm, rightMargin=2 * cm, topMargin=2 * cm, bottomMargin=2 * cm
+    )
     styles = getSampleStyleSheet()
     elements: list = []
 
@@ -278,22 +317,26 @@ def _export_pdf(findings: list[Finding]) -> StreamingResponse:
         [str(total), str(fail_count), str(pass_count), str(high_count), str(medium_count), str(low_count)],
     ]
     summary_table = Table(summary_data, colWidths=[doc.width / 6] * 6)
-    summary_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#3b82f6")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("FONTSIZE", (0, 1), (-1, 1), 14),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        # Color code the severity cells in data row
-        ("TEXTCOLOR", (3, 1), (3, 1), colors.HexColor("#dc2626")),
-        ("TEXTCOLOR", (4, 1), (4, 1), colors.HexColor("#ea580c")),
-        ("TEXTCOLOR", (5, 1), (5, 1), colors.HexColor("#2563eb")),
-        ("TEXTCOLOR", (1, 1), (1, 1), colors.HexColor("#dc2626")),
-        ("TEXTCOLOR", (2, 1), (2, 1), colors.HexColor("#16a34a")),
-    ]))
+    summary_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#3b82f6")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("FONTSIZE", (0, 1), (-1, 1), 14),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                # Color code the severity cells in data row
+                ("TEXTCOLOR", (3, 1), (3, 1), colors.HexColor("#dc2626")),
+                ("TEXTCOLOR", (4, 1), (4, 1), colors.HexColor("#ea580c")),
+                ("TEXTCOLOR", (5, 1), (5, 1), colors.HexColor("#2563eb")),
+                ("TEXTCOLOR", (1, 1), (1, 1), colors.HexColor("#dc2626")),
+                ("TEXTCOLOR", (2, 1), (2, 1), colors.HexColor("#16a34a")),
+            ]
+        )
+    )
     elements.append(summary_table)
     elements.append(Spacer(1, 16))
 
@@ -309,37 +352,49 @@ def _export_pdf(findings: list[Finding]) -> StreamingResponse:
             status = d["status"].upper()
 
             # Finding header
-            elements.append(Paragraph(
-                f"<b>{_xml_escape(d['title'])}</b> &nbsp; "
-                f"<font color='{_sev_color(d['severity'])}'>[{sev}]</font> &nbsp; "
-                f"<font color='{'#dc2626' if d['status'] == 'fail' else '#16a34a'}'>{status}</font>",
-                normal,
-            ))
+            elements.append(
+                Paragraph(
+                    f"<b>{_xml_escape(d['title'])}</b> &nbsp; "
+                    f"<font color='{_sev_color(d['severity'])}'>[{sev}]</font> &nbsp; "
+                    f"<font color='{'#dc2626' if d['status'] == 'fail' else '#16a34a'}'>{status}</font>",
+                    normal,
+                )
+            )
 
             # Meta table
             meta_data = [
-                [f"Control: {d['control_code'] or '—'}",
-                 f"Asset: {d['asset_name'] or '—'}",
-                 f"Region: {d['asset_region'] or '—'}"],
-                [f"First detected: {d['first_detected_at'] or '—'}",
-                 f"Last evaluated: {d['last_evaluated_at'] or '—'}",
-                 f"Waived: {'Yes' if d['waived'] else 'No'}"],
+                [
+                    f"Control: {d['control_code'] or '—'}",
+                    f"Asset: {d['asset_name'] or '—'}",
+                    f"Region: {d['asset_region'] or '—'}",
+                ],
+                [
+                    f"First detected: {d['first_detected_at'] or '—'}",
+                    f"Last evaluated: {d['last_evaluated_at'] or '—'}",
+                    f"Waived: {'Yes' if d['waived'] else 'No'}",
+                ],
             ]
             meta_table = Table(meta_data, colWidths=[doc.width / 3] * 3)
-            meta_table.setStyle(TableStyle([
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("TOPPADDING", (0, 0), (-1, -1), 2),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-                ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#4b5563")),
-            ]))
+            meta_table.setStyle(
+                TableStyle(
+                    [
+                        ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ("TOPPADDING", (0, 0), (-1, -1), 2),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                        ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#4b5563")),
+                    ]
+                )
+            )
             elements.append(meta_table)
 
             # Remediation hint
             if d.get("remediation_hint"):
-                elements.append(Paragraph(
-                    f"<b>Remediation:</b> {_xml_escape(d['remediation_hint'])}",
-                    small,
-                ))
+                elements.append(
+                    Paragraph(
+                        f"<b>Remediation:</b> {_xml_escape(d['remediation_hint'])}",
+                        small,
+                    )
+                )
 
             # Evidence
             if f.evidences:
@@ -348,17 +403,20 @@ def _export_pdf(findings: list[Finding]) -> StreamingResponse:
                 # Truncate long evidence
                 if len(evidence_str) > 500:
                     evidence_str = evidence_str[:500] + "\n..."
-                elements.append(Paragraph(
-                    f"<b>Evidence:</b><br/><font face='Courier' size='7'>{_xml_escape(evidence_str)}</font>",
-                    small,
-                ))
+                elements.append(
+                    Paragraph(
+                        f"<b>Evidence:</b><br/><font face='Courier' size='7'>{_xml_escape(evidence_str)}</font>",
+                        small,
+                    )
+                )
 
             elements.append(Spacer(1, 10))
 
     # Footer
     elements.append(Spacer(1, 20))
-    footer_style = ParagraphStyle("Footer", parent=normal, fontSize=7, textColor=colors.HexColor("#9ca3af"),
-                                  alignment=1)
+    footer_style = ParagraphStyle(
+        "Footer", parent=normal, fontSize=7, textColor=colors.HexColor("#9ca3af"), alignment=1
+    )
     elements.append(Paragraph("CSPM Evidence Pack — Confidential", footer_style))
 
     doc.build(elements)
@@ -377,9 +435,4 @@ def _sev_color(severity: str) -> str:
 
 def _xml_escape(text: str) -> str:
     """Escape XML special characters for reportlab Paragraph."""
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")

@@ -5,9 +5,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_dashboard_summary(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_dashboard_summary(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get("/api/v1/dashboard/summary", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
@@ -28,9 +26,7 @@ async def test_dashboard_summary(
 
 
 @pytest.mark.asyncio
-async def test_dashboard_summary_empty(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_dashboard_summary_empty(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.get("/api/v1/dashboard/summary", headers=auth_headers)
     assert res.status_code == 200
     summary = res.json()["data"]
@@ -48,9 +44,7 @@ async def test_dashboard_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_dashboard_severity_counts(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_dashboard_severity_counts(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get("/api/v1/dashboard/summary", headers=auth_headers)
     severity_counts = res.json()["data"]["findings_by_severity"]
     # Our seed data has one "high" severity finding with status "fail"
@@ -58,9 +52,7 @@ async def test_dashboard_severity_counts(
 
 
 @pytest.mark.asyncio
-async def test_dashboard_top_failing_controls(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_dashboard_top_failing_controls(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get("/api/v1/dashboard/summary", headers=auth_headers)
     top = res.json()["data"]["top_failing_controls"]
     assert len(top) >= 1
@@ -74,9 +66,7 @@ async def test_dashboard_top_failing_controls(
 
 
 @pytest.mark.asyncio
-async def test_dashboard_tenant_isolation(
-    client: AsyncClient, second_auth_headers: dict, seed_data: dict
-) -> None:
+async def test_dashboard_tenant_isolation(client: AsyncClient, second_auth_headers: dict, seed_data: dict) -> None:
     # Clear cookies to prevent cookie-based auth bleed (Bearer header takes priority)
     client.cookies.clear()
 
@@ -97,9 +87,7 @@ async def test_cross_cloud_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_cross_cloud_empty(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_cross_cloud_empty(client: AsyncClient, auth_headers: dict) -> None:
     """With no cloud accounts, the endpoint returns an empty summary."""
     res = await client.get("/api/v1/dashboard/cross-cloud", headers=auth_headers)
     assert res.status_code == 200
@@ -117,9 +105,7 @@ async def test_cross_cloud_empty(
 
 
 @pytest.mark.asyncio
-async def test_cross_cloud_with_data(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_cross_cloud_with_data(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     """With seed data (single Azure account), the cross-cloud endpoint
     returns one provider with correct aggregation."""
     res = await client.get("/api/v1/dashboard/cross-cloud", headers=auth_headers)
@@ -153,9 +139,7 @@ async def test_cross_cloud_with_data(
 
 
 @pytest.mark.asyncio
-async def test_cross_cloud_tenant_isolation(
-    client: AsyncClient, second_auth_headers: dict, seed_data: dict
-) -> None:
+async def test_cross_cloud_tenant_isolation(client: AsyncClient, second_auth_headers: dict, seed_data: dict) -> None:
     """Second tenant should not see first tenant's data."""
     # Clear cookies to prevent cookie-based auth bleed (Bearer header takes priority)
     client.cookies.clear()

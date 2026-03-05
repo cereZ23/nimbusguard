@@ -1,4 +1,5 @@
 """Network resource checks (CIS-AZ-45, 46, 47, 48)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

@@ -27,7 +27,7 @@ from app.schemas.auth import (
     UserResponse,
 )
 from app.schemas.common import ApiResponse
-from app.schemas.sso import SsoCallbackResponse, SsoPublicConfig
+from app.schemas.sso import SsoPublicConfig
 from app.services.audit import record_audit
 from app.services.auth import (
     authenticate_user,

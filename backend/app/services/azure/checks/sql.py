@@ -1,4 +1,5 @@
 """SQL Server / Database checks (CIS-AZ-08, 27, 28, 29, 30)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

@@ -18,9 +18,9 @@ REPORTS_DIR = os.environ.get("REPORTS_STORAGE_DIR", "/tmp/reports")
 
 # Cron expressions for each schedule type
 SCHEDULE_CRON: dict[str, str] = {
-    "daily": "0 0 * * *",       # midnight every day
-    "weekly": "0 0 * * 1",      # midnight every Monday
-    "monthly": "0 0 1 * *",     # midnight first of each month
+    "daily": "0 0 * * *",  # midnight every day
+    "weekly": "0 0 * * 1",  # midnight every Monday
+    "monthly": "0 0 1 * *",  # midnight first of each month
 }
 
 
@@ -57,25 +57,20 @@ async def _generate_pdf_bytes(
         pdf_bytes = await _generate_compliance(db, tenant_id, tenant_name, framework)
     elif report_type == "technical_detail":
         severity_filter = (config or {}).get("severity")
-        pdf_bytes = await _generate_technical_detail(
-            db, tenant_id, tenant_name, severity_filter
-        )
+        pdf_bytes = await _generate_technical_detail(db, tenant_id, tenant_name, severity_filter)
     else:
         raise ValueError(f"Unknown report type: {report_type}")
 
     return pdf_bytes
 
 
-async def _generate_executive_summary(
-    db: AsyncSession, tenant_id: str, tenant_name: str
-) -> bytes:
+async def _generate_executive_summary(db: AsyncSession, tenant_id: str, tenant_name: str) -> bytes:
     """Generate executive summary PDF bytes."""
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import cm
     from reportlab.platypus import (
-        PageBreak,
         Paragraph,
         SimpleDocTemplate,
         Spacer,
@@ -145,11 +140,7 @@ async def _generate_executive_summary(
     low_count = findings_agg[5] or 0
 
     total_assets = (
-        await db.execute(
-            select(func.count(Asset.id))
-            .join(CloudAccount)
-            .where(CloudAccount.tenant_id == tenant_id)
-        )
+        await db.execute(select(func.count(Asset.id)).join(CloudAccount).where(CloudAccount.tenant_id == tenant_id))
     ).scalar() or 0
 
     score_result = await db.execute(
@@ -182,9 +173,12 @@ async def _generate_executive_summary(
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
-        buf, pagesize=A4,
-        leftMargin=2 * cm, rightMargin=2 * cm,
-        topMargin=2 * cm, bottomMargin=2 * cm,
+        buf,
+        pagesize=A4,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
     )
     s = _build_styles()
     elements: list = []
@@ -194,9 +188,7 @@ async def _generate_executive_summary(
     elements.append(Paragraph("Security Posture Overview", s["heading"]))
     if secure_score is not None:
         score_display = f"{secure_score:.1f}%"
-        score_color = (
-            "#16a34a" if secure_score >= 80 else "#ea580c" if secure_score >= 50 else "#dc2626"
-        )
+        score_color = "#16a34a" if secure_score >= 80 else "#ea580c" if secure_score >= 50 else "#dc2626"
         elements.append(
             Paragraph(
                 f'<font size="28" color="{score_color}"><b>{score_display}</b></font>',
@@ -217,26 +209,27 @@ async def _generate_executive_summary(
     elements.append(Paragraph("Key Performance Indicators", s["heading"]))
     kpi_data = [
         ["Total Assets", "Total Findings", "Failing", "High / Critical", "Medium", "Low"],
-        [str(total_assets), str(total_findings), str(fail_count),
-         str(high_count), str(medium_count), str(low_count)],
+        [str(total_assets), str(total_findings), str(fail_count), str(high_count), str(medium_count), str(low_count)],
     ]
     kpi_table = Table(kpi_data, colWidths=[doc.width / 6] * 6)
     kpi_table.setStyle(
-        TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), _BLUE),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTSIZE", (0, 0), (-1, 0), 9),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 1), (-1, 1), 16),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("GRID", (0, 0), (-1, -1), 0.5, _LIGHT_GRAY),
-            ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-            ("TEXTCOLOR", (3, 1), (3, 1), _RED),
-            ("TEXTCOLOR", (4, 1), (4, 1), _ORANGE),
-            ("TEXTCOLOR", (5, 1), (5, 1), colors.HexColor("#2563eb")),
-            ("TEXTCOLOR", (2, 1), (2, 1), _RED),
-        ])
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), _BLUE),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTSIZE", (0, 0), (-1, 0), 9),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 1), (-1, 1), 16),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("GRID", (0, 0), (-1, -1), 0.5, _LIGHT_GRAY),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("TEXTCOLOR", (3, 1), (3, 1), _RED),
+                ("TEXTCOLOR", (4, 1), (4, 1), _ORANGE),
+                ("TEXTCOLOR", (5, 1), (5, 1), colors.HexColor("#2563eb")),
+                ("TEXTCOLOR", (2, 1), (2, 1), _RED),
+            ]
+        )
     )
     elements.append(kpi_table)
     elements.append(Spacer(1, 1 * cm))
@@ -245,19 +238,22 @@ async def _generate_executive_summary(
     if control_rows:
         ctrl_data = [["#", "Code", "Name", "Severity", "Failures", "Total"]]
         for idx, row in enumerate(control_rows, 1):
-            ctrl_data.append([
-                str(idx), row[0],
-                Paragraph(_xml_escape(row[1][:60]), s["small"]),
-                row[2].capitalize(), str(row[3]), str(row[4]),
-            ])
+            ctrl_data.append(
+                [
+                    str(idx),
+                    row[0],
+                    Paragraph(_xml_escape(row[1][:60]), s["small"]),
+                    row[2].capitalize(),
+                    str(row[3]),
+                    str(row[4]),
+                ]
+            )
         col_widths = [0.5 * cm, 2 * cm, 7.5 * cm, 2 * cm, 2 * cm, 2 * cm]
         ctrl_table = Table(ctrl_data, colWidths=col_widths)
         ctrl_table.setStyle(_header_table_style())
         elements.append(ctrl_table)
     else:
-        elements.append(
-            Paragraph("No control data available. Run a scan to populate controls.", s["normal"])
-        )
+        elements.append(Paragraph("No control data available. Run a scan to populate controls.", s["normal"]))
 
     elements.append(Spacer(1, 1 * cm))
     elements.append(Paragraph("Summary", s["heading"]))
@@ -281,16 +277,12 @@ async def _generate_executive_summary(
     return buf.getvalue()
 
 
-async def _generate_compliance(
-    db: AsyncSession, tenant_id: str, tenant_name: str, framework: str
-) -> bytes:
+async def _generate_compliance(db: AsyncSession, tenant_id: str, tenant_name: str, framework: str) -> bytes:
     """Generate compliance PDF bytes."""
-    from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import cm
     from reportlab.platypus import (
-        PageBreak,
         Paragraph,
         SimpleDocTemplate,
         Spacer,
@@ -298,10 +290,8 @@ async def _generate_compliance(
         TableStyle,
     )
     from sqlalchemy import case, func
-    from sqlalchemy.orm import selectinload
 
     from app.api.reports import (
-        _BLUE,
         _GRAY,
         _GREEN,
         _RED,
@@ -310,7 +300,6 @@ async def _generate_compliance(
         _add_footer,
         _build_styles,
         _header_table_style,
-        _sev_color,
         _title_page,
         _xml_escape,
     )
@@ -324,8 +313,13 @@ async def _generate_compliance(
     control_rows = (
         await db.execute(
             select(
-                Control.id, Control.code, Control.name, Control.severity,
-                Control.description, Control.remediation_hint, Control.framework_mappings,
+                Control.id,
+                Control.code,
+                Control.name,
+                Control.severity,
+                Control.description,
+                Control.remediation_hint,
+                Control.framework_mappings,
                 func.count(Finding.id).label("total_count"),
                 func.count(case((Finding.status == "fail", 1))).label("fail_count"),
                 func.count(case((Finding.status == "pass", 1))).label("pass_count"),
@@ -341,22 +335,20 @@ async def _generate_compliance(
     if framework == "cis_azure":
         relevant_controls = [r for r in control_rows if r[1].startswith("CIS-AZ")]
     else:
-        relevant_controls = [
-            r for r in control_rows
-            if r[6] and isinstance(r[6], dict) and mapping_key in r[6]
-        ]
+        relevant_controls = [r for r in control_rows if r[6] and isinstance(r[6], dict) and mapping_key in r[6]]
 
     total_controls = len(relevant_controls)
-    passing_controls = sum(
-        1 for r in relevant_controls if r[8] == 0 and r[7] > 0
-    )
+    passing_controls = sum(1 for r in relevant_controls if r[8] == 0 and r[7] > 0)
     compliance_pct = (passing_controls / total_controls * 100) if total_controls > 0 else 0
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
-        buf, pagesize=A4,
-        leftMargin=2 * cm, rightMargin=2 * cm,
-        topMargin=2 * cm, bottomMargin=2 * cm,
+        buf,
+        pagesize=A4,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
     )
     s = _build_styles()
     elements: list = []
@@ -364,18 +356,14 @@ async def _generate_compliance(
     _title_page(elements, s, "Compliance Report", tenant_name, subtitle=framework_label)
 
     elements.append(Paragraph("Overall Compliance", s["heading"]))
-    comp_color = (
-        "#16a34a" if compliance_pct >= 80 else "#ea580c" if compliance_pct >= 50 else "#dc2626"
-    )
+    comp_color = "#16a34a" if compliance_pct >= 80 else "#ea580c" if compliance_pct >= 50 else "#dc2626"
     elements.append(
         Paragraph(
             f'<font size="28" color="{comp_color}"><b>{compliance_pct:.1f}%</b></font>',
             ParagraphStyle("CompDisplay", parent=s["normal"], alignment=1),
         )
     )
-    elements.append(
-        Paragraph(f"{passing_controls} of {total_controls} controls passing", s["kpi_label"])
-    )
+    elements.append(Paragraph(f"{passing_controls} of {total_controls} controls passing", s["kpi_label"]))
     elements.append(Spacer(1, 1 * cm))
 
     elements.append(Paragraph("Controls Overview", s["heading"]))
@@ -385,10 +373,16 @@ async def _generate_compliance(
             fails = r[8]
             total = r[7]
             ctrl_status = "PASS" if fails == 0 and total > 0 else ("FAIL" if fails > 0 else "N/A")
-            tbl_data.append([
-                r[1], Paragraph(_xml_escape(r[2][:50]), s["small"]),
-                r[3].capitalize(), ctrl_status, str(total), str(fails),
-            ])
+            tbl_data.append(
+                [
+                    r[1],
+                    Paragraph(_xml_escape(r[2][:50]), s["small"]),
+                    r[3].capitalize(),
+                    ctrl_status,
+                    str(total),
+                    str(fails),
+                ]
+            )
         col_widths = [2 * cm, 6.5 * cm, 1.8 * cm, 1.5 * cm, 1.8 * cm, 1.8 * cm]
         tbl = Table(tbl_data, colWidths=col_widths)
         base_style = _header_table_style()
@@ -426,7 +420,7 @@ async def _generate_technical_detail(
     from collections import Counter
 
     from reportlab.lib import colors
-    from reportlab.lib.pagesizes import landscape, A4
+    from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib.units import cm
     from reportlab.platypus import (
         Paragraph,
@@ -439,10 +433,8 @@ async def _generate_technical_detail(
     from sqlalchemy.orm import selectinload
 
     from app.api.reports import (
-        _BLUE,
         _GRAY,
         _GREEN,
-        _LIGHT_GRAY,
         _ORANGE,
         _RED,
         _add_footer,
@@ -468,9 +460,7 @@ async def _generate_technical_detail(
     if severity_filter:
         query = query.where(Finding.severity == severity_filter)
 
-    result = await db.execute(
-        query.order_by(Finding.severity.desc(), Finding.last_evaluated_at.desc())
-    )
+    result = await db.execute(query.order_by(Finding.severity.desc(), Finding.last_evaluated_at.desc()))
     findings = result.scalars().all()
 
     asset_rows = (
@@ -491,9 +481,12 @@ async def _generate_technical_detail(
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
-        buf, pagesize=landscape(A4),
-        leftMargin=1.5 * cm, rightMargin=1.5 * cm,
-        topMargin=1.5 * cm, bottomMargin=1.5 * cm,
+        buf,
+        pagesize=landscape(A4),
+        leftMargin=1.5 * cm,
+        rightMargin=1.5 * cm,
+        topMargin=1.5 * cm,
+        bottomMargin=1.5 * cm,
     )
     s = _build_styles()
     elements: list = []
@@ -545,15 +538,17 @@ async def _generate_technical_detail(
         elements.append(Paragraph("Detailed Findings", s["heading"]))
         tbl_data = [["Severity", "Status", "Title", "Control", "Resource", "Region", "Last Evaluated"]]
         for f in findings:
-            tbl_data.append([
-                f.severity.upper(),
-                f.status.upper(),
-                Paragraph(_xml_escape((f.title or "Untitled")[:60]), s["small"]),
-                f.control.code if f.control else "-",
-                Paragraph(_xml_escape((f.asset.name if f.asset else "Unknown")[:40]), s["small"]),
-                f.asset.region if f.asset else "-",
-                f.last_evaluated_at.strftime("%Y-%m-%d %H:%M") if f.last_evaluated_at else "-",
-            ])
+            tbl_data.append(
+                [
+                    f.severity.upper(),
+                    f.status.upper(),
+                    Paragraph(_xml_escape((f.title or "Untitled")[:60]), s["small"]),
+                    f.control.code if f.control else "-",
+                    Paragraph(_xml_escape((f.asset.name if f.asset else "Unknown")[:40]), s["small"]),
+                    f.asset.region if f.asset else "-",
+                    f.last_evaluated_at.strftime("%Y-%m-%d %H:%M") if f.last_evaluated_at else "-",
+                ]
+            )
 
         col_widths = [1.8 * cm, 1.5 * cm, 7 * cm, 2.2 * cm, 6 * cm, 3 * cm, 3.5 * cm]
         findings_tbl = Table(tbl_data, colWidths=col_widths, repeatRows=1)
@@ -576,9 +571,7 @@ async def _generate_technical_detail(
     return buf.getvalue()
 
 
-async def generate_scheduled_report(
-    db: AsyncSession, scheduled_report: ScheduledReport
-) -> ReportHistory:
+async def generate_scheduled_report(db: AsyncSession, scheduled_report: ScheduledReport) -> ReportHistory:
     """Generate a PDF report and store it on disk."""
     now = datetime.now(UTC)
     tenant_id = str(scheduled_report.tenant_id)
@@ -628,15 +621,11 @@ async def generate_scheduled_report(
         )
         db.add(history)
 
-        logger.exception(
-            "Failed to generate scheduled report %s", scheduled_report.id
-        )
+        logger.exception("Failed to generate scheduled report %s", scheduled_report.id)
 
     # Update scheduled report timestamps
     scheduled_report.last_run_at = now
-    scheduled_report.next_run_at = calculate_next_run(
-        scheduled_report.schedule, now
-    )
+    scheduled_report.next_run_at = calculate_next_run(scheduled_report.schedule, now)
 
     await db.commit()
     await db.refresh(history)
@@ -667,9 +656,7 @@ async def check_and_run_due_reports(db: AsyncSession) -> dict:
             else:
                 failed += 1
         except Exception:
-            logger.exception(
-                "Unexpected error generating scheduled report %s", report.id
-            )
+            logger.exception("Unexpected error generating scheduled report %s", report.id)
             failed += 1
 
     logger.info(

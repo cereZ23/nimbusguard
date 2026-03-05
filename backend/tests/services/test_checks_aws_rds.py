@@ -1,4 +1,5 @@
 """Unit tests for AWS RDS checks (CIS-AWS-13, 14, 15)."""
+
 from __future__ import annotations
 
 import uuid

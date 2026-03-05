@@ -74,11 +74,7 @@ async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends
             detail="MFA verification required",
         )
 
-    result = await db.execute(
-        select(User)
-        .options(selectinload(User.custom_role))
-        .where(User.id == payload["sub"])
-    )
+    result = await db.execute(select(User).options(selectinload(User.custom_role)).where(User.id == payload["sub"]))
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(
@@ -113,6 +109,7 @@ TenantID = Annotated[str, Depends(effective_tenant_id)]
 
 def require_role(*allowed_roles: str):
     """Dependency that checks the current user has one of the allowed roles."""
+
     async def _check(user: CurrentUser) -> User:
         if user.role not in allowed_roles:
             raise HTTPException(
@@ -120,6 +117,7 @@ def require_role(*allowed_roles: str):
                 detail="Insufficient permissions",
             )
         return user
+
     return Depends(_check)
 
 
@@ -131,6 +129,7 @@ def require_permission(permission: str):
 
     Works with both legacy roles (admin/viewer) and custom roles with granular permissions.
     """
+
     async def _check(user: CurrentUser) -> User:
         from app.services.permissions import has_permission as _has_perm
 
@@ -140,4 +139,5 @@ def require_permission(permission: str):
                 detail=f"Permission required: {permission}",
             )
         return user
+
     return Depends(_check)

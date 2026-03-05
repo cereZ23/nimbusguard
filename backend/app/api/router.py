@@ -2,32 +2,32 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.auth import router as auth_router
 from app.api.accounts import router as accounts_router
-from app.api.assets import router as assets_router
-from app.api.findings import router as findings_router
-from app.api.dashboard import router as dashboard_router
-from app.api.controls import router as controls_router
-from app.api.exceptions import router as exceptions_router
-from app.api.audit import router as audit_router
-from app.api.export import router as export_router
-from app.api.scans import router as scans_router
-from app.api.errors import router as errors_router
-from app.api.saved_filters import router as saved_filters_router
-from app.api.users import router as users_router
-from app.api.reports import router as reports_router
-from app.api.webhooks import router as webhooks_router
 from app.api.api_keys import router as api_keys_router
-from app.api.custom_frameworks import router as custom_frameworks_router
-from app.api.scheduled_reports import router as scheduled_reports_router
-from app.api.slack import router as slack_router
+from app.api.asset_graph import router as asset_graph_router
+from app.api.assets import router as assets_router
+from app.api.audit import router as audit_router
+from app.api.auth import router as auth_router
 from app.api.branding import router as branding_router
+from app.api.controls import router as controls_router
+from app.api.custom_dashboards import router as custom_dashboards_router
+from app.api.custom_frameworks import router as custom_frameworks_router
+from app.api.dashboard import router as dashboard_router
+from app.api.errors import router as errors_router
+from app.api.exceptions import router as exceptions_router
+from app.api.export import router as export_router
+from app.api.findings import router as findings_router
 from app.api.invitations import router as invitations_router
 from app.api.jira import router as jira_router
-from app.api.custom_dashboards import router as custom_dashboards_router
+from app.api.reports import router as reports_router
 from app.api.roles import router as roles_router
-from app.api.asset_graph import router as asset_graph_router
+from app.api.saved_filters import router as saved_filters_router
+from app.api.scans import router as scans_router
+from app.api.scheduled_reports import router as scheduled_reports_router
+from app.api.slack import router as slack_router
 from app.api.sso import router as sso_router
+from app.api.users import router as users_router
+from app.api.webhooks import router as webhooks_router
 
 api_router = APIRouter()
 

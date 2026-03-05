@@ -7,9 +7,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_list_controls(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_list_controls(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get("/api/v1/controls", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
@@ -29,9 +27,7 @@ async def test_list_controls_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_control(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_get_control(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     control_id = seed_data["control_id"]
     res = await client.get(f"/api/v1/controls/{control_id}", headers=auth_headers)
     assert res.status_code == 200
@@ -41,30 +37,22 @@ async def test_get_control(
 
 
 @pytest.mark.asyncio
-async def test_get_control_not_found(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_get_control_not_found(client: AsyncClient, auth_headers: dict) -> None:
     fake_id = str(uuid.uuid4())
     res = await client.get(f"/api/v1/controls/{fake_id}", headers=auth_headers)
     assert res.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_control_findings(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_control_findings(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     control_id = seed_data["control_id"]
-    res = await client.get(
-        f"/api/v1/controls/{control_id}/findings", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/controls/{control_id}/findings", headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["meta"]["total"] >= 1
 
 
 @pytest.mark.asyncio
-async def test_dashboard_trend(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_dashboard_trend(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/dashboard/trend",
         headers=auth_headers,
@@ -83,9 +71,7 @@ async def test_dashboard_trend_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_controls_filter_by_framework(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_list_controls_filter_by_framework(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     """Controls endpoint should accept any framework filter without error."""
     for framework in ("cis-lite", "soc2", "nist", "iso27001"):
         res = await client.get(

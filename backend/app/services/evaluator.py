@@ -4,13 +4,14 @@ Instead of relying on Azure Defender for Cloud (which requires paid tiers),
 this engine reads the raw_properties collected via Resource Graph and evaluates
 them against CIS-lite controls directly.
 """
+
 from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Callable
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,11 +47,7 @@ class CheckRegistry:
     def get_checks_for(self, resource_type: str) -> list[tuple[str, CheckFn]]:
         """Return [(control_code, fn)] for the given resource type."""
         rt = resource_type.lower()
-        return [
-            (code, fn)
-            for (check_rt, code), fn in self._checks.items()
-            if check_rt == rt
-        ]
+        return [(code, fn) for (check_rt, code), fn in self._checks.items() if check_rt == rt]
 
     @property
     def all_checks(self) -> dict[tuple[str, str], CheckFn]:
@@ -73,9 +70,8 @@ def check(resource_type: str, control_code: str) -> Callable[[CheckFn], CheckFn]
 
 
 # Import all check modules — this triggers @check decorators and populates the registry
-import app.services.azure.checks  # noqa: E402, F401
 import app.services.aws.checks  # noqa: E402, F401
-
+import app.services.azure.checks  # noqa: E402, F401
 
 # ── Evaluation orchestration ─────────────────────────────────────────
 
@@ -110,9 +106,7 @@ async def evaluate_all(
     controls_by_code = {c.code: c for c in result.scalars().all()}
 
     # Load assets for this account
-    result = await db.execute(
-        select(Asset).where(Asset.cloud_account_id == cloud_account_id)
-    )
+    result = await db.execute(select(Asset).where(Asset.cloud_account_id == cloud_account_id))
     assets = result.scalars().all()
 
     # Batch-load all existing eval findings for this account to avoid N+1 queries.
@@ -124,9 +118,7 @@ async def evaluate_all(
             Finding.dedup_key.like("eval:%"),
         )
     )
-    existing_findings_by_dedup: dict[str, Finding] = {
-        f.dedup_key: f for f in existing_findings_result.scalars().all()
-    }
+    existing_findings_by_dedup: dict[str, Finding] = {f.dedup_key: f for f in existing_findings_result.scalars().all()}
 
     stats = {
         "assets_evaluated": 0,
@@ -216,9 +208,7 @@ async def evaluate_all(
         score = round((stats["pass_count"] / total) * 100, 1)
         stats["secure_score"] = score
 
-        account_result = await db.execute(
-            select(CloudAccount).where(CloudAccount.id == cloud_account_id)
-        )
+        account_result = await db.execute(select(CloudAccount).where(CloudAccount.id == cloud_account_id))
         account = account_result.scalar_one_or_none()
         if account:
             metadata = dict(account.metadata_ or {})

@@ -1,4 +1,5 @@
 """Unit tests for SQL Server/Database checks."""
+
 from __future__ import annotations
 
 import uuid

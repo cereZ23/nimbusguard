@@ -8,12 +8,12 @@ from sqlalchemy import select
 
 from app.deps import DB, AdminUser, CurrentUser
 from app.exceptions import ConflictError
-from app.rate_limit import limiter
-from app.services.audit import record_audit
 from app.models.cloud_account import CloudAccount
 from app.models.scan import Scan
+from app.rate_limit import limiter
 from app.schemas.common import ApiResponse
 from app.schemas.scans import ScanCreate, ScanResponse
+from app.services.audit import record_audit
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -65,6 +65,7 @@ async def create_scan(request: Request, body: ScanCreate, db: DB, user: AdminUse
 
     # Dispatch Celery task
     from app.worker.tasks import run_scan
+
     run_scan.delay(str(scan.id))
 
     logger.info("Scan created: %s for account %s", scan.id, body.cloud_account_id)
@@ -74,9 +75,7 @@ async def create_scan(request: Request, body: ScanCreate, db: DB, user: AdminUse
 @router.get("/{scan_id}", response_model=ApiResponse[ScanResponse])
 async def get_scan(scan_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     result = await db.execute(
-        select(Scan)
-        .join(CloudAccount)
-        .where(Scan.id == scan_id, CloudAccount.tenant_id == user.tenant_id)
+        select(Scan).join(CloudAccount).where(Scan.id == scan_id, CloudAccount.tenant_id == user.tenant_id)
     )
     scan = result.scalar_one_or_none()
     if scan is None:

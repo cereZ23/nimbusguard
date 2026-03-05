@@ -1,4 +1,5 @@
 """Unit tests for AWS EC2 checks (CIS-AWS-05, 06)."""
+
 from __future__ import annotations
 
 import uuid
@@ -26,16 +27,12 @@ class TestCheckIMDSv2:
     """CIS-AWS-05: EC2 instances must require IMDSv2."""
 
     def test_pass_when_required(self):
-        asset = _make_asset({
-            "MetadataOptions": {"HttpTokens": "required"}
-        })
+        asset = _make_asset({"MetadataOptions": {"HttpTokens": "required"}})
         result = check_imdsv2(asset)
         assert result.status == "pass"
 
     def test_fail_when_optional(self):
-        asset = _make_asset({
-            "MetadataOptions": {"HttpTokens": "optional"}
-        })
+        asset = _make_asset({"MetadataOptions": {"HttpTokens": "optional"}})
         result = check_imdsv2(asset)
         assert result.status == "fail"
 

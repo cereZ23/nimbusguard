@@ -3,6 +3,7 @@
 Uses Security Hub, AWS Config, and direct AWS service APIs (S3, EC2, IAM, RDS,
 Lambda, etc.) to build an asset inventory and collect security findings.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -21,7 +22,7 @@ from app.models.evidence import Evidence
 from app.models.finding import Finding
 from app.models.scan import Scan
 from app.services.credentials import decrypt_credentials
-from app.services.normalizer import build_control_map, match_control
+from app.services.normalizer import build_control_map
 
 logger = logging.getLogger(__name__)
 
@@ -104,16 +105,12 @@ class AwsCollector:
         return self.stats
 
     async def _get_account(self) -> CloudAccount:
-        result = await self.db.execute(
-            select(CloudAccount).where(CloudAccount.id == self.scan.cloud_account_id)
-        )
+        result = await self.db.execute(select(CloudAccount).where(CloudAccount.id == self.scan.cloud_account_id))
         return result.scalar_one()
 
     async def _load_asset_map(self, account_id) -> dict[str, Asset]:
         """Pre-load all assets for this account into a provider_id -> Asset map."""
-        result = await self.db.execute(
-            select(Asset).where(Asset.cloud_account_id == account_id)
-        )
+        result = await self.db.execute(select(Asset).where(Asset.cloud_account_id == account_id))
         return {a.provider_id: a for a in result.scalars().all()}
 
     def _build_clients(self, account: CloudAccount) -> None:
@@ -123,10 +120,6 @@ class AwsCollector:
         creds = decrypt_credentials(account.credential_ref)
         self._region = creds.get("region", "us-east-1")
         self._account_id = account.provider_account_id
-
-        session_kwargs: dict[str, str] = {
-            "region_name": self._region,
-        }
 
         role_arn = creds.get("role_arn")
         external_id = creds.get("external_id")
@@ -178,9 +171,7 @@ class AwsCollector:
 
     async def _run_sync(self, func, *args, **kwargs):
         """Run a sync boto3 call in a thread executor."""
-        return await self._loop.run_in_executor(
-            None, partial(func, *args, **kwargs)
-        )
+        return await self._loop.run_in_executor(None, partial(func, *args, **kwargs))
 
     # ── Inventory Collection ─────────────────────────────────────────
 
@@ -249,9 +240,7 @@ class AwsCollector:
 
         return asset
 
-    async def _collect_s3_buckets(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_s3_buckets(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect S3 buckets with security-relevant properties."""
         try:
             s3_client = self._get_client("s3")
@@ -267,7 +256,8 @@ class AwsCollector:
                 props.update(await self._get_bucket_properties(s3_client, bucket_name))
 
                 self._upsert_asset(
-                    account, asset_map,
+                    account,
+                    asset_map,
                     provider_id=arn,
                     name=bucket_name,
                     resource_type="aws.s3.bucket",
@@ -285,12 +275,8 @@ class AwsCollector:
 
         # Public access block
         try:
-            pab = await self._run_sync(
-                s3_client.get_public_access_block, Bucket=bucket_name
-            )
-            props["PublicAccessBlockConfiguration"] = pab.get(
-                "PublicAccessBlockConfiguration", {}
-            )
+            pab = await self._run_sync(s3_client.get_public_access_block, Bucket=bucket_name)
+            props["PublicAccessBlockConfiguration"] = pab.get("PublicAccessBlockConfiguration", {})
         except s3_client.exceptions.NoSuchPublicAccessBlockConfiguration:
             props["PublicAccessBlockConfiguration"] = {}
         except Exception:
@@ -298,29 +284,21 @@ class AwsCollector:
 
         # Encryption
         try:
-            enc = await self._run_sync(
-                s3_client.get_bucket_encryption, Bucket=bucket_name
-            )
-            props["ServerSideEncryptionConfiguration"] = enc.get(
-                "ServerSideEncryptionConfiguration", {}
-            )
+            enc = await self._run_sync(s3_client.get_bucket_encryption, Bucket=bucket_name)
+            props["ServerSideEncryptionConfiguration"] = enc.get("ServerSideEncryptionConfiguration", {})
         except Exception:
             props["ServerSideEncryptionConfiguration"] = {}
 
         # Versioning
         try:
-            ver = await self._run_sync(
-                s3_client.get_bucket_versioning, Bucket=bucket_name
-            )
+            ver = await self._run_sync(s3_client.get_bucket_versioning, Bucket=bucket_name)
             props["Versioning"] = {"Status": ver.get("Status", "")}
         except Exception:
             props["Versioning"] = {}
 
         # Logging
         try:
-            log = await self._run_sync(
-                s3_client.get_bucket_logging, Bucket=bucket_name
-            )
+            log = await self._run_sync(s3_client.get_bucket_logging, Bucket=bucket_name)
             props["LoggingEnabled"] = log.get("LoggingEnabled", {})
         except Exception:
             props["LoggingEnabled"] = {}
@@ -330,17 +308,13 @@ class AwsCollector:
     async def _get_bucket_tags(self, s3_client, bucket_name: str) -> dict:
         """Get tags for an S3 bucket."""
         try:
-            response = await self._run_sync(
-                s3_client.get_bucket_tagging, Bucket=bucket_name
-            )
+            response = await self._run_sync(s3_client.get_bucket_tagging, Bucket=bucket_name)
             tag_set = response.get("TagSet", [])
             return {tag["Key"]: tag["Value"] for tag in tag_set}
         except Exception:
             return {}
 
-    async def _collect_ec2_instances(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_ec2_instances(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect EC2 instances with pagination."""
         try:
             ec2_client = self._get_client("ec2")
@@ -350,10 +324,7 @@ class AwsCollector:
                 for reservation in page.get("Reservations", []):
                     for instance in reservation.get("Instances", []):
                         instance_id = instance.get("InstanceId", "")
-                        arn = (
-                            f"arn:aws:ec2:{self._region}:{self._account_id}"
-                            f":instance/{instance_id}"
-                        )
+                        arn = f"arn:aws:ec2:{self._region}:{self._account_id}:instance/{instance_id}"
                         name = ""
                         tags_dict = {}
                         for tag in instance.get("Tags", []):
@@ -365,7 +336,8 @@ class AwsCollector:
                         props = _sanitize_for_json(instance)
 
                         self._upsert_asset(
-                            account, asset_map,
+                            account,
+                            asset_map,
                             provider_id=arn,
                             name=name or instance_id,
                             resource_type="aws.ec2.instance",
@@ -377,9 +349,7 @@ class AwsCollector:
         except Exception:
             logger.warning("Failed to collect EC2 instances", exc_info=True)
 
-    async def _collect_security_groups(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_security_groups(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect EC2 security groups."""
         try:
             ec2_client = self._get_client("ec2")
@@ -388,10 +358,7 @@ class AwsCollector:
             async for page in self._paginate(paginator):
                 for sg in page.get("SecurityGroups", []):
                     sg_id = sg.get("GroupId", "")
-                    arn = (
-                        f"arn:aws:ec2:{self._region}:{self._account_id}"
-                        f":security-group/{sg_id}"
-                    )
+                    arn = f"arn:aws:ec2:{self._region}:{self._account_id}:security-group/{sg_id}"
                     tags_dict = {}
                     name = sg.get("GroupName", sg_id)
                     for tag in sg.get("Tags", []):
@@ -400,7 +367,8 @@ class AwsCollector:
                             name = tag["Value"]
 
                     self._upsert_asset(
-                        account, asset_map,
+                        account,
+                        asset_map,
                         provider_id=arn,
                         name=name,
                         resource_type="aws.ec2.security-group",
@@ -412,9 +380,7 @@ class AwsCollector:
         except Exception:
             logger.warning("Failed to collect security groups", exc_info=True)
 
-    async def _collect_ebs_volumes(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_ebs_volumes(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect EBS volumes."""
         try:
             ec2_client = self._get_client("ec2")
@@ -423,10 +389,7 @@ class AwsCollector:
             async for page in self._paginate(paginator):
                 for vol in page.get("Volumes", []):
                     vol_id = vol.get("VolumeId", "")
-                    arn = (
-                        f"arn:aws:ec2:{self._region}:{self._account_id}"
-                        f":volume/{vol_id}"
-                    )
+                    arn = f"arn:aws:ec2:{self._region}:{self._account_id}:volume/{vol_id}"
                     tags_dict = {}
                     name = vol_id
                     for tag in vol.get("Tags", []):
@@ -435,7 +398,8 @@ class AwsCollector:
                             name = tag["Value"]
 
                     self._upsert_asset(
-                        account, asset_map,
+                        account,
+                        asset_map,
                         provider_id=arn,
                         name=name,
                         resource_type="aws.ec2.volume",
@@ -447,9 +411,7 @@ class AwsCollector:
         except Exception:
             logger.warning("Failed to collect EBS volumes", exc_info=True)
 
-    async def _collect_vpcs(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_vpcs(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect VPCs with flow log status."""
         try:
             ec2_client = self._get_client("ec2")
@@ -457,9 +419,7 @@ class AwsCollector:
 
             for vpc in response.get("Vpcs", []):
                 vpc_id = vpc.get("VpcId", "")
-                arn = (
-                    f"arn:aws:ec2:{self._region}:{self._account_id}:vpc/{vpc_id}"
-                )
+                arn = f"arn:aws:ec2:{self._region}:{self._account_id}:vpc/{vpc_id}"
                 tags_dict = {}
                 name = vpc_id
                 for tag in vpc.get("Tags", []):
@@ -475,14 +435,13 @@ class AwsCollector:
                         ec2_client.describe_flow_logs,
                         Filters=[{"Name": "resource-id", "Values": [vpc_id]}],
                     )
-                    props["FlowLogs"] = _sanitize_for_json(
-                        fl_response.get("FlowLogs", [])
-                    )
+                    props["FlowLogs"] = _sanitize_for_json(fl_response.get("FlowLogs", []))
                 except Exception:
                     props["FlowLogs"] = []
 
                 self._upsert_asset(
-                    account, asset_map,
+                    account,
+                    asset_map,
                     provider_id=arn,
                     name=name,
                     resource_type="aws.ec2.vpc",
@@ -494,9 +453,7 @@ class AwsCollector:
         except Exception:
             logger.warning("Failed to collect VPCs", exc_info=True)
 
-    async def _collect_iam_users(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_iam_users(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect IAM users with security-relevant properties."""
         try:
             iam_client = self._get_client("iam")
@@ -510,9 +467,7 @@ class AwsCollector:
 
                     # Check for login profile (console access)
                     try:
-                        await self._run_sync(
-                            iam_client.get_login_profile, UserName=user_name
-                        )
+                        await self._run_sync(iam_client.get_login_profile, UserName=user_name)
                         props["HasLoginProfile"] = True
                     except iam_client.exceptions.NoSuchEntityException:
                         props["HasLoginProfile"] = False
@@ -521,39 +476,30 @@ class AwsCollector:
 
                     # List MFA devices
                     try:
-                        mfa_response = await self._run_sync(
-                            iam_client.list_mfa_devices, UserName=user_name
-                        )
-                        props["MFADevices"] = _sanitize_for_json(
-                            mfa_response.get("MFADevices", [])
-                        )
+                        mfa_response = await self._run_sync(iam_client.list_mfa_devices, UserName=user_name)
+                        props["MFADevices"] = _sanitize_for_json(mfa_response.get("MFADevices", []))
                     except Exception:
                         props["MFADevices"] = []
 
                     # List access keys
                     try:
-                        ak_response = await self._run_sync(
-                            iam_client.list_access_keys, UserName=user_name
-                        )
-                        props["AccessKeys"] = _sanitize_for_json(
-                            ak_response.get("AccessKeyMetadata", [])
-                        )
+                        ak_response = await self._run_sync(iam_client.list_access_keys, UserName=user_name)
+                        props["AccessKeys"] = _sanitize_for_json(ak_response.get("AccessKeyMetadata", []))
                     except Exception:
                         props["AccessKeys"] = []
 
                     # Get user tags
                     tags_dict = {}
                     try:
-                        tags_response = await self._run_sync(
-                            iam_client.list_user_tags, UserName=user_name
-                        )
+                        tags_response = await self._run_sync(iam_client.list_user_tags, UserName=user_name)
                         for tag in tags_response.get("Tags", []):
                             tags_dict[tag["Key"]] = tag["Value"]
                     except Exception:
                         pass
 
                     self._upsert_asset(
-                        account, asset_map,
+                        account,
+                        asset_map,
                         provider_id=arn,
                         name=user_name,
                         resource_type="aws.iam.user",
@@ -565,9 +511,7 @@ class AwsCollector:
         except Exception:
             logger.warning("Failed to collect IAM users", exc_info=True)
 
-    async def _collect_iam_account_summary(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_iam_account_summary(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect IAM account summary (for root MFA check)."""
         try:
             iam_client = self._get_client("iam")
@@ -576,7 +520,8 @@ class AwsCollector:
 
             arn = f"arn:aws:iam::{self._account_id}:account-summary"
             self._upsert_asset(
-                account, asset_map,
+                account,
+                asset_map,
                 provider_id=arn,
                 name="IAM Account Summary",
                 resource_type="aws.iam.account-summary",
@@ -587,9 +532,7 @@ class AwsCollector:
         except Exception:
             logger.warning("Failed to collect IAM account summary", exc_info=True)
 
-    async def _collect_iam_password_policy(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_iam_password_policy(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect IAM password policy."""
         try:
             iam_client = self._get_client("iam")
@@ -598,7 +541,8 @@ class AwsCollector:
 
             arn = f"arn:aws:iam::{self._account_id}:password-policy"
             self._upsert_asset(
-                account, asset_map,
+                account,
+                asset_map,
                 provider_id=arn,
                 name="IAM Password Policy",
                 resource_type="aws.iam.password-policy",
@@ -611,7 +555,8 @@ class AwsCollector:
             logger.info("No custom IAM password policy found (or permission denied)")
             arn = f"arn:aws:iam::{self._account_id}:password-policy"
             self._upsert_asset(
-                account, asset_map,
+                account,
+                asset_map,
                 provider_id=arn,
                 name="IAM Password Policy",
                 resource_type="aws.iam.password-policy",
@@ -629,9 +574,7 @@ class AwsCollector:
                 },
             )
 
-    async def _collect_rds_instances(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_rds_instances(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect RDS DB instances."""
         try:
             rds_client = self._get_client("rds")
@@ -650,7 +593,8 @@ class AwsCollector:
                         tags_dict[tag["Key"]] = tag["Value"]
 
                     self._upsert_asset(
-                        account, asset_map,
+                        account,
+                        asset_map,
                         provider_id=arn,
                         name=db_id,
                         resource_type="aws.rds.instance",
@@ -662,17 +606,13 @@ class AwsCollector:
         except Exception:
             logger.warning("Failed to collect RDS instances", exc_info=True)
 
-    async def _collect_lambda_functions(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_lambda_functions(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect Lambda functions."""
         try:
             lambda_client = self._get_client("lambda")
             kwargs: dict[str, Any] = {}
             while True:
-                response = await self._run_sync(
-                    lambda_client.list_functions, **kwargs
-                )
+                response = await self._run_sync(lambda_client.list_functions, **kwargs)
 
                 for func in response.get("Functions", []):
                     func_name = func.get("FunctionName", "")
@@ -685,9 +625,7 @@ class AwsCollector:
 
                     # Get resource policy
                     try:
-                        policy_response = await self._run_sync(
-                            lambda_client.get_policy, FunctionName=func_name
-                        )
+                        policy_response = await self._run_sync(lambda_client.get_policy, FunctionName=func_name)
                         policy_str = policy_response.get("Policy", "")
                         if policy_str:
                             props["Policy"] = json.loads(policy_str)
@@ -698,7 +636,8 @@ class AwsCollector:
                     tags_dict = func.get("Tags", {}) or {}
 
                     self._upsert_asset(
-                        account, asset_map,
+                        account,
+                        asset_map,
                         provider_id=arn,
                         name=func_name,
                         resource_type="aws.lambda.function",
@@ -715,9 +654,7 @@ class AwsCollector:
         except Exception:
             logger.warning("Failed to collect Lambda functions", exc_info=True)
 
-    async def _collect_cloudtrail_trails(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_cloudtrail_trails(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect CloudTrail trails."""
         try:
             ct_client = self._get_client("cloudtrail")
@@ -734,15 +671,14 @@ class AwsCollector:
 
                 # Get trail status (is it logging?)
                 try:
-                    status_response = await self._run_sync(
-                        ct_client.get_trail_status, Name=arn
-                    )
+                    status_response = await self._run_sync(ct_client.get_trail_status, Name=arn)
                     props["IsLogging"] = status_response.get("IsLogging", False)
                 except Exception:
                     props["IsLogging"] = False
 
                 self._upsert_asset(
-                    account, asset_map,
+                    account,
+                    asset_map,
                     provider_id=arn,
                     name=trail_name,
                     resource_type="aws.cloudtrail.trail",
@@ -754,9 +690,7 @@ class AwsCollector:
         except Exception:
             logger.warning("Failed to collect CloudTrail trails", exc_info=True)
 
-    async def _collect_guardduty_detectors(
-        self, account: CloudAccount, asset_map: dict[str, Asset]
-    ) -> None:
+    async def _collect_guardduty_detectors(self, account: CloudAccount, asset_map: dict[str, Asset]) -> None:
         """Collect GuardDuty detectors."""
         try:
             gd_client = self._get_client("guardduty")
@@ -767,7 +701,8 @@ class AwsCollector:
                 # Create a synthetic asset representing "no GuardDuty"
                 arn = f"arn:aws:guardduty:{self._region}:{self._account_id}:detector/none"
                 self._upsert_asset(
-                    account, asset_map,
+                    account,
+                    asset_map,
                     provider_id=arn,
                     name="GuardDuty (not enabled)",
                     resource_type="aws.guardduty.detector",
@@ -779,18 +714,14 @@ class AwsCollector:
 
             for detector_id in detector_ids:
                 try:
-                    detector = await self._run_sync(
-                        gd_client.get_detector, DetectorId=detector_id
-                    )
-                    arn = (
-                        f"arn:aws:guardduty:{self._region}:{self._account_id}"
-                        f":detector/{detector_id}"
-                    )
+                    detector = await self._run_sync(gd_client.get_detector, DetectorId=detector_id)
+                    arn = f"arn:aws:guardduty:{self._region}:{self._account_id}:detector/{detector_id}"
                     props = _sanitize_for_json(detector)
                     props["DetectorId"] = detector_id
 
                     self._upsert_asset(
-                        account, asset_map,
+                        account,
+                        asset_map,
                         provider_id=arn,
                         name=f"GuardDuty Detector {detector_id}",
                         resource_type="aws.guardduty.detector",
@@ -799,9 +730,7 @@ class AwsCollector:
                         raw_properties=props,
                     )
                 except Exception:
-                    logger.warning(
-                        "Failed to get GuardDuty detector %s", detector_id, exc_info=True
-                    )
+                    logger.warning("Failed to get GuardDuty detector %s", detector_id, exc_info=True)
 
         except Exception:
             logger.warning("Failed to collect GuardDuty detectors", exc_info=True)
@@ -825,9 +754,7 @@ class AwsCollector:
                 Finding.dedup_key.like("aws:%"),
             )
         )
-        findings_by_dedup: dict[str, Finding] = {
-            f.dedup_key: f for f in existing_findings_result.scalars().all()
-        }
+        findings_by_dedup: dict[str, Finding] = {f.dedup_key: f for f in existing_findings_result.scalars().all()}
 
         filters = {
             "RecordState": [{"Value": "ACTIVE", "Comparison": "EQUALS"}],
@@ -851,9 +778,7 @@ class AwsCollector:
 
                 for sh_finding in response.get("Findings", []):
                     self.stats["security_hub_findings"] += 1
-                    self._process_security_hub_finding(
-                        sh_finding, account, control_map, findings_by_dedup
-                    )
+                    self._process_security_hub_finding(sh_finding, account, control_map, findings_by_dedup)
 
                 next_token = response.get("NextToken")
                 if not next_token:
@@ -880,9 +805,7 @@ class AwsCollector:
         """Process a single Security Hub finding."""
         finding_id = sh_finding.get("Id", "")
         title = sh_finding.get("Title", "")
-        severity_label = (
-            sh_finding.get("Severity", {}).get("Label", "MEDIUM").upper()
-        )
+        severity_label = sh_finding.get("Severity", {}).get("Label", "MEDIUM").upper()
         severity = _SEVERITY_MAP.get(severity_label, "medium")
 
         # Determine status
@@ -979,9 +902,7 @@ class AwsCollector:
                 if next_token:
                     kwargs["NextToken"] = next_token
 
-                response = await self._run_sync(
-                    config_client.describe_compliance_by_config_rule, **kwargs
-                )
+                response = await self._run_sync(config_client.describe_compliance_by_config_rule, **kwargs)
 
                 for rule_compliance in response.get("ComplianceByConfigRules", []):
                     self.stats["config_compliance_rules"] += 1
@@ -989,9 +910,7 @@ class AwsCollector:
                     compliance = rule_compliance.get("Compliance", {})
                     compliance_type = compliance.get("ComplianceType", "")
 
-                    logger.debug(
-                        "Config rule %s: %s", rule_name, compliance_type
-                    )
+                    logger.debug("Config rule %s: %s", rule_name, compliance_type)
 
                 next_token = response.get("NextToken")
                 if not next_token:

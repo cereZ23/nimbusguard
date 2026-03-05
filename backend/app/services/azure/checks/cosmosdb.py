@@ -1,4 +1,5 @@
 """Cosmos DB checks (CIS-AZ-35, 36, 81, 82)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

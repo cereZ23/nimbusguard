@@ -1,4 +1,5 @@
 """EBS volume checks (CIS-AWS-17)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset
@@ -17,7 +18,5 @@ def check_encryption(asset: Asset) -> EvalResult:
             "Encrypted": encrypted,
             "KmsKeyId": kms_key_id or None,
         },
-        description="EBS volume is encrypted"
-        if encrypted
-        else "EBS volume is NOT encrypted -- enable encryption",
+        description="EBS volume is encrypted" if encrypted else "EBS volume is NOT encrypted -- enable encryption",
     )

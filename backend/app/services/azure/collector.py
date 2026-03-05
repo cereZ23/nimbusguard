@@ -67,17 +67,13 @@ class AzureCollector:
         return self.stats
 
     async def _get_account(self) -> CloudAccount:
-        result = await self.db.execute(
-            select(CloudAccount).where(CloudAccount.id == self.scan.cloud_account_id)
-        )
+        result = await self.db.execute(select(CloudAccount).where(CloudAccount.id == self.scan.cloud_account_id))
         account = result.scalar_one()
         return account
 
     async def _load_asset_map(self, account_id) -> dict[str, Asset]:
         """Pre-load all assets for this account into a provider_id -> Asset map."""
-        result = await self.db.execute(
-            select(Asset).where(Asset.cloud_account_id == account_id)
-        )
+        result = await self.db.execute(select(Asset).where(Asset.cloud_account_id == account_id))
         return {a.provider_id: a for a in result.scalars().all()}
 
     async def _collect_inventory(
@@ -152,7 +148,7 @@ class AzureCollector:
         )
 
         try:
-            from azure.identity import get_bearer_token_provider
+            from azure.identity import get_bearer_token_provider  # noqa: F401
         except ImportError:
             # Fallback: get token directly
             token = credential.get_token("https://management.azure.com/.default")
@@ -185,11 +181,7 @@ class AzureCollector:
         self, client: ResourceGraphClient, subscription_id: str, account: CloudAccount
     ) -> None:
         """Query flow logs and patch matching NSG assets with flowLogs data."""
-        query = (
-            "resources "
-            "| where type =~ 'microsoft.network/networkwatchers/flowlogs' "
-            "| project id, name, properties"
-        )
+        query = "resources | where type =~ 'microsoft.network/networkwatchers/flowlogs' | project id, name, properties"
         skip_token = None
 
         while True:
@@ -211,11 +203,13 @@ class AzureCollector:
                 if nsg_asset and nsg_asset.raw_properties is not None:
                     raw = dict(nsg_asset.raw_properties)
                     flow_logs = raw.get("flowLogs", [])
-                    flow_logs.append({
-                        "id": row.get("id"),
-                        "enabled": props.get("enabled", False),
-                        "retentionPolicy": props.get("retentionPolicy"),
-                    })
+                    flow_logs.append(
+                        {
+                            "id": row.get("id"),
+                            "enabled": props.get("enabled", False),
+                            "retentionPolicy": props.get("retentionPolicy"),
+                        }
+                    )
                     raw["flowLogs"] = flow_logs
                     nsg_asset.raw_properties = raw
 
@@ -333,15 +327,9 @@ class AzureCollector:
                 Finding.dedup_key.like("azure:%"),
             )
         )
-        findings_by_dedup: dict[str, Finding] = {
-            f.dedup_key: f for f in existing_findings_result.scalars().all()
-        }
+        findings_by_dedup: dict[str, Finding] = {f.dedup_key: f for f in existing_findings_result.scalars().all()}
 
-        query = (
-            "securityresources "
-            "| where type == 'microsoft.security/assessments' "
-            "| project id, name, properties"
-        )
+        query = "securityresources | where type == 'microsoft.security/assessments' | project id, name, properties"
         skip_token = None
 
         while True:

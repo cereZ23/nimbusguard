@@ -25,10 +25,9 @@ class TestConnectionRequest(BaseModel):
             if not all([self.tenant_id, self.client_id, self.client_secret, self.subscription_id]):
                 msg = "Azure requires tenant_id, client_id, client_secret, and subscription_id"
                 raise ValueError(msg)
-        elif self.provider == "aws":
-            if not all([self.access_key_id, self.secret_access_key]):
-                msg = "AWS requires access_key_id and secret_access_key"
-                raise ValueError(msg)
+        elif self.provider == "aws" and not all([self.access_key_id, self.secret_access_key]):
+            msg = "AWS requires access_key_id and secret_access_key"
+            raise ValueError(msg)
         return self
 
 

@@ -5,7 +5,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import case, cast, func, or_, select, Date
+from sqlalchemy import Date, case, cast, func, or_, select
 
 from app.deps import DB, CurrentUser
 from app.models.asset import Asset
@@ -61,9 +61,7 @@ async def list_custom_dashboards(db: DB, user: CurrentUser) -> dict:
     response_model=ApiResponse[CustomDashboardResponse],
     status_code=status.HTTP_201_CREATED,
 )
-async def create_custom_dashboard(
-    body: CustomDashboardCreate, db: DB, user: CurrentUser
-) -> dict:
+async def create_custom_dashboard(body: CustomDashboardCreate, db: DB, user: CurrentUser) -> dict:
     """Create a new custom dashboard."""
     # Validate widget types
     for widget_item in body.layout:
@@ -130,9 +128,7 @@ async def update_custom_dashboard(
 
 
 @router.delete("/{dashboard_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_custom_dashboard(
-    dashboard_id: uuid.UUID, db: DB, user: CurrentUser
-) -> None:
+async def delete_custom_dashboard(dashboard_id: uuid.UUID, db: DB, user: CurrentUser) -> None:
     """Delete a custom dashboard owned by the current user."""
     dashboard = await _get_owned_dashboard(db, dashboard_id, user)
     await db.delete(dashboard)
@@ -140,9 +136,7 @@ async def delete_custom_dashboard(
 
 
 @router.get("/{dashboard_id}/data", response_model=ApiResponse[DashboardDataResponse])
-async def get_dashboard_widget_data(
-    dashboard_id: uuid.UUID, db: DB, user: CurrentUser
-) -> dict:
+async def get_dashboard_widget_data(dashboard_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     """Batch-fetch data for all widgets in a dashboard."""
     result = await db.execute(
         select(CustomDashboard).where(
@@ -156,9 +150,7 @@ async def get_dashboard_widget_data(
     )
     dashboard = result.scalar_one_or_none()
     if dashboard is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard not found")
 
     tenant_id = user.tenant_id
     widgets_data: list[WidgetData] = []
@@ -178,14 +170,10 @@ async def get_dashboard_widget_data(
     for item in dashboard.layout:
         widget_type = item["widget"]
         config = item.get("config", {})
-        data = await _fetch_widget_data(
-            db, tenant_id, widget_type, config, findings_agg, assets_data
-        )
+        data = await _fetch_widget_data(db, tenant_id, widget_type, config, findings_agg, assets_data)
         widgets_data.append(WidgetData(widget=widget_type, data=data))
 
-    response = DashboardDataResponse(
-        dashboard_id=dashboard.id, widgets=widgets_data
-    )
+    response = DashboardDataResponse(dashboard_id=dashboard.id, widgets=widgets_data)
     return {"data": response, "error": None, "meta": None}
 
 
@@ -194,9 +182,7 @@ async def get_dashboard_widget_data(
 # ---------------------------------------------------------------------------
 
 
-async def _get_owned_dashboard(
-    db: DB, dashboard_id: uuid.UUID, user: CurrentUser
-) -> CustomDashboard:
+async def _get_owned_dashboard(db: DB, dashboard_id: uuid.UUID, user: CurrentUser) -> CustomDashboard:
     result = await db.execute(
         select(CustomDashboard).where(
             CustomDashboard.id == dashboard_id,
@@ -206,15 +192,11 @@ async def _get_owned_dashboard(
     )
     dashboard = result.scalar_one_or_none()
     if dashboard is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard not found")
     return dashboard
 
 
-async def _unset_default_dashboards(
-    db: DB, tenant_id: uuid.UUID, user_id: uuid.UUID
-) -> None:
+async def _unset_default_dashboards(db: DB, tenant_id: uuid.UUID, user_id: uuid.UUID) -> None:
     """Clear is_default flag on all dashboards for a user."""
     result = await db.execute(
         select(CustomDashboard).where(
@@ -233,17 +215,9 @@ async def _fetch_findings_aggregate(db: DB, tenant_id: uuid.UUID) -> tuple:
             select(
                 func.count(Finding.id).label("total"),
                 func.count(case((Finding.status == "fail", 1))).label("fail_total"),
-                func.count(
-                    case(((Finding.status == "fail") & (Finding.severity == "high"), 1))
-                ).label("high"),
-                func.count(
-                    case(
-                        ((Finding.status == "fail") & (Finding.severity == "medium"), 1)
-                    )
-                ).label("medium"),
-                func.count(
-                    case(((Finding.status == "fail") & (Finding.severity == "low"), 1))
-                ).label("low"),
+                func.count(case(((Finding.status == "fail") & (Finding.severity == "high"), 1))).label("high"),
+                func.count(case(((Finding.status == "fail") & (Finding.severity == "medium"), 1))).label("medium"),
+                func.count(case(((Finding.status == "fail") & (Finding.severity == "low"), 1))).label("low"),
             )
             .join(CloudAccount)
             .where(CloudAccount.tenant_id == tenant_id)
@@ -251,9 +225,7 @@ async def _fetch_findings_aggregate(db: DB, tenant_id: uuid.UUID) -> tuple:
     ).one()
 
 
-async def _fetch_assets_data(
-    db: DB, tenant_id: uuid.UUID
-) -> tuple[int, dict[str, int]]:
+async def _fetch_assets_data(db: DB, tenant_id: uuid.UUID) -> tuple[int, dict[str, int]]:
     type_rows = (
         await db.execute(
             select(Asset.resource_type, func.count(Asset.id).label("cnt"))
@@ -335,9 +307,7 @@ async def _widget_secure_score(db: DB, tenant_id: uuid.UUID) -> dict:
     return {"score": secure_score}
 
 
-async def _widget_top_failing_controls(
-    db: DB, tenant_id: uuid.UUID, config: dict
-) -> list[dict]:
+async def _widget_top_failing_controls(db: DB, tenant_id: uuid.UUID, config: dict) -> list[dict]:
     limit = min(config.get("limit", 10), 20)
     control_rows = (
         await db.execute(
@@ -368,19 +338,21 @@ async def _widget_top_failing_controls(
     ]
 
 
-async def _widget_recent_findings(
-    db: DB, tenant_id: uuid.UUID, config: dict
-) -> list[dict]:
+async def _widget_recent_findings(db: DB, tenant_id: uuid.UUID, config: dict) -> list[dict]:
     limit = min(config.get("limit", 5), 20)
     rows = (
-        await db.execute(
-            select(Finding)
-            .join(CloudAccount, CloudAccount.id == Finding.cloud_account_id)
-            .where(CloudAccount.tenant_id == tenant_id, Finding.status == "fail")
-            .order_by(Finding.first_detected_at.desc())
-            .limit(limit)
+        (
+            await db.execute(
+                select(Finding)
+                .join(CloudAccount, CloudAccount.id == Finding.cloud_account_id)
+                .where(CloudAccount.tenant_id == tenant_id, Finding.status == "fail")
+                .order_by(Finding.first_detected_at.desc())
+                .limit(limit)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [
         {
             "id": str(r.id),
@@ -411,9 +383,7 @@ async def _widget_compliance_score(db: DB, tenant_id: uuid.UUID) -> dict:
     return {"score": score, "total": total, "passing": pass_count}
 
 
-async def _widget_findings_trend(
-    db: DB, tenant_id: uuid.UUID, config: dict
-) -> list[dict]:
+async def _widget_findings_trend(db: DB, tenant_id: uuid.UUID, config: dict) -> list[dict]:
     days = min(config.get("days", 30), 365)
     since = datetime.now(UTC) - timedelta(days=days)
     date_col = cast(Finding.first_detected_at, Date)
@@ -436,6 +406,4 @@ async def _widget_findings_trend(
             .order_by(date_col)
         )
     ).all()
-    return [
-        {"date": str(r[0]), "high": r[1], "medium": r[2], "low": r[3]} for r in rows
-    ]
+    return [{"date": str(r[0]), "high": r[1], "medium": r[2], "low": r[3]} for r in rows]

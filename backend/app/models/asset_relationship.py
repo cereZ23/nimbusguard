@@ -44,12 +44,8 @@ class AssetRelationship(Base, UUIDPrimaryKey, TimestampMixin):
     )
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, default=dict)
 
-    source_asset: Mapped[Asset] = relationship(
-        foreign_keys=[source_asset_id], lazy="noload"
-    )
-    target_asset: Mapped[Asset] = relationship(
-        foreign_keys=[target_asset_id], lazy="noload"
-    )
+    source_asset: Mapped[Asset] = relationship(foreign_keys=[source_asset_id], lazy="noload")
+    target_asset: Mapped[Asset] = relationship(foreign_keys=[target_asset_id], lazy="noload")
 
 
 from app.models.asset import Asset  # noqa: E402

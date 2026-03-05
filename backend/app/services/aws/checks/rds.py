@@ -1,4 +1,5 @@
 """RDS checks (CIS-AWS-13, 14, 15)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

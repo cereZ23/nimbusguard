@@ -214,9 +214,7 @@ async def list_accounts(
 
     query = select(CloudAccount).where(CloudAccount.tenant_id == user.tenant_id)
     total = (
-        await db.execute(
-            select(func.count(CloudAccount.id)).where(CloudAccount.tenant_id == user.tenant_id)
-        )
+        await db.execute(select(func.count(CloudAccount.id)).where(CloudAccount.tenant_id == user.tenant_id))
     ).scalar() or 0
 
     result = await db.execute(query.offset((page - 1) * size).limit(size))
@@ -270,9 +268,7 @@ async def delete_account(account_id: uuid.UUID, db: DB, user: AdminUser) -> None
 
 
 @router.put("/{account_id}/schedule", response_model=ApiResponse[CloudAccountResponse])
-async def update_schedule(
-    account_id: uuid.UUID, body: CloudAccountUpdate, db: DB, user: AdminUser
-) -> dict:
+async def update_schedule(account_id: uuid.UUID, body: CloudAccountUpdate, db: DB, user: AdminUser) -> dict:
     result = await db.execute(
         select(CloudAccount).where(
             CloudAccount.id == account_id,

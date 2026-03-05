@@ -6,6 +6,7 @@ Coverage:
   Bulk-waive — success, empty IDs, missing/empty reason, tenant isolation, auth guard,
                idempotency (already-waived findings are skipped)
 """
+
 from __future__ import annotations
 
 import uuid
@@ -18,7 +19,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.asset import Asset
 from app.models.control import Control
 from app.models.finding import Finding
-
 
 # ── Shared helpers ────────────────────────────────────────────────────
 
@@ -80,16 +80,12 @@ async def _create_finding(db: AsyncSession, account_id: str) -> str:
 
 
 @pytest.mark.asyncio
-async def test_get_timeline_empty(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_get_timeline_empty(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     """A brand-new finding has no timeline events."""
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
 
-    res = await client.get(
-        f"/api/v1/findings/{finding_id}/timeline", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{finding_id}/timeline", headers=auth_headers)
 
     assert res.status_code == 200
     body = res.json()
@@ -98,9 +94,7 @@ async def test_get_timeline_empty(
 
 
 @pytest.mark.asyncio
-async def test_get_timeline_after_comment(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_get_timeline_after_comment(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     """Adding a comment records a 'commented' timeline event visible on the timeline."""
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
@@ -113,9 +107,7 @@ async def test_get_timeline_after_comment(
     )
     assert comment_res.status_code == 201
 
-    res = await client.get(
-        f"/api/v1/findings/{finding_id}/timeline", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{finding_id}/timeline", headers=auth_headers)
     assert res.status_code == 200
 
     events = res.json()["data"]
@@ -149,9 +141,7 @@ async def test_get_timeline_returns_events_newest_first(
         json={"content": "Second comment"},
     )
 
-    res = await client.get(
-        f"/api/v1/findings/{finding_id}/timeline", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{finding_id}/timeline", headers=auth_headers)
     assert res.status_code == 200
 
     events = res.json()["data"]
@@ -162,9 +152,7 @@ async def test_get_timeline_returns_events_newest_first(
 
 
 @pytest.mark.asyncio
-async def test_get_timeline_event_schema(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_get_timeline_event_schema(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     """Each timeline event has the required fields from FindingEventResponse."""
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
@@ -175,9 +163,7 @@ async def test_get_timeline_event_schema(
         json={"content": "Schema check comment"},
     )
 
-    res = await client.get(
-        f"/api/v1/findings/{finding_id}/timeline", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{finding_id}/timeline", headers=auth_headers)
     assert res.status_code == 200
 
     event = res.json()["data"][0]
@@ -191,14 +177,10 @@ async def test_get_timeline_event_schema(
 
 
 @pytest.mark.asyncio
-async def test_get_timeline_not_found(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_get_timeline_not_found(client: AsyncClient, auth_headers: dict) -> None:
     """Returns 404 for a finding that does not exist."""
     non_existent_id = str(uuid.uuid4())
-    res = await client.get(
-        f"/api/v1/findings/{non_existent_id}/timeline", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{non_existent_id}/timeline", headers=auth_headers)
     assert res.status_code == 404
 
 
@@ -237,9 +219,7 @@ async def test_get_timeline_tenant_isolation(
 
 
 @pytest.mark.asyncio
-async def test_get_timeline_requires_auth(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_get_timeline_requires_auth(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     """Unauthenticated request to timeline returns 401."""
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
@@ -254,9 +234,7 @@ async def test_get_timeline_requires_auth(
 
 
 @pytest.mark.asyncio
-async def test_bulk_waive_success(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_bulk_waive_success(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     """Valid bulk-waive request creates Exception_ records and returns correct counts."""
     account_id = await _create_account(client, auth_headers)
     finding_id_1 = await _create_finding(db, account_id)
@@ -281,9 +259,7 @@ async def test_bulk_waive_success(
 
 
 @pytest.mark.asyncio
-async def test_bulk_waive_records_timeline_events(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_bulk_waive_records_timeline_events(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     """Each waived finding gets a 'waiver_requested' timeline event."""
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
@@ -297,9 +273,7 @@ async def test_bulk_waive_records_timeline_events(
         },
     )
 
-    res = await client.get(
-        f"/api/v1/findings/{finding_id}/timeline", headers=auth_headers
-    )
+    res = await client.get(f"/api/v1/findings/{finding_id}/timeline", headers=auth_headers)
     assert res.status_code == 200
 
     events = res.json()["data"]
@@ -310,9 +284,7 @@ async def test_bulk_waive_records_timeline_events(
 
 
 @pytest.mark.asyncio
-async def test_bulk_waive_skips_already_waived(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_bulk_waive_skips_already_waived(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     """Findings with an existing active exception are skipped (not duplicated)."""
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
@@ -370,9 +342,7 @@ async def test_bulk_waive_mixed_new_and_already_waived(
 
 
 @pytest.mark.asyncio
-async def test_bulk_waive_empty_ids(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_bulk_waive_empty_ids(client: AsyncClient, auth_headers: dict) -> None:
     """Submitting an empty finding_ids list returns 400."""
     res = await client.post(
         "/api/v1/findings/bulk-waive",
@@ -384,9 +354,7 @@ async def test_bulk_waive_empty_ids(
 
 
 @pytest.mark.asyncio
-async def test_bulk_waive_missing_reason(
-    client: AsyncClient, auth_headers: dict, db: AsyncSession
-) -> None:
+async def test_bulk_waive_missing_reason(client: AsyncClient, auth_headers: dict, db: AsyncSession) -> None:
     """Request body without the 'reason' field fails Pydantic validation (422)."""
     account_id = await _create_account(client, auth_headers)
     finding_id = await _create_finding(db, account_id)
@@ -400,9 +368,7 @@ async def test_bulk_waive_missing_reason(
 
 
 @pytest.mark.asyncio
-async def test_bulk_waive_missing_finding_ids(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_bulk_waive_missing_finding_ids(client: AsyncClient, auth_headers: dict) -> None:
     """Request body without the 'finding_ids' field fails Pydantic validation (422)."""
     res = await client.post(
         "/api/v1/findings/bulk-waive",
@@ -413,9 +379,7 @@ async def test_bulk_waive_missing_finding_ids(
 
 
 @pytest.mark.asyncio
-async def test_bulk_waive_invalid_finding_id_format(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_bulk_waive_invalid_finding_id_format(client: AsyncClient, auth_headers: dict) -> None:
     """Non-UUID values in finding_ids fail Pydantic validation (422)."""
     res = await client.post(
         "/api/v1/findings/bulk-waive",
@@ -474,9 +438,7 @@ async def test_bulk_waive_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_bulk_waive_nonexistent_finding_ids(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_bulk_waive_nonexistent_finding_ids(client: AsyncClient, auth_headers: dict) -> None:
     """Finding IDs that do not exist in the tenant produce processed=0 (silent skip).
 
     This is the same behaviour as the tenant isolation case: the endpoint

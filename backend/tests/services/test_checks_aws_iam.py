@@ -1,4 +1,5 @@
 """Unit tests for AWS IAM checks (CIS-AWS-09, 10, 11, 12)."""
+
 from __future__ import annotations
 
 import uuid
@@ -31,16 +32,12 @@ class TestCheckRootMfa:
     """CIS-AWS-09: Root account must have MFA enabled."""
 
     def test_pass_when_mfa_enabled(self):
-        asset = _make_asset("aws.iam.account-summary", {
-            "SummaryMap": {"AccountMFAEnabled": 1}
-        })
+        asset = _make_asset("aws.iam.account-summary", {"SummaryMap": {"AccountMFAEnabled": 1}})
         result = check_root_mfa(asset)
         assert result.status == "pass"
 
     def test_fail_when_mfa_disabled(self):
-        asset = _make_asset("aws.iam.account-summary", {
-            "SummaryMap": {"AccountMFAEnabled": 0}
-        })
+        asset = _make_asset("aws.iam.account-summary", {"SummaryMap": {"AccountMFAEnabled": 0}})
         result = check_root_mfa(asset)
         assert result.status == "fail"
 
@@ -59,26 +56,35 @@ class TestCheckUserMfa:
     """CIS-AWS-10: IAM users with console access must have MFA enabled."""
 
     def test_pass_when_mfa_enabled(self):
-        asset = _make_asset("aws.iam.user", {
-            "HasLoginProfile": True,
-            "MFADevices": [{"SerialNumber": "arn:aws:iam::123456789012:mfa/user"}],
-        })
+        asset = _make_asset(
+            "aws.iam.user",
+            {
+                "HasLoginProfile": True,
+                "MFADevices": [{"SerialNumber": "arn:aws:iam::123456789012:mfa/user"}],
+            },
+        )
         result = check_user_mfa(asset)
         assert result.status == "pass"
 
     def test_fail_when_console_access_no_mfa(self):
-        asset = _make_asset("aws.iam.user", {
-            "HasLoginProfile": True,
-            "MFADevices": [],
-        })
+        asset = _make_asset(
+            "aws.iam.user",
+            {
+                "HasLoginProfile": True,
+                "MFADevices": [],
+            },
+        )
         result = check_user_mfa(asset)
         assert result.status == "fail"
 
     def test_pass_when_no_console_access(self):
-        asset = _make_asset("aws.iam.user", {
-            "HasLoginProfile": False,
-            "MFADevices": [],
-        })
+        asset = _make_asset(
+            "aws.iam.user",
+            {
+                "HasLoginProfile": False,
+                "MFADevices": [],
+            },
+        )
         result = check_user_mfa(asset)
         assert result.status == "pass"
 
@@ -93,28 +99,34 @@ class TestCheckPasswordPolicy:
     """CIS-AWS-11: IAM password policy must meet CIS requirements."""
 
     def test_pass_when_compliant(self):
-        asset = _make_asset("aws.iam.password-policy", {
-            "MinimumPasswordLength": 14,
-            "RequireSymbols": True,
-            "RequireNumbers": True,
-            "RequireUppercaseCharacters": True,
-            "RequireLowercaseCharacters": True,
-            "MaxPasswordAge": 90,
-            "PasswordReusePrevention": 24,
-        })
+        asset = _make_asset(
+            "aws.iam.password-policy",
+            {
+                "MinimumPasswordLength": 14,
+                "RequireSymbols": True,
+                "RequireNumbers": True,
+                "RequireUppercaseCharacters": True,
+                "RequireLowercaseCharacters": True,
+                "MaxPasswordAge": 90,
+                "PasswordReusePrevention": 24,
+            },
+        )
         result = check_password_policy(asset)
         assert result.status == "pass"
 
     def test_fail_when_short_password(self):
-        asset = _make_asset("aws.iam.password-policy", {
-            "MinimumPasswordLength": 8,
-            "RequireSymbols": True,
-            "RequireNumbers": True,
-            "RequireUppercaseCharacters": True,
-            "RequireLowercaseCharacters": True,
-            "MaxPasswordAge": 90,
-            "PasswordReusePrevention": 24,
-        })
+        asset = _make_asset(
+            "aws.iam.password-policy",
+            {
+                "MinimumPasswordLength": 8,
+                "RequireSymbols": True,
+                "RequireNumbers": True,
+                "RequireUppercaseCharacters": True,
+                "RequireLowercaseCharacters": True,
+                "MaxPasswordAge": 90,
+                "PasswordReusePrevention": 24,
+            },
+        )
         result = check_password_policy(asset)
         assert result.status == "fail"
 
@@ -134,25 +146,35 @@ class TestCheckAccessKeyRotation:
 
     def test_pass_when_key_recent(self):
         recent_date = (datetime.now(UTC) - timedelta(days=30)).isoformat()
-        asset = _make_asset("aws.iam.user", {
-            "AccessKeys": [{
-                "AccessKeyId": "AKIAIOSFODNN7EXAMPLE",
-                "Status": "Active",
-                "CreateDate": recent_date,
-            }]
-        })
+        asset = _make_asset(
+            "aws.iam.user",
+            {
+                "AccessKeys": [
+                    {
+                        "AccessKeyId": "AKIAIOSFODNN7EXAMPLE",
+                        "Status": "Active",
+                        "CreateDate": recent_date,
+                    }
+                ]
+            },
+        )
         result = check_access_key_rotation(asset)
         assert result.status == "pass"
 
     def test_fail_when_key_stale(self):
         old_date = (datetime.now(UTC) - timedelta(days=120)).isoformat()
-        asset = _make_asset("aws.iam.user", {
-            "AccessKeys": [{
-                "AccessKeyId": "AKIAIOSFODNN7EXAMPLE",
-                "Status": "Active",
-                "CreateDate": old_date,
-            }]
-        })
+        asset = _make_asset(
+            "aws.iam.user",
+            {
+                "AccessKeys": [
+                    {
+                        "AccessKeyId": "AKIAIOSFODNN7EXAMPLE",
+                        "Status": "Active",
+                        "CreateDate": old_date,
+                    }
+                ]
+            },
+        )
         result = check_access_key_rotation(asset)
         assert result.status == "fail"
 
@@ -168,12 +190,17 @@ class TestCheckAccessKeyRotation:
 
     def test_pass_when_key_inactive(self):
         old_date = (datetime.now(UTC) - timedelta(days=120)).isoformat()
-        asset = _make_asset("aws.iam.user", {
-            "AccessKeys": [{
-                "AccessKeyId": "AKIAIOSFODNN7EXAMPLE",
-                "Status": "Inactive",
-                "CreateDate": old_date,
-            }]
-        })
+        asset = _make_asset(
+            "aws.iam.user",
+            {
+                "AccessKeys": [
+                    {
+                        "AccessKeyId": "AKIAIOSFODNN7EXAMPLE",
+                        "Status": "Inactive",
+                        "CreateDate": old_date,
+                    }
+                ]
+            },
+        )
         result = check_access_key_rotation(asset)
         assert result.status == "pass"

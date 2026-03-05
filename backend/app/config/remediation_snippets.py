@@ -49,8 +49,12 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     }
   }
 }""",
-        "azure_cli": "az storage account update --name <storage-account> --resource-group <rg> --encryption-key-source Microsoft.Keyvault --encryption-key-vault <vault-uri> --encryption-key-name <key-name>",
-        "description": "Enable customer-managed key (CMK) encryption for the storage account using a Key Vault key.",
+        "azure_cli": (
+            "az storage account update --name <storage-account> --resource-group <rg>"
+            " --encryption-key-source Microsoft.Keyvault"
+            " --encryption-key-vault <vault-uri> --encryption-key-name <key-name>"
+        ),
+        "description": ("Enable customer-managed key (CMK) encryption for the storage account using a Key Vault key."),
     },
     "CIS-AZ-09": {
         "terraform": """resource "azurerm_storage_account" "example" {
@@ -96,7 +100,9 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     allowBlobPublicAccess: false
   }
 }""",
-        "azure_cli": "az storage account update --name <storage-account> --resource-group <rg> --allow-blob-public-access false",
+        "azure_cli": (
+            "az storage account update --name <storage-account> --resource-group <rg> --allow-blob-public-access false"
+        ),
         "description": "Disable blob public access on the storage account to prevent anonymous reads.",
     },
     "CIS-AZ-72": {
@@ -119,7 +125,9 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     minimumTlsVersion: 'TLS1_2'
   }
 }""",
-        "azure_cli": "az storage account update --name <storage-account> --resource-group <rg> --min-tls-version TLS1_2",
+        "azure_cli": (
+            "az storage account update --name <storage-account> --resource-group <rg> --min-tls-version TLS1_2"
+        ),
         "description": "Set the minimum TLS version to 1.2 on the storage account.",
     },
     "CIS-AZ-73": {
@@ -148,8 +156,21 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     }
   }
 }""",
-        "azure_cli": "# Infrastructure encryption must be enabled at storage account creation time.\n# It cannot be toggled after creation. Recreate the account with:\naz storage account create --name <storage-account> --resource-group <rg> --location <location> --sku Standard_LRS --require-infrastructure-encryption true",
-        "description": "Enable infrastructure encryption (double encryption) on the storage account. Note: this must be set at creation time.",
+        "azure_cli": (
+            "# Infrastructure encryption must be enabled at storage"
+            " account creation time.\n"
+            "# It cannot be toggled after creation."
+            " Recreate the account with:\n"
+            "az storage account create --name <storage-account>"
+            " --resource-group <rg> --location <location>"
+            " --sku Standard_LRS"
+            " --require-infrastructure-encryption true"
+        ),
+        "description": (
+            "Enable infrastructure encryption (double encryption)"
+            " on the storage account."
+            " Note: this must be set at creation time."
+        ),
     },
     # ── NSG / Network ───────────────────────────────────────────────────
     "CIS-AZ-06": {
@@ -200,7 +221,12 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     }
   }
 }""",
-        "azure_cli": "az network watcher flow-log create --name <flow-log-name> --nsg <nsg-id> --resource-group <rg> --storage-account <storage-id> --enabled true --retention 90 --workspace <workspace-id>",
+        "azure_cli": (
+            "az network watcher flow-log create --name <flow-log-name>"
+            " --nsg <nsg-id> --resource-group <rg>"
+            " --storage-account <storage-id> --enabled true"
+            " --retention 90 --workspace <workspace-id>"
+        ),
         "description": "Enable NSG flow logs with retention and traffic analytics for network monitoring.",
     },
     "CIS-AZ-13": {
@@ -230,7 +256,13 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     destinationAddressPrefix: '*'
   }
 }""",
-        "azure_cli": "az network nsg rule create --resource-group <rg> --nsg-name <nsg> --name DenySSHFromInternet --priority 100 --direction Inbound --access Deny --protocol Tcp --destination-port-ranges 22 --source-address-prefixes Internet",
+        "azure_cli": (
+            "az network nsg rule create --resource-group <rg>"
+            " --nsg-name <nsg> --name DenySSHFromInternet"
+            " --priority 100 --direction Inbound --access Deny"
+            " --protocol Tcp --destination-port-ranges 22"
+            " --source-address-prefixes Internet"
+        ),
         "description": "Deny inbound SSH (port 22) from the internet by adding a high-priority deny rule to the NSG.",
     },
     "CIS-AZ-14": {
@@ -260,7 +292,13 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     destinationAddressPrefix: '*'
   }
 }""",
-        "azure_cli": "az network nsg rule create --resource-group <rg> --nsg-name <nsg> --name DenyRDPFromInternet --priority 101 --direction Inbound --access Deny --protocol Tcp --destination-port-ranges 3389 --source-address-prefixes Internet",
+        "azure_cli": (
+            "az network nsg rule create --resource-group <rg>"
+            " --nsg-name <nsg> --name DenyRDPFromInternet"
+            " --priority 101 --direction Inbound --access Deny"
+            " --protocol Tcp --destination-port-ranges 3389"
+            " --source-address-prefixes Internet"
+        ),
         "description": "Deny inbound RDP (port 3389) from the internet by adding a high-priority deny rule to the NSG.",
     },
     # ── Web App / App Service ───────────────────────────────────────────
@@ -365,7 +403,11 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
   }
 }""",
         "azure_cli": "az keyvault update --name <vault-name> --resource-group <rg> --enable-purge-protection true",
-        "description": "Enable purge protection on the Key Vault. This is irreversible once enabled and prevents permanent deletion during the retention period.",
+        "description": (
+            "Enable purge protection on the Key Vault."
+            " This is irreversible once enabled and prevents"
+            " permanent deletion during the retention period."
+        ),
     },
     "CIS-AZ-17": {
         "terraform": """resource "azurerm_key_vault" "example" {
@@ -392,8 +434,16 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     softDeleteRetentionInDays: 90
   }
 }""",
-        "azure_cli": "# Soft delete is enforced by default on new Key Vaults.\n# For older vaults, enable it:\naz keyvault update --name <vault-name> --resource-group <rg> --enable-soft-delete true",
-        "description": "Enable soft delete on the Key Vault to allow recovery of deleted keys, secrets, and certificates.",
+        "azure_cli": (
+            "# Soft delete is enforced by default on new"
+            " Key Vaults.\n"
+            "# For older vaults, enable it:\n"
+            "az keyvault update --name <vault-name>"
+            " --resource-group <rg> --enable-soft-delete true"
+        ),
+        "description": (
+            "Enable soft delete on the Key Vault to allow recovery of deleted keys, secrets, and certificates."
+        ),
     },
     "CIS-AZ-21": {
         "terraform": """resource "azurerm_key_vault" "example" {
@@ -438,8 +488,14 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     }
   }
 }""",
-        "azure_cli": "az keyvault update --name <vault-name> --resource-group <rg> --default-action Deny --bypass AzureServices",
-        "description": "Restrict Key Vault network access by setting the default firewall action to Deny and allowing only specific VNets/IPs.",
+        "azure_cli": (
+            "az keyvault update --name <vault-name> --resource-group <rg> --default-action Deny --bypass AzureServices"
+        ),
+        "description": (
+            "Restrict Key Vault network access by setting the"
+            " default firewall action to Deny and allowing"
+            " only specific VNets/IPs."
+        ),
     },
     # ── SQL Server ──────────────────────────────────────────────────────
     "CIS-AZ-27": {
@@ -496,8 +552,8 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
     ]
   }
 }""",
-        "azure_cli": "az sql server update --name <sql-server> --resource-group <rg> --enable-public-network false",
-        "description": "Disable public network access on the SQL Server and use private endpoints for connectivity.",
+        "azure_cli": ("az sql server update --name <sql-server> --resource-group <rg> --enable-public-network false"),
+        "description": ("Disable public network access on the SQL Server and use private endpoints for connectivity."),
     },
     "CIS-AZ-28": {
         "terraform": """resource "azurerm_mssql_server" "example" {
@@ -563,8 +619,10 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
     ]
   }
 }""",
-        "azure_cli": "az cosmosdb update --name <cosmosdb-account> --resource-group <rg> --enable-public-network false",
-        "description": "Disable public network access on the Cosmos DB account and use private endpoints.",
+        "azure_cli": (
+            "az cosmosdb update --name <cosmosdb-account> --resource-group <rg> --enable-public-network false"
+        ),
+        "description": ("Disable public network access on the Cosmos DB account and use private endpoints."),
     },
     # ── ACR ─────────────────────────────────────────────────────────────
     "CIS-AZ-39": {
@@ -586,7 +644,11 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
   }
 }""",
         "azure_cli": "az acr update --name <registry-name> --resource-group <rg> --admin-enabled false",
-        "description": "Disable the admin user on the container registry. Use Azure AD service principals or managed identity for authentication.",
+        "description": (
+            "Disable the admin user on the container registry."
+            " Use Azure AD service principals or managed"
+            " identity for authentication."
+        ),
     },
     # ── AKS ─────────────────────────────────────────────────────────────
     "CIS-AZ-41": {
@@ -636,8 +698,17 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
     ]
   }
 }""",
-        "azure_cli": "# RBAC cannot be enabled on an existing non-RBAC cluster.\n# For new clusters:\naz aks create --name <aks-cluster> --resource-group <rg> --enable-rbac --enable-aad --enable-azure-rbac",
-        "description": "Enable Kubernetes RBAC on the AKS cluster with Azure AD integration for centralized access control.",
+        "azure_cli": (
+            "# RBAC cannot be enabled on an existing"
+            " non-RBAC cluster.\n"
+            "# For new clusters:\n"
+            "az aks create --name <aks-cluster>"
+            " --resource-group <rg>"
+            " --enable-rbac --enable-aad --enable-azure-rbac"
+        ),
+        "description": (
+            "Enable Kubernetes RBAC on the AKS cluster with Azure AD integration for centralized access control."
+        ),
     },
     "CIS-AZ-42": {
         "terraform": """resource "azurerm_kubernetes_cluster" "example" {
@@ -682,8 +753,16 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
     ]
   }
 }""",
-        "azure_cli": "# Network policy must be set at cluster creation time:\naz aks create --name <aks-cluster> --resource-group <rg> --network-plugin azure --network-policy calico",
-        "description": "Configure a network policy engine (Azure or Calico) on the AKS cluster to control pod-to-pod traffic.",
+        "azure_cli": (
+            "# Network policy must be set at cluster"
+            " creation time:\n"
+            "az aks create --name <aks-cluster>"
+            " --resource-group <rg>"
+            " --network-plugin azure --network-policy calico"
+        ),
+        "description": (
+            "Configure a network policy engine (Azure or Calico) on the AKS cluster to control pod-to-pod traffic."
+        ),
     },
     # ── Storage soft delete (blob) ──────────────────────────────────────
     "CIS-AZ-75": {
@@ -731,7 +810,15 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01'
     }
   }
 }""",
-        "azure_cli": "az storage account blob-service-properties update --account-name <storage-account> --resource-group <rg> --enable-versioning true --enable-delete-retention true --delete-retention-days 30 --enable-container-delete-retention true --container-delete-retention-days 30",
+        "azure_cli": (
+            "az storage account blob-service-properties update"
+            " --account-name <storage-account> --resource-group <rg>"
+            " --enable-versioning true"
+            " --enable-delete-retention true"
+            " --delete-retention-days 30"
+            " --enable-container-delete-retention true"
+            " --container-delete-retention-days 30"
+        ),
         "description": "Enable blob versioning and soft delete to protect against accidental deletion.",
     },
     # ── Additional high-value controls ──────────────────────────────────
@@ -766,7 +853,11 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01'
     }
   }
 }""",
-        "azure_cli": "az storage account update --name <storage-account> --resource-group <rg> --default-action Deny --bypass AzureServices",
+        "azure_cli": (
+            "az storage account update --name <storage-account>"
+            " --resource-group <rg>"
+            " --default-action Deny --bypass AzureServices"
+        ),
         "description": "Restrict storage account network access to specific VNets and IP ranges.",
     },
     "CIS-AZ-37": {
@@ -808,7 +899,11 @@ resource sslConfig 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@202
     source: 'user-override'
   }
 }""",
-        "azure_cli": "az postgres flexible-server parameter set --resource-group <rg> --server-name <pg-server> --name require_secure_transport --value on",
+        "azure_cli": (
+            "az postgres flexible-server parameter set"
+            " --resource-group <rg> --server-name <pg-server>"
+            " --name require_secure_transport --value on"
+        ),
         "description": "Enforce SSL/TLS connections on the PostgreSQL flexible server.",
     },
     "CIS-AZ-40": {
@@ -861,7 +956,9 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
   }
 }""",
         "azure_cli": "az acr update --name <registry-name> --resource-group <rg> --public-network-enabled false",
-        "description": "Disable public network access on the container registry. Requires Premium SKU and private endpoints.",
+        "description": (
+            "Disable public network access on the container registry. Requires Premium SKU and private endpoints."
+        ),
     },
     "CIS-AZ-12": {
         "terraform": """resource "azurerm_storage_container" "example" {
@@ -875,7 +972,12 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
     publicAccess: 'None'
   }
 }""",
-        "azure_cli": "az storage container set-permission --name <container-name> --account-name <storage-account> --public-access off",
+        "azure_cli": (
+            "az storage container set-permission"
+            " --name <container-name>"
+            " --account-name <storage-account>"
+            " --public-access off"
+        ),
         "description": "Set blob container access level to private (no anonymous access).",
     },
 }

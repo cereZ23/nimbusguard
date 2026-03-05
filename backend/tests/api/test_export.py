@@ -7,9 +7,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_export_json(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_export_json(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/export/findings",
         headers=auth_headers,
@@ -27,9 +25,7 @@ async def test_export_json(
 
 
 @pytest.mark.asyncio
-async def test_export_csv(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_export_csv(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/export/findings",
         headers=auth_headers,
@@ -45,9 +41,7 @@ async def test_export_csv(
 
 
 @pytest.mark.asyncio
-async def test_export_with_filters(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_export_with_filters(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/export/findings",
         headers=auth_headers,
@@ -78,9 +72,7 @@ async def test_export_empty(client: AsyncClient, auth_headers: dict) -> None:
 
 
 @pytest.mark.asyncio
-async def test_export_pdf(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_export_pdf(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     res = await client.get(
         "/api/v1/export/findings",
         headers=auth_headers,

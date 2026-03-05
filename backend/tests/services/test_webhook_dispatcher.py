@@ -1,11 +1,11 @@
 """Unit tests for the webhook dispatcher service."""
+
 from __future__ import annotations
 
 import hashlib
 import hmac
 import json
 import uuid
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -52,9 +52,7 @@ async def test_dispatch_webhooks_sends_to_matching_event() -> None:
         mock_client.__aexit__ = AsyncMock(return_value=False)
         mock_client_cls.return_value = mock_client
 
-        count = await dispatch_webhooks(
-            mock_db, str(tenant_id), "scan.completed", {"test": True}
-        )
+        count = await dispatch_webhooks(mock_db, str(tenant_id), "scan.completed", {"test": True})
 
     assert count == 1
     mock_client.post.assert_called_once()
@@ -78,9 +76,7 @@ async def test_dispatch_webhooks_skips_non_matching_event() -> None:
         mock_client.__aexit__ = AsyncMock(return_value=False)
         mock_client_cls.return_value = mock_client
 
-        count = await dispatch_webhooks(
-            mock_db, str(tenant_id), "scan.completed", {"test": True}
-        )
+        count = await dispatch_webhooks(mock_db, str(tenant_id), "scan.completed", {"test": True})
 
     assert count == 0
     mock_client.post.assert_not_called()
@@ -135,9 +131,7 @@ async def test_dispatch_webhooks_handles_delivery_failure() -> None:
         mock_client.__aexit__ = AsyncMock(return_value=False)
         mock_client_cls.return_value = mock_client
 
-        count = await dispatch_webhooks(
-            mock_db, str(tenant_id), "scan.completed", {"test": True}
-        )
+        count = await dispatch_webhooks(mock_db, str(tenant_id), "scan.completed", {"test": True})
 
     assert count == 1
     assert wh.last_status_code == 0
@@ -151,9 +145,7 @@ async def test_dispatch_webhooks_no_webhooks() -> None:
     mock_result.scalars.return_value.all.return_value = []
     mock_db.execute.return_value = mock_result
 
-    count = await dispatch_webhooks(
-        mock_db, str(uuid.uuid4()), "scan.completed", {"test": True}
-    )
+    count = await dispatch_webhooks(mock_db, str(uuid.uuid4()), "scan.completed", {"test": True})
     assert count == 0
     mock_db.commit.assert_not_called()
 

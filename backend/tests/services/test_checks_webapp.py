@@ -1,4 +1,5 @@
 """Unit tests for Web App checks."""
+
 from __future__ import annotations
 
 import uuid

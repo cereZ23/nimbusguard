@@ -5,7 +5,6 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
-
 from sqlalchemy.orm import selectinload
 
 from app.deps import DB, AdminUser, CurrentUser
@@ -56,9 +55,7 @@ async def invite_user(body: InviteUserRequest, db: DB, user: AdminUser) -> dict:
 
     # If role_id is provided, validate it belongs to the tenant
     if body.role_id is not None:
-        role_result = await db.execute(
-            select(Role).where(Role.id == body.role_id, Role.tenant_id == user.tenant_id)
-        )
+        role_result = await db.execute(select(Role).where(Role.id == body.role_id, Role.tenant_id == user.tenant_id))
         custom_role = role_result.scalar_one_or_none()
         if custom_role is None:
             raise HTTPException(
@@ -83,12 +80,8 @@ async def invite_user(body: InviteUserRequest, db: DB, user: AdminUser) -> dict:
 
 
 @router.put("/{user_id}/role", response_model=ApiResponse[UserResponse])
-async def update_user_role(
-    user_id: uuid.UUID, body: UpdateRoleRequest, db: DB, user: AdminUser
-) -> dict:
-    result = await db.execute(
-        select(User).where(User.id == user_id, User.tenant_id == user.tenant_id)
-    )
+async def update_user_role(user_id: uuid.UUID, body: UpdateRoleRequest, db: DB, user: AdminUser) -> dict:
+    result = await db.execute(select(User).where(User.id == user_id, User.tenant_id == user.tenant_id))
     target = result.scalar_one_or_none()
     if target is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -101,9 +94,7 @@ async def update_user_role(
 
     # Handle role_id assignment (custom role)
     if body.role_id is not None:
-        role_result = await db.execute(
-            select(Role).where(Role.id == body.role_id, Role.tenant_id == user.tenant_id)
-        )
+        role_result = await db.execute(select(Role).where(Role.id == body.role_id, Role.tenant_id == user.tenant_id))
         custom_role = role_result.scalar_one_or_none()
         if custom_role is None:
             raise HTTPException(
@@ -126,16 +117,17 @@ async def update_user_role(
 
     logger.info(
         "User %s role updated to %s (role_id=%s) by %s",
-        target.email, target.role, target.role_id, user.email,
+        target.email,
+        target.role,
+        target.role_id,
+        user.email,
     )
     return {"data": target, "error": None, "meta": None}
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_user(user_id: uuid.UUID, db: DB, user: AdminUser) -> None:
-    result = await db.execute(
-        select(User).where(User.id == user_id, User.tenant_id == user.tenant_id)
-    )
+    result = await db.execute(select(User).where(User.id == user_id, User.tenant_id == user.tenant_id))
     target = result.scalar_one_or_none()
     if target is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

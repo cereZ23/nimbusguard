@@ -1,4 +1,5 @@
 """AKS (Managed Kubernetes) checks (CIS-AZ-41, 42, 83, 84)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

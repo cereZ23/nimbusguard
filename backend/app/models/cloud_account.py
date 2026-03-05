@@ -32,6 +32,6 @@ class CloudAccount(Base, UUIDPrimaryKey, TimestampMixin):
     scans: Mapped[list[Scan]] = relationship(back_populates="cloud_account", lazy="noload")
 
 
-from app.models.tenant import Tenant  # noqa: E402
 from app.models.asset import Asset  # noqa: E402
 from app.models.scan import Scan  # noqa: E402
+from app.models.tenant import Tenant  # noqa: E402

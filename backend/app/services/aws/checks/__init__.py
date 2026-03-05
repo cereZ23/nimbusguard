@@ -2,6 +2,7 @@
 
 Importing this package registers all check functions in the global CheckRegistry.
 """
+
 from __future__ import annotations
 
 from app.services.aws.checks import (  # noqa: F401

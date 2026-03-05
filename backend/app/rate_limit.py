@@ -1,4 +1,5 @@
 """Rate limiter instance — imported by endpoints and wired in main.py."""
+
 from __future__ import annotations
 
 from slowapi import Limiter

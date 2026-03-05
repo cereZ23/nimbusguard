@@ -1,8 +1,9 @@
 """Slack notifier — sends formatted messages to Slack via incoming webhooks."""
+
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from sqlalchemy import select
@@ -245,9 +246,7 @@ def format_slack_message(event_type: str, payload: dict) -> dict:
     }
 
 
-async def send_slack_notification(
-    webhook_url: str, event_type: str, payload: dict
-) -> bool:
+async def send_slack_notification(webhook_url: str, event_type: str, payload: dict) -> bool:
     """Send a formatted Slack message via incoming webhook.
 
     Returns True if the message was delivered successfully (2xx response).
@@ -309,7 +308,7 @@ async def send_test_slack_notification(webhook_url: str) -> tuple[bool, str]:
                 "elements": [
                     {
                         "type": "mrkdwn",
-                        "text": f"Sent at {datetime.now(timezone.utc).isoformat()}",
+                        "text": f"Sent at {datetime.now(UTC).isoformat()}",
                     }
                 ],
             },

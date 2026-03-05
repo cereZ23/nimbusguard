@@ -30,12 +30,8 @@ class Asset(Base, UUIDPrimaryKey, TimestampMixin):
     region: Mapped[str | None] = mapped_column(String(100), nullable=True)
     tags: Mapped[dict | None] = mapped_column(JSONB, default=dict)
     raw_properties: Mapped[dict | None] = mapped_column(JSONB, default=dict)
-    first_seen_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    last_seen_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     cloud_account: Mapped[CloudAccount] = relationship(back_populates="assets", lazy="noload")
     findings: Mapped[list[Finding]] = relationship(back_populates="asset", lazy="noload")

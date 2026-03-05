@@ -1,4 +1,5 @@
 """Web App / App Service checks (CIS-AZ-10, 23, 24, 25, 26, 67, 68, 69, 70, 71)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset
@@ -13,9 +14,7 @@ def check_https_only(asset: Asset) -> EvalResult:
     return EvalResult(
         status="pass" if https_only else "fail",
         evidence={"httpsOnly": https_only},
-        description="HTTPS Only is enabled"
-        if https_only
-        else "HTTPS Only is NOT enabled — HTTP traffic is allowed",
+        description="HTTPS Only is enabled" if https_only else "HTTPS Only is NOT enabled — HTTP traffic is allowed",
     )
 
 
@@ -120,9 +119,7 @@ def check_http2_enabled(asset: Asset) -> EvalResult:
     return EvalResult(
         status="pass" if http2 else "fail",
         evidence={"siteConfig.http20Enabled": http2},
-        description="HTTP/2 is enabled"
-        if http2
-        else "HTTP/2 is NOT enabled — enable for better performance",
+        description="HTTP/2 is enabled" if http2 else "HTTP/2 is NOT enabled — enable for better performance",
     )
 
 

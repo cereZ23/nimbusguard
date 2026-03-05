@@ -1,4 +1,5 @@
 """Network Security Group checks (CIS-AZ-06, 13, 14)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

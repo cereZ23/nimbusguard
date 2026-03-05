@@ -27,16 +27,8 @@ async def list_assets(
     sort_by: str = Query("name", pattern=r"^(name|resource_type|region|first_seen_at|last_seen_at)$"),
     sort_order: str = Query("asc", pattern=r"^(asc|desc)$"),
 ) -> dict:
-    base = (
-        select(Asset)
-        .join(CloudAccount)
-        .where(CloudAccount.tenant_id == user.tenant_id)
-    )
-    count_base = (
-        select(func.count(Asset.id))
-        .join(CloudAccount)
-        .where(CloudAccount.tenant_id == user.tenant_id)
-    )
+    base = select(Asset).join(CloudAccount).where(CloudAccount.tenant_id == user.tenant_id)
+    count_base = select(func.count(Asset.id)).join(CloudAccount).where(CloudAccount.tenant_id == user.tenant_id)
 
     if search:
         like = f"%{search}%"
@@ -69,9 +61,7 @@ async def list_assets(
 @router.get("/{asset_id}", response_model=ApiResponse[AssetResponse])
 async def get_asset(asset_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     result = await db.execute(
-        select(Asset)
-        .join(CloudAccount)
-        .where(Asset.id == asset_id, CloudAccount.tenant_id == user.tenant_id)
+        select(Asset).join(CloudAccount).where(Asset.id == asset_id, CloudAccount.tenant_id == user.tenant_id)
     )
     asset = result.scalar_one_or_none()
     if asset is None:

@@ -36,9 +36,7 @@ async def test_audit_log_created_on_login(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_audit_log_on_account_create(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_audit_log_on_account_create(client: AsyncClient, auth_headers: dict) -> None:
     """Creating an account should create an audit log entry."""
     await client.post(
         "/api/v1/accounts",
@@ -58,9 +56,7 @@ async def test_audit_log_on_account_create(
 
 
 @pytest.mark.asyncio
-async def test_audit_log_filter_by_action(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_audit_log_filter_by_action(client: AsyncClient, auth_headers: dict) -> None:
     """Should filter audit logs by action."""
     # Create an account (generates audit log)
     await client.post(
@@ -94,9 +90,7 @@ async def test_audit_log_requires_admin(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_audit_log_pagination(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_audit_log_pagination(client: AsyncClient, auth_headers: dict) -> None:
     """Audit logs should support pagination."""
     res = await client.get(
         "/api/v1/audit-logs",

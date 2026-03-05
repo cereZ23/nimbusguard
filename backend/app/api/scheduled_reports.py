@@ -36,11 +36,7 @@ async def list_scheduled_reports(
     """List all scheduled reports for the current tenant."""
     tenant_id = user.tenant_id
 
-    total_q = await db.execute(
-        select(func.count(ScheduledReport.id)).where(
-            ScheduledReport.tenant_id == tenant_id
-        )
-    )
+    total_q = await db.execute(select(func.count(ScheduledReport.id)).where(ScheduledReport.tenant_id == tenant_id))
     total = total_q.scalar() or 0
 
     result = await db.execute(
@@ -53,9 +49,7 @@ async def list_scheduled_reports(
     reports = result.scalars().all()
 
     return ApiResponse(
-        data=[
-            ScheduledReportResponse.model_validate(r) for r in reports
-        ],
+        data=[ScheduledReportResponse.model_validate(r) for r in reports],
         meta=PaginationMeta(total=total, page=page, size=size),
     )
 

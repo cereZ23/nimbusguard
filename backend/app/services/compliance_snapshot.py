@@ -1,4 +1,5 @@
 """Service for capturing and querying compliance score snapshots over time."""
+
 from __future__ import annotations
 
 import logging
@@ -47,9 +48,7 @@ async def capture_compliance_snapshot(
     all_controls = controls_result.scalars().all()
 
     # Load all findings for this tenant (fail/pass with a control)
-    accounts_result = await db.execute(
-        select(CloudAccount.id).where(CloudAccount.tenant_id == tenant_id)
-    )
+    accounts_result = await db.execute(select(CloudAccount.id).where(CloudAccount.tenant_id == tenant_id))
     account_ids = [row[0] for row in accounts_result.all()]
 
     if not account_ids:

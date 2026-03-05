@@ -1,4 +1,5 @@
 """Tests for the normalizer engine — maps provider assessment IDs to CIS-lite controls."""
+
 from __future__ import annotations
 
 import uuid
@@ -213,9 +214,7 @@ async def test_normalize_skips_already_mapped(db: AsyncSession) -> None:
 
 
 def test_extract_assessment_id_from_name() -> None:
-    fake_evidence = SimpleNamespace(
-        snapshot={"name": "my-assess-uuid", "displayName": "Test"}
-    )
+    fake_evidence = SimpleNamespace(snapshot={"name": "my-assess-uuid", "displayName": "Test"})
     fake_finding = SimpleNamespace(evidences=[fake_evidence])
     result = _extract_assessment_id(fake_finding)
     assert result == "my-assess-uuid"
@@ -224,9 +223,7 @@ def test_extract_assessment_id_from_name() -> None:
 def test_extract_assessment_id_from_resource_path() -> None:
     fake_evidence = SimpleNamespace(
         snapshot={
-            "resourceDetails": {
-                "Id": "/subscriptions/x/providers/Microsoft.Security/assessments/abcd-1234/subpath"
-            }
+            "resourceDetails": {"Id": "/subscriptions/x/providers/Microsoft.Security/assessments/abcd-1234/subpath"}
         }
     )
     fake_finding = SimpleNamespace(evidences=[fake_evidence])

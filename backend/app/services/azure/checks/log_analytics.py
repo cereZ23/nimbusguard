@@ -1,4 +1,5 @@
 """Log Analytics workspace checks (CIS-AZ-61, 62)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset
@@ -28,8 +29,6 @@ def check_retention_days(asset: Asset) -> EvalResult:
 def check_cmk_encryption(asset: Asset) -> EvalResult:
     """CIS-AZ-62: Log Analytics workspace should use CMK encryption."""
     props = asset.raw_properties or {}
-    features = props.get("features", {})
-    cmk = features.get("enableDataExport") if isinstance(features, dict) else None
     # Check for cluster-based CMK
     cluster_id = props.get("clusterResourceId")
     # Check direct CMK config

@@ -35,9 +35,7 @@ async def list_custom_frameworks(
     """List custom frameworks for the current tenant."""
     tenant_id = user.tenant_id
 
-    count_q = select(func.count(CustomFramework.id)).where(
-        CustomFramework.tenant_id == tenant_id
-    )
+    count_q = select(func.count(CustomFramework.id)).where(CustomFramework.tenant_id == tenant_id)
     total = (await db.execute(count_q)).scalar() or 0
 
     result = await db.execute(
@@ -69,9 +67,7 @@ async def create_custom_framework(
     """Create a new custom compliance framework (admin only)."""
     # Validate that all referenced control codes exist
     control_codes = [m.control_code for m in body.control_mappings]
-    result = await db.execute(
-        select(Control.code).where(Control.code.in_(control_codes))
-    )
+    result = await db.execute(select(Control.code).where(Control.code.in_(control_codes)))
     existing_codes = {row[0] for row in result.all()}
     invalid_codes = set(control_codes) - existing_codes
     if invalid_codes:
@@ -129,9 +125,7 @@ async def update_custom_framework(
     if body.control_mappings is not None:
         # Validate control codes
         control_codes = [m.control_code for m in body.control_mappings]
-        result = await db.execute(
-            select(Control.code).where(Control.code.in_(control_codes))
-        )
+        result = await db.execute(select(Control.code).where(Control.code.in_(control_codes)))
         existing_codes = {row[0] for row in result.all()}
         invalid_codes = set(control_codes) - existing_codes
         if invalid_codes:

@@ -13,15 +13,9 @@ class SavedFilter(UUIDPrimaryKey, TimestampMixin, Base):
 
     __tablename__ = "saved_filters"
 
-    tenant_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True
-    )
-    user_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
-    )
+    tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    page: Mapped[str] = mapped_column(
-        String(30), nullable=False
-    )  # "findings" | "assets"
+    page: Mapped[str] = mapped_column(String(30), nullable=False)  # "findings" | "assets"
     filters: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

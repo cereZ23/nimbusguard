@@ -1,4 +1,5 @@
 """SSO configuration endpoints -- admin only."""
+
 from __future__ import annotations
 
 import logging
@@ -18,7 +19,6 @@ from app.schemas.sso import (
 )
 from app.services.audit import record_audit
 from app.services.sso import (
-    decrypt_client_secret,
     discover_oidc_config,
     encrypt_client_secret,
 )
@@ -29,9 +29,7 @@ router = APIRouter()
 
 async def _get_sso_config(db: AsyncSession, tenant_id: str) -> SsoConfig | None:
     """Fetch the SSO config for a given tenant."""
-    result = await db.execute(
-        select(SsoConfig).where(SsoConfig.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(SsoConfig).where(SsoConfig.tenant_id == tenant_id))
     return result.scalar_one_or_none()
 
 
@@ -122,9 +120,7 @@ async def patch_sso_config(
 
     update_data = body.model_dump(exclude_unset=True)
     if "client_secret" in update_data and update_data["client_secret"] is not None:
-        update_data["client_secret_encrypted"] = encrypt_client_secret(
-            update_data.pop("client_secret")
-        )
+        update_data["client_secret_encrypted"] = encrypt_client_secret(update_data.pop("client_secret"))
     else:
         update_data.pop("client_secret", None)
 

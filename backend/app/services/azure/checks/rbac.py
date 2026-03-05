@@ -1,4 +1,5 @@
 """RBAC / Role Definition checks (CIS-AZ-03)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset

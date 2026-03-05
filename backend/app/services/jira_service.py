@@ -1,4 +1,5 @@
 """Jira integration service -- create tickets from security findings."""
+
 from __future__ import annotations
 
 import base64
@@ -22,9 +23,7 @@ class JiraClient:
 
     def __init__(self, base_url: str, email: str, api_token: str) -> None:
         self.base_url = base_url.rstrip("/")
-        self.auth_header = base64.b64encode(
-            f"{email}:{api_token}".encode()
-        ).decode()
+        self.auth_header = base64.b64encode(f"{email}:{api_token}".encode()).decode()
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -91,10 +90,7 @@ class JiraClient:
                 headers=self._headers(),
             )
             resp.raise_for_status()
-            return [
-                {"key": p["key"], "name": p["name"]}
-                for p in resp.json()
-            ]
+            return [{"key": p["key"], "name": p["name"]} for p in resp.json()]
 
 
 def _encrypt_token(api_token: str) -> str:
@@ -193,9 +189,7 @@ async def create_finding_ticket(
     asset_name = finding.asset.name if finding.asset else "Unknown resource"
     resource_type = finding.asset.resource_type if finding.asset else ""
     region = finding.asset.region if finding.asset else ""
-    remediation = (
-        finding.control.remediation_hint if finding.control else None
-    )
+    remediation = finding.control.remediation_hint if finding.control else None
 
     summary = f"[{control_code}] {finding.title or control_name} - {asset_name}"
 
@@ -209,14 +203,10 @@ async def create_finding_ticket(
         description_parts.append(f"*Resource Type:* {resource_type}")
     if region:
         description_parts.append(f"*Region:* {region}")
-    description_parts.append(
-        f"*First Detected:* {finding.first_detected_at.strftime('%Y-%m-%d %H:%M UTC')}"
-    )
+    description_parts.append(f"*First Detected:* {finding.first_detected_at.strftime('%Y-%m-%d %H:%M UTC')}")
     if remediation:
         description_parts.append(f"\n*Remediation:*\n{remediation}")
-    description_parts.append(
-        f"\n_Created by CSPM - Finding ID: {finding.id}_"
-    )
+    description_parts.append(f"\n_Created by CSPM - Finding ID: {finding.id}_")
     description = "\n".join(description_parts)
 
     labels = ["cspm", finding.severity, control_code.lower().replace("-", "_")]

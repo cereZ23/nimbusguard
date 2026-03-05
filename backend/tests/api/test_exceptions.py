@@ -7,9 +7,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_create_exception(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_create_exception(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     finding_id = seed_data["finding_id"]
     res = await client.post(
         f"/api/v1/findings/{finding_id}/exception",
@@ -23,9 +21,7 @@ async def test_create_exception(
 
 
 @pytest.mark.asyncio
-async def test_create_exception_finding_not_found(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_exception_finding_not_found(client: AsyncClient, auth_headers: dict) -> None:
     fake_id = str(uuid.uuid4())
     res = await client.post(
         f"/api/v1/findings/{fake_id}/exception",
@@ -36,9 +32,7 @@ async def test_create_exception_finding_not_found(
 
 
 @pytest.mark.asyncio
-async def test_create_exception_conflict(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_create_exception_conflict(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     finding_id = seed_data["finding_id"]
     # First exception
     await client.post(
@@ -56,9 +50,7 @@ async def test_create_exception_conflict(
 
 
 @pytest.mark.asyncio
-async def test_list_exceptions(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_list_exceptions(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     finding_id = seed_data["finding_id"]
     await client.post(
         f"/api/v1/findings/{finding_id}/exception",
@@ -72,9 +64,7 @@ async def test_list_exceptions(
 
 
 @pytest.mark.asyncio
-async def test_approve_exception(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_approve_exception(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     finding_id = seed_data["finding_id"]
     create_res = await client.post(
         f"/api/v1/findings/{finding_id}/exception",
@@ -83,18 +73,14 @@ async def test_approve_exception(
     )
     exc_id = create_res.json()["data"]["id"]
 
-    res = await client.put(
-        f"/api/v1/exceptions/{exc_id}/approve", headers=auth_headers
-    )
+    res = await client.put(f"/api/v1/exceptions/{exc_id}/approve", headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["data"]["status"] == "approved"
     assert res.json()["data"]["approved_by"] is not None
 
 
 @pytest.mark.asyncio
-async def test_reject_exception(
-    client: AsyncClient, auth_headers: dict, seed_data: dict
-) -> None:
+async def test_reject_exception(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
     finding_id = seed_data["finding_id"]
     create_res = await client.post(
         f"/api/v1/findings/{finding_id}/exception",
@@ -103,9 +89,7 @@ async def test_reject_exception(
     )
     exc_id = create_res.json()["data"]["id"]
 
-    res = await client.put(
-        f"/api/v1/exceptions/{exc_id}/reject", headers=auth_headers
-    )
+    res = await client.put(f"/api/v1/exceptions/{exc_id}/reject", headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["data"]["status"] == "rejected"
 

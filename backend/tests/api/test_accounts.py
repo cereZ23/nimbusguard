@@ -69,9 +69,7 @@ async def test_list_accounts(client: AsyncClient, auth_headers: dict) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_accounts_with_pagination(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_list_accounts_with_pagination(client: AsyncClient, auth_headers: dict) -> None:
     # Create 3 accounts
     for i in range(3):
         await client.post(
@@ -85,9 +83,7 @@ async def test_list_accounts_with_pagination(
             },
         )
 
-    res = await client.get(
-        "/api/v1/accounts", headers=auth_headers, params={"page": 1, "size": 2}
-    )
+    res = await client.get("/api/v1/accounts", headers=auth_headers, params={"page": 1, "size": 2})
     assert res.status_code == 200
     data = res.json()
     assert data["meta"]["total"] == 3
@@ -145,9 +141,7 @@ async def test_delete_account(client: AsyncClient, auth_headers: dict) -> None:
 
 
 @pytest.mark.asyncio
-async def test_tenant_isolation(
-    client: AsyncClient, auth_headers: dict, second_auth_headers: dict
-) -> None:
+async def test_tenant_isolation(client: AsyncClient, auth_headers: dict, second_auth_headers: dict) -> None:
     # Clear cookies to prevent cookie-based auth bleed (Bearer header takes priority)
     client.cookies.clear()
 

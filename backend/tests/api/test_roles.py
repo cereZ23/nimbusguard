@@ -9,6 +9,7 @@ from app.services.permissions import ALL_PERMISSIONS, PERMISSION_CATEGORIES, SYS
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 async def _create_viewer(client: AsyncClient, admin_headers: dict) -> dict[str, str]:
     """Create a viewer user within the admin tenant and return its auth headers."""
     res = await client.post(
@@ -57,6 +58,7 @@ async def _create_custom_role(
 # test_list_permissions
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_list_permissions(client: AsyncClient, auth_headers: dict) -> None:
     """GET /roles/permissions returns all permissions with descriptions and categories."""
@@ -93,6 +95,7 @@ async def test_list_permissions_requires_auth(client: AsyncClient) -> None:
 # test_list_roles_includes_system
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_list_roles_includes_system(client: AsyncClient, auth_headers: dict) -> None:
     """GET /roles always includes built-in system roles (admin + viewer)."""
@@ -126,6 +129,7 @@ async def test_list_roles_requires_auth(client: AsyncClient) -> None:
 # ---------------------------------------------------------------------------
 # test_create_custom_role
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_create_custom_role(client: AsyncClient, auth_headers: dict) -> None:
@@ -162,10 +166,9 @@ async def test_create_custom_role(client: AsyncClient, auth_headers: dict) -> No
 # test_create_role_invalid_permissions
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_create_role_invalid_permissions(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_role_invalid_permissions(client: AsyncClient, auth_headers: dict) -> None:
     """POST /roles with a non-existent permission returns 400."""
     res = await client.post(
         "/api/v1/roles",
@@ -182,9 +185,7 @@ async def test_create_role_invalid_permissions(
 
 
 @pytest.mark.asyncio
-async def test_create_role_empty_permissions_returns_422(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_role_empty_permissions_returns_422(client: AsyncClient, auth_headers: dict) -> None:
     """POST /roles with empty permissions list fails Pydantic validation (422)."""
     res = await client.post(
         "/api/v1/roles",
@@ -198,10 +199,9 @@ async def test_create_role_empty_permissions_returns_422(
 # test_create_role_duplicate_name
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_create_role_duplicate_name(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_role_duplicate_name(client: AsyncClient, auth_headers: dict) -> None:
     """POST /roles with a name that already exists for the tenant returns 409."""
     await _create_custom_role(client, auth_headers, name="Unique Role Name")
 
@@ -218,6 +218,7 @@ async def test_create_role_duplicate_name(
 # ---------------------------------------------------------------------------
 # test_update_role
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_update_role(client: AsyncClient, auth_headers: dict) -> None:
@@ -248,9 +249,7 @@ async def test_update_role(client: AsyncClient, auth_headers: dict) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_role_invalid_permissions(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_update_role_invalid_permissions(client: AsyncClient, auth_headers: dict) -> None:
     """PUT /roles/{id} with invalid permissions returns 400."""
     role = await _create_custom_role(client, auth_headers, name="To Patch Bad Perms")
 
@@ -280,10 +279,9 @@ async def test_update_role_not_found(client: AsyncClient, auth_headers: dict) ->
 # test_update_system_role_blocked
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_update_system_role_blocked(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_update_system_role_blocked(client: AsyncClient, auth_headers: dict) -> None:
     """PUT on a system role returns 400 — system roles are immutable.
 
     The API only exposes *custom* roles (those persisted in the DB).
@@ -292,10 +290,12 @@ async def test_update_system_role_blocked(
     We also persist a custom role flagged as is_system=True directly in the
     DB to cover the explicit 400 guard in the endpoint.
     """
+    import uuid
+
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
     from sqlalchemy.pool import NullPool
+
     from app.models.role import Role
-    import uuid
 
     # Obtain the tenant_id by fetching current user
     me_res = await client.get("/api/v1/auth/me", headers=auth_headers)
@@ -336,6 +336,7 @@ async def test_update_system_role_blocked(
 # test_delete_role
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_delete_role(client: AsyncClient, auth_headers: dict) -> None:
     """DELETE /roles/{id} removes a custom role and returns 204."""
@@ -364,15 +365,16 @@ async def test_delete_role_not_found(client: AsyncClient, auth_headers: dict) ->
 # test_delete_system_role_blocked
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_delete_system_role_blocked(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_delete_system_role_blocked(client: AsyncClient, auth_headers: dict) -> None:
     """DELETE on a DB-persisted system role returns 400."""
+    import uuid
+
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
     from sqlalchemy.pool import NullPool
+
     from app.models.role import Role
-    import uuid
 
     me_res = await client.get("/api/v1/auth/me", headers=auth_headers)
     tenant_id = me_res.json()["data"]["tenant_id"]
@@ -406,10 +408,9 @@ async def test_delete_system_role_blocked(
 # test_create_role_requires_admin
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_create_role_requires_admin(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_create_role_requires_admin(client: AsyncClient, auth_headers: dict) -> None:
     """A viewer user cannot create roles (must get 403)."""
     viewer_headers = await _create_viewer(client, auth_headers)
 
@@ -422,9 +423,7 @@ async def test_create_role_requires_admin(
 
 
 @pytest.mark.asyncio
-async def test_update_role_requires_admin(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_update_role_requires_admin(client: AsyncClient, auth_headers: dict) -> None:
     """A viewer user cannot update roles (must get 403)."""
     role = await _create_custom_role(client, auth_headers, name="Viewer Cannot Update")
     viewer_headers = await _create_viewer(client, auth_headers)
@@ -438,9 +437,7 @@ async def test_update_role_requires_admin(
 
 
 @pytest.mark.asyncio
-async def test_delete_role_requires_admin(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_delete_role_requires_admin(client: AsyncClient, auth_headers: dict) -> None:
     """A viewer user cannot delete roles (must get 403)."""
     role = await _create_custom_role(client, auth_headers, name="Viewer Cannot Delete")
     viewer_headers = await _create_viewer(client, auth_headers)
@@ -456,6 +453,7 @@ async def test_delete_role_requires_admin(
 # test_roles_tenant_isolation
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_roles_tenant_isolation(
     client: AsyncClient,
@@ -465,9 +463,7 @@ async def test_roles_tenant_isolation(
     """Custom roles created by tenant A must not appear in tenant B's listing."""
     # Clear cookies to prevent cookie-based auth bleed (Bearer header takes priority)
     client.cookies.clear()
-    await _create_custom_role(
-        client, auth_headers, name="Tenant A Exclusive Role"
-    )
+    await _create_custom_role(client, auth_headers, name="Tenant A Exclusive Role")
 
     # Clear cookies again before tenant B request
     client.cookies.clear()
@@ -487,9 +483,7 @@ async def test_roles_tenant_b_cannot_delete_tenant_a_role(
     """Tenant B cannot delete a role belonging to tenant A (must get 404)."""
     # Clear cookies to prevent cookie-based auth bleed
     client.cookies.clear()
-    role = await _create_custom_role(
-        client, auth_headers, name="Tenant A Private Role"
-    )
+    role = await _create_custom_role(client, auth_headers, name="Tenant A Private Role")
 
     # Clear cookies again before tenant B request
     client.cookies.clear()

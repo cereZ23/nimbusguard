@@ -7,7 +7,6 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.services.auth import (
     authenticate_user,

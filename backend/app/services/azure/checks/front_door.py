@@ -1,4 +1,5 @@
 """Front Door checks (CIS-AZ-49, 50)."""
+
 from __future__ import annotations
 
 from app.models.asset import Asset
@@ -44,8 +45,6 @@ def check_https_redirect(asset: Asset) -> EvalResult:
                     if str(protocol).lower() == "httpsonly":
                         has_redirect = True
                         break
-    # Also check if all frontend endpoints require HTTPS
-    enforce_https = props.get("enforceCertificateNameCheck", "")
     return EvalResult(
         status="pass" if has_redirect else "fail",
         evidence={"httpsRedirectConfigured": has_redirect},
