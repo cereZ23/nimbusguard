@@ -18,8 +18,8 @@ router = APIRouter()
 async def list_assets(
     db: DB,
     user: CurrentUser,
-    page: int = 1,
-    size: int = 20,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     resource_type: str | None = Query(None),
     region: str | None = Query(None),
     account_id: uuid.UUID | None = Query(None),
@@ -31,9 +31,10 @@ async def list_assets(
     count_base = select(func.count(Asset.id)).join(CloudAccount).where(CloudAccount.tenant_id == user.tenant_id)
 
     if search:
-        like = f"%{search}%"
-        base = base.where(Asset.name.ilike(like))
-        count_base = count_base.where(Asset.name.ilike(like))
+        escaped = search.replace("%", r"\%").replace("_", r"\_")
+        like = f"%{escaped}%"
+        base = base.where(Asset.name.ilike(like, escape="\\"))
+        count_base = count_base.where(Asset.name.ilike(like, escape="\\"))
     if resource_type:
         base = base.where(Asset.resource_type == resource_type)
         count_base = count_base.where(Asset.resource_type == resource_type)

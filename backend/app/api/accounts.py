@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import uuid
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.deps import DB, AdminUser, CurrentUser
@@ -92,7 +92,7 @@ async def _test_azure_connection(body: TestConnectionRequest) -> dict:
             "data": TestConnectionResponse(
                 success=False,
                 resource_count=0,
-                message=str(e),
+                message="Azure connection failed. Check credentials and permissions.",
             ),
             "error": None,
             "meta": None,
@@ -166,7 +166,7 @@ async def _test_aws_connection(body: TestConnectionRequest) -> dict:
             "data": TestConnectionResponse(
                 success=False,
                 resource_count=0,
-                message=str(e),
+                message="AWS connection failed. Check credentials and permissions.",
             ),
             "error": None,
             "meta": None,
@@ -207,8 +207,8 @@ async def create_account(body: CloudAccountCreate, db: DB, user: AdminUser) -> d
 async def list_accounts(
     db: DB,
     user: CurrentUser,
-    page: int = 1,
-    size: int = 20,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
 ) -> dict:
     from sqlalchemy import func
 

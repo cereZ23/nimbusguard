@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import secrets
-import time
 from urllib.parse import urlencode
 
 import httpx
@@ -20,10 +20,7 @@ from app.services.credentials import decrypt_credentials, encrypt_credentials
 
 logger = logging.getLogger(__name__)
 
-# In-memory state store with TTL (max 10 min, max 1000 entries)
 _STATE_TTL = 600  # 10 minutes
-_STATE_MAX_ENTRIES = 1000
-_pending_states: dict[str, dict] = {}
 
 
 def encrypt_client_secret(client_secret: str) -> str:
@@ -35,6 +32,36 @@ def decrypt_client_secret(encrypted: str) -> str:
     """Decrypt client_secret stored in the DB."""
     data = decrypt_credentials(encrypted)
     return data["client_secret"]
+
+
+async def store_state(state: str, data: dict) -> None:
+    """Store SSO state in Redis with TTL. Falls back to warning if Redis unavailable."""
+    try:
+        from app.services.cache import get_redis
+
+        r = await get_redis()
+        key = f"sso_state:{state}"
+        await r.set(key, json.dumps(data), ex=_STATE_TTL)
+    except Exception:
+        logger.error("Failed to store SSO state in Redis — SSO login will fail")
+        raise
+
+
+async def retrieve_and_consume_state(state: str) -> dict | None:
+    """Retrieve and delete state from Redis — single use."""
+    try:
+        from app.services.cache import get_redis
+
+        r = await get_redis()
+        key = f"sso_state:{state}"
+        data = await r.get(key)
+        if data is None:
+            return None
+        await r.delete(key)
+        return json.loads(data)
+    except Exception:
+        logger.error("Failed to retrieve SSO state from Redis")
+        return None
 
 
 async def discover_oidc_config(issuer_url: str, metadata_url: str | None = None) -> dict:
