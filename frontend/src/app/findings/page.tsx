@@ -9,14 +9,7 @@ import {
   useState,
 } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import {
-  ChevronUp,
-  ChevronDown,
-  X,
-  Search,
-  ShieldCheck,
-  CheckSquare,
-} from "lucide-react";
+import { X, Search, ShieldCheck, CheckSquare } from "lucide-react";
 import AppShell from "@/components/layout/app-shell";
 import SeverityBadge from "@/components/ui/severity-badge";
 import StatusBadge from "@/components/ui/status-badge";
@@ -25,6 +18,7 @@ import { TableSkeleton } from "@/components/ui/skeleton";
 import Pagination from "@/components/ui/pagination";
 import FilterPanel from "@/components/ui/filter-panel";
 import type { FilterConfig } from "@/components/ui/filter-panel";
+import SortIndicator from "@/components/ui/sort-indicator";
 import api from "@/lib/api";
 import type { Finding, CloudAccount } from "@/types";
 
@@ -44,36 +38,6 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 // Filter keys that should be cleared on "Clear all"
 const FILTER_KEYS = ["severity", "status", "account_id"] as const;
-
-function SortIndicator({
-  column,
-  active,
-  order,
-}: {
-  column: FindingsSortColumn;
-  active: FindingsSortColumn;
-  order: SortOrder;
-}) {
-  if (column !== active) {
-    return (
-      <span className="ml-1 inline-flex flex-col opacity-30" aria-hidden="true">
-        <ChevronUp className="h-3 w-3 -mb-1" />
-        <ChevronDown className="h-3 w-3" />
-      </span>
-    );
-  }
-  return order === "asc" ? (
-    <ChevronUp
-      className="ml-1 inline h-3.5 w-3.5 text-blue-500"
-      aria-hidden="true"
-    />
-  ) : (
-    <ChevronDown
-      className="ml-1 inline h-3.5 w-3.5 text-blue-500"
-      aria-hidden="true"
-    />
-  );
-}
 
 export default function FindingsPage() {
   return (
@@ -631,9 +595,17 @@ function FindingsContent() {
                     {findings.map((finding, idx) => (
                       <tr
                         key={finding.id}
+                        tabIndex={0}
+                        role="link"
                         onClick={() => router.push(`/findings/${finding.id}`)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            router.push(`/findings/${finding.id}`);
+                          }
+                        }}
                         aria-label={`View finding: ${finding.title}`}
-                        className={`cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
+                        className={`cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset dark:border-gray-700 dark:hover:bg-gray-700/50 ${
                           finding.waived ? "opacity-60" : ""
                         } ${idx % 2 === 1 ? "bg-gray-50/50 dark:bg-gray-800/50" : ""}`}
                       >

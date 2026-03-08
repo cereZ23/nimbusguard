@@ -9,12 +9,13 @@ import {
   useState,
 } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { ChevronUp, ChevronDown, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import AppShell from "@/components/layout/app-shell";
 import ErrorState from "@/components/ui/error-state";
 import FilterPanel, { type FilterConfig } from "@/components/ui/filter-panel";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import Pagination from "@/components/ui/pagination";
+import SortIndicator from "@/components/ui/sort-indicator";
 import api from "@/lib/api";
 import type { Asset, CloudAccount } from "@/types";
 
@@ -25,36 +26,6 @@ type SortOrder = "asc" | "desc";
 const DEFAULT_SORT_BY: AssetsSortColumn = "last_seen_at";
 const DEFAULT_SORT_ORDER: SortOrder = "desc";
 const DEFAULT_SIZE = 20;
-
-function SortIndicator({
-  column,
-  active,
-  order,
-}: {
-  column: AssetsSortColumn;
-  active: AssetsSortColumn;
-  order: SortOrder;
-}) {
-  if (column !== active) {
-    return (
-      <span className="ml-1 inline-flex flex-col opacity-30" aria-hidden="true">
-        <ChevronUp className="h-3 w-3 -mb-1" />
-        <ChevronDown className="h-3 w-3" />
-      </span>
-    );
-  }
-  return order === "asc" ? (
-    <ChevronUp
-      className="ml-1 inline h-3.5 w-3.5 text-blue-500"
-      aria-hidden="true"
-    />
-  ) : (
-    <ChevronDown
-      className="ml-1 inline h-3.5 w-3.5 text-blue-500"
-      aria-hidden="true"
-    />
-  );
-}
 
 export default function AssetsPage() {
   return (
@@ -486,9 +457,17 @@ function AssetsContent() {
                     {assets.map((asset, idx) => (
                       <tr
                         key={asset.id}
+                        tabIndex={0}
+                        role="link"
                         onClick={() => router.push(`/assets/${asset.id}`)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            router.push(`/assets/${asset.id}`);
+                          }
+                        }}
                         aria-label={`View asset: ${asset.name}`}
-                        className={`cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
+                        className={`cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset dark:border-gray-700 dark:hover:bg-gray-700/50 ${
                           idx % 2 === 1
                             ? "bg-gray-50/50 dark:bg-gray-800/50"
                             : ""
