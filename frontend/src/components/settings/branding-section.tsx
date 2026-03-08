@@ -11,7 +11,7 @@ interface BrandingSectionProps {
     React.SetStateAction<{ company_name: string; primary_color: string }>
   >;
   isColorValid: boolean;
-  logoInputRef: React.RefObject<HTMLInputElement>;
+  logoInputRef: React.RefObject<HTMLInputElement | null>;
   handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   logoUploading: boolean;
   logoError: string | null;
