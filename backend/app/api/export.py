@@ -21,6 +21,35 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+EXPORT_MAX_ROWS = 10000
+
+
+def _build_export_query(
+    tenant_id,
+    severity: str | None,
+    finding_status: str | None,
+    account_id: str | None,
+):
+    """Build the base query for export (reused across formats)."""
+    query = (
+        select(Finding)
+        .join(CloudAccount)
+        .where(CloudAccount.tenant_id == tenant_id)
+        .options(
+            selectinload(Finding.asset),
+            selectinload(Finding.control),
+            selectinload(Finding.evidences),
+        )
+    )
+    if severity:
+        query = query.where(Finding.severity == severity)
+    if finding_status:
+        query = query.where(Finding.status == finding_status)
+    if account_id:
+        query = query.where(Finding.cloud_account_id == account_id)
+    return query.order_by(Finding.last_evaluated_at.desc()).limit(EXPORT_MAX_ROWS)
+
+
 @router.get("/findings")
 @limiter.limit("10/minute")
 async def export_findings(
@@ -32,27 +61,8 @@ async def export_findings(
     finding_status: str | None = Query(None, alias="status"),
     account_id: str | None = Query(None),
 ) -> StreamingResponse:
-    tenant_id = user.tenant_id
-
-    query = (
-        select(Finding)
-        .join(CloudAccount)
-        .where(CloudAccount.tenant_id == tenant_id)
-        .options(
-            selectinload(Finding.asset),
-            selectinload(Finding.control),
-            selectinload(Finding.evidences),
-        )
-    )
-
-    if severity:
-        query = query.where(Finding.severity == severity)
-    if finding_status:
-        query = query.where(Finding.status == finding_status)
-    if account_id:
-        query = query.where(Finding.cloud_account_id == account_id)
-
-    result = await db.execute(query.order_by(Finding.last_evaluated_at.desc()))
+    query = _build_export_query(user.tenant_id, severity, finding_status, account_id)
+    result = await db.execute(query)
     findings = result.scalars().all()
 
     if fmt == "csv":
@@ -95,7 +105,7 @@ async def _query_findings_for_siem(
     if date_to:
         query = query.where(Finding.last_evaluated_at <= date_to)
 
-    result = await db.execute(query.order_by(Finding.last_evaluated_at.desc()))
+    result = await db.execute(query.order_by(Finding.last_evaluated_at.desc()).limit(EXPORT_MAX_ROWS))
     return list(result.scalars().all())
 
 
@@ -209,61 +219,56 @@ def _finding_to_dict(f: Finding) -> dict:
     }
 
 
+def _generate_json(findings: list[Finding]):
+    """Yield JSON content in chunks to avoid building the entire payload in memory."""
+    yield '{"findings": [\n'
+    for i, f in enumerate(findings):
+        line = json.dumps(_finding_to_dict(f), default=str)
+        if i > 0:
+            yield ",\n"
+        yield line
+    yield f'\n], "total": {len(findings)}}}\n'
+
+
 def _export_json(findings: list[Finding]) -> StreamingResponse:
-    data = [_finding_to_dict(f) for f in findings]
-    content = json.dumps({"findings": data, "total": len(data)}, indent=2)
     return StreamingResponse(
-        iter([content]),
+        _generate_json(findings),
         media_type="application/json",
         headers={"Content-Disposition": "attachment; filename=findings-export.json"},
     )
 
 
-def _export_csv(findings: list[Finding]) -> StreamingResponse:
+def _generate_csv(findings: list[Finding]):
+    """Yield CSV rows one at a time."""
     output = io.StringIO()
-    headers = [
-        "ID",
-        "Title",
-        "Status",
-        "Severity",
-        "Waived",
-        "First Detected",
-        "Last Evaluated",
-        "Asset Name",
-        "Asset Type",
-        "Asset Region",
-        "Control Code",
-        "Control Name",
-        "Control Severity",
-        "Cloud Account ID",
-    ]
     writer = csv.writer(output)
-    writer.writerow(headers)
+    header = [
+        "ID", "Title", "Status", "Severity", "Waived",
+        "First Detected", "Last Evaluated", "Asset Name",
+        "Asset Type", "Asset Region", "Control Code",
+        "Control Name", "Control Severity", "Cloud Account ID",
+    ]
+    writer.writerow(header)
+    yield output.getvalue()
+    output.seek(0)
+    output.truncate(0)
 
     for f in findings:
         d = _finding_to_dict(f)
-        writer.writerow(
-            [
-                d["id"],
-                d["title"],
-                d["status"],
-                d["severity"],
-                d["waived"],
-                d["first_detected_at"],
-                d["last_evaluated_at"],
-                d["asset_name"],
-                d["asset_type"],
-                d["asset_region"],
-                d["control_code"],
-                d["control_name"],
-                d["control_severity"],
-                d["cloud_account_id"],
-            ]
-        )
+        writer.writerow([
+            d["id"], d["title"], d["status"], d["severity"], d["waived"],
+            d["first_detected_at"], d["last_evaluated_at"], d["asset_name"],
+            d["asset_type"], d["asset_region"], d["control_code"],
+            d["control_name"], d["control_severity"], d["cloud_account_id"],
+        ])
+        yield output.getvalue()
+        output.seek(0)
+        output.truncate(0)
 
-    output.seek(0)
+
+def _export_csv(findings: list[Finding]) -> StreamingResponse:
     return StreamingResponse(
-        iter([output.getvalue()]),
+        _generate_csv(findings),
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=findings-export.csv"},
     )

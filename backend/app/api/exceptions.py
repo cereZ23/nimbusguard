@@ -63,8 +63,8 @@ async def list_exceptions(
     db: DB,
     user: CurrentUser,
     exc_status: str | None = Query(None, alias="status"),
-    page: int = 1,
-    size: int = 20,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
 ) -> dict:
     base = (
         select(Exception_)

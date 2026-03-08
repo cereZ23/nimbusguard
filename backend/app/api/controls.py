@@ -22,8 +22,8 @@ async def list_controls(
     user: CurrentUser,
     framework: str | None = Query(None),
     search: str | None = Query(None),
-    page: int = 1,
-    size: int = 50,
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
 ) -> dict:
     tenant_id = user.tenant_id
 
@@ -70,8 +70,9 @@ async def list_controls(
 
     count_base = select(func.count(Control.id))
     if search:
-        like = f"%{search}%"
-        search_filter = Control.name.ilike(like) | Control.code.ilike(like)
+        escaped = search.replace("%", r"\%").replace("_", r"\_")
+        like = f"%{escaped}%"
+        search_filter = Control.name.ilike(like, escape="\\") | Control.code.ilike(like, escape="\\")
         base = base.where(search_filter)
         count_base = count_base.where(search_filter)
     if framework:
@@ -161,8 +162,8 @@ async def list_control_findings(
     control_id: uuid.UUID,
     db: DB,
     user: CurrentUser,
-    page: int = 1,
-    size: int = 20,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
 ) -> dict:
     tenant_id = user.tenant_id
 

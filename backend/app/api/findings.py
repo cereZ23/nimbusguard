@@ -93,8 +93,8 @@ async def _get_tenant_finding(db: DB, finding_id: uuid.UUID, tenant_id: uuid.UUI
 async def list_findings(
     db: DB,
     user: CurrentUser,
-    page: int = 1,
-    size: int = 20,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     severity: str | None = Query(None),
     finding_status: str | None = Query(None, alias="status"),
     account_id: uuid.UUID | None = Query(None),
@@ -119,9 +119,10 @@ async def list_findings(
     count_base = select(func.count(Finding.id)).join(CloudAccount).where(CloudAccount.tenant_id == user.tenant_id)
 
     if search:
-        like = f"%{search}%"
-        base = base.where(Finding.title.ilike(like))
-        count_base = count_base.where(Finding.title.ilike(like))
+        escaped = search.replace("%", r"\%").replace("_", r"\_")
+        like = f"%{escaped}%"
+        base = base.where(Finding.title.ilike(like, escape="\\"))
+        count_base = count_base.where(Finding.title.ilike(like, escape="\\"))
     if severity:
         base = base.where(Finding.severity == severity)
         count_base = count_base.where(Finding.severity == severity)

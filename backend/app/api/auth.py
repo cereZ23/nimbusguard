@@ -335,10 +335,42 @@ async def mfa_disable(body: MfaDisableRequest, user: CurrentUser, db: DB) -> dic
     return {"data": None, "error": None, "meta": None}
 
 
+_MFA_MAX_ATTEMPTS = 5
+_MFA_ATTEMPT_WINDOW = 300  # 5 minutes (matches MFA token lifetime)
+
+
+async def _check_mfa_brute_force(mfa_token: str) -> None:
+    """Rate-limit MFA attempts per token via Redis. Max 5 attempts per token."""
+    import hashlib
+
+    from app.services.cache import get_redis
+
+    token_hash = hashlib.sha256(mfa_token.encode()).hexdigest()[:16]
+    key = f"mfa_attempts:{token_hash}"
+    try:
+        r = await get_redis()
+        attempts = await r.incr(key)
+        if attempts == 1:
+            await r.expire(key, _MFA_ATTEMPT_WINDOW)
+        if attempts > _MFA_MAX_ATTEMPTS:
+            logger.warning("MFA brute-force blocked for token hash %s (%d attempts)", token_hash, attempts)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many MFA attempts. Please login again.",
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        # Redis down — fall through to global rate limit only
+        logger.debug("MFA brute-force check skipped (Redis unavailable)")
+
+
 @router.post("/mfa/login", response_model=ApiResponse[MfaLoginResponse])
 @limiter.limit("10/minute")
 async def mfa_login(request: Request, body: MfaLoginRequest, db: DB, response: Response) -> dict:
     """Complete MFA login with TOTP code or backup code."""
+    await _check_mfa_brute_force(body.mfa_token)
+
     payload = decode_mfa_token(body.mfa_token)
     if payload is None:
         raise HTTPException(
@@ -466,7 +498,7 @@ async def sso_authorize(
     redirect_uri = f"{settings.frontend_url}/api/v1/auth/sso/callback"
 
     state = generate_state_token()
-    store_state(state, {"tenant_id": str(tenant.id), "tenant_slug": tenant_slug})
+    await store_state(state, {"tenant_id": str(tenant.id), "tenant_slug": tenant_slug})
 
     try:
         auth_url = await get_authorization_url(sso_config, redirect_uri, state)
@@ -494,7 +526,7 @@ async def sso_callback(
     and redirects to the dashboard.
     """
     # Verify state
-    state_data = retrieve_and_consume_state(state)
+    state_data = await retrieve_and_consume_state(state)
     if state_data is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

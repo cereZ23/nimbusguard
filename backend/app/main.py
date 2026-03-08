@@ -16,7 +16,7 @@ from app.config.settings import settings
 from app.database import async_session
 from app.exceptions import ConflictError, DomainError, NotFoundError
 from app.logging_config import setup_logging
-from app.middleware import RequestContextMiddleware
+from app.middleware import RequestContextMiddleware, SecurityHeadersMiddleware
 from app.rate_limit import limiter
 from app.services.seed_controls import seed_controls
 
@@ -43,6 +43,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestContextMiddleware)
 app.add_middleware(
     CORSMiddleware,

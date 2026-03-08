@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import UTC, datetime
+from functools import partial
 
 from azure.identity import ClientSecretCredential
 from azure.mgmt.resourcegraph import ResourceGraphClient
@@ -18,6 +20,12 @@ from app.services.credentials import decrypt_credentials
 from app.services.normalizer import build_control_map, match_control
 
 logger = logging.getLogger(__name__)
+
+
+async def _query_resource_graph(client: ResourceGraphClient, request: QueryRequest):
+    """Run the sync Resource Graph SDK call in a thread to avoid blocking the event loop."""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, partial(client.resources, request))
 
 
 class AzureCollector:
@@ -91,7 +99,7 @@ class AzureCollector:
                 query=query,
                 options={"$skip": 0, "$top": 1000, "$skipToken": skip_token},
             )
-            response = client.resources(request)
+            response = await _query_resource_graph(client, request)
 
             for row in response.data:
                 self.stats["assets_found"] += 1
@@ -190,7 +198,7 @@ class AzureCollector:
                 query=query,
                 options={"$skip": 0, "$top": 1000, "$skipToken": skip_token},
             )
-            response = client.resources(request)
+            response = await _query_resource_graph(client, request)
 
             for row in response.data:
                 props = row.get("properties", {})
@@ -237,7 +245,7 @@ class AzureCollector:
                 query=query,
                 options={"$skip": 0, "$top": 1000, "$skipToken": skip_token},
             )
-            response = client.resources(request)
+            response = await _query_resource_graph(client, request)
 
             for row in response.data:
                 provider_id = row.get("id", "")
@@ -284,7 +292,7 @@ class AzureCollector:
                 query=query,
                 options={"$skip": 0, "$top": 1000, "$skipToken": skip_token},
             )
-            response = client.resources(request)
+            response = await _query_resource_graph(client, request)
 
             for row in response.data:
                 provider_id = row.get("id", "")
@@ -338,7 +346,7 @@ class AzureCollector:
                 query=query,
                 options={"$skip": 0, "$top": 1000, "$skipToken": skip_token},
             )
-            response = client.resources(request)
+            response = await _query_resource_graph(client, request)
 
             for row in response.data:
                 props = row.get("properties", {})
