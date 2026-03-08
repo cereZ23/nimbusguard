@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from unittest.mock import patch
 
 import pytest
@@ -56,12 +57,23 @@ async def test_check_scheduled_scans_triggers(client: AsyncClient, auth_headers:
         json={"scan_schedule": "* * * * *"},
     )
 
+    # Flush the test DB so the worker session can see the data
+    await db.commit()
+
     from app.worker.tasks import _check_scheduled_scans_async
     from tests.conftest import TestSession
 
+    @asynccontextmanager
+    async def _test_worker_session():
+        async with TestSession() as session:
+            try:
+                yield session
+            finally:
+                await session.close()
+
     with (
         patch("app.worker.tasks.run_scan") as mock_run,
-        patch("app.database.async_session", TestSession),
+        patch("app.worker.tasks._worker_session", _test_worker_session),
     ):
         mock_run.delay = lambda x: None
         result = await _check_scheduled_scans_async()
