@@ -15,9 +15,12 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "CSPM - Cloud Security Posture Management",
+  title: {
+    default: "NimbusGuard — Cloud Security",
+    template: "%s | NimbusGuard",
+  },
   description:
-    "Monitor and manage the security posture of your cloud infrastructure",
+    "Cloud Security Posture Management — continuous assessment for Azure and AWS",
 };
 
 export default function RootLayout({

@@ -164,7 +164,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="space-y-8">
+      <div className="animate-page-in space-y-8">
         {/* Page Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>

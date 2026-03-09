@@ -607,7 +607,7 @@ function FindingsContent() {
                         aria-label={`View finding: ${finding.title}`}
                         className={`cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset dark:border-gray-700 dark:hover:bg-gray-700/50 ${
                           finding.waived ? "opacity-60" : ""
-                        } ${idx % 2 === 1 ? "bg-gray-50/50 dark:bg-gray-800/50" : ""}`}
+                        } ${idx % 2 === 1 ? "bg-gray-50/50 dark:bg-gray-800/70" : ""}`}
                       >
                         {/* Checkbox cell */}
                         <td className="w-10 px-4 py-3">
