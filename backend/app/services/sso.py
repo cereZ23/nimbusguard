@@ -98,37 +98,6 @@ def generate_state_token() -> str:
     return secrets.token_urlsafe(32)
 
 
-def _purge_expired_states() -> None:
-    """Remove expired state entries to prevent memory growth."""
-    now = time.time()
-    expired = [k for k, v in _pending_states.items() if now - v.get("_created_at", 0) > _STATE_TTL]
-    for k in expired:
-        _pending_states.pop(k, None)
-
-
-def store_state(state: str, data: dict) -> None:
-    """Store state data for later verification during callback."""
-    _purge_expired_states()
-    if len(_pending_states) >= _STATE_MAX_ENTRIES:
-        logger.warning("State store full (%d entries), rejecting new state", len(_pending_states))
-        msg = "Too many pending SSO requests"
-        raise ValueError(msg)
-    data["_created_at"] = time.time()
-    _pending_states[state] = data
-
-
-def retrieve_and_consume_state(state: str) -> dict | None:
-    """Retrieve and remove state data -- single use."""
-    data = _pending_states.pop(state, None)
-    if data is None:
-        return None
-    if time.time() - data.get("_created_at", 0) > _STATE_TTL:
-        logger.warning("SSO state expired")
-        return None
-    data.pop("_created_at", None)
-    return data
-
-
 async def get_authorization_url(
     sso_config: SsoConfig,
     redirect_uri: str,
