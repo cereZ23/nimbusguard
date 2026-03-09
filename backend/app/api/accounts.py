@@ -104,6 +104,10 @@ async def _test_aws_connection(body: TestConnectionRequest) -> dict:
     try:
         import boto3
 
+        from app.config.settings import settings
+
+        endpoint_url = settings.aws_endpoint_url or None
+
         session_kwargs = {
             "aws_access_key_id": body.access_key_id,
             "aws_secret_access_key": body.secret_access_key,
@@ -112,8 +116,8 @@ async def _test_aws_connection(body: TestConnectionRequest) -> dict:
         session = boto3.Session(**session_kwargs)
 
         # If role_arn is provided, test AssumeRole first
-        if body.role_arn:
-            sts_client = session.client("sts")
+        if body.role_arn and not endpoint_url:
+            sts_client = session.client("sts", endpoint_url=endpoint_url)
             assumed = sts_client.assume_role(
                 RoleArn=body.role_arn,
                 RoleSessionName="cspm-test-connection",
@@ -127,12 +131,12 @@ async def _test_aws_connection(body: TestConnectionRequest) -> dict:
                 region_name=body.region or "us-east-1",
             )
 
-        sts_client = session.client("sts")
+        sts_client = session.client("sts", endpoint_url=endpoint_url)
         identity = sts_client.get_caller_identity()
         account_id = identity.get("Account", "")
 
         # Try a quick S3 list to count resources
-        s3_client = session.client("s3")
+        s3_client = session.client("s3", endpoint_url=endpoint_url)
         try:
             buckets = s3_client.list_buckets()
             count = len(buckets.get("Buckets", []))

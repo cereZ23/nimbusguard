@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     # Frontend URL (used to build invitation links)
     frontend_url: str = "http://localhost:3000"
 
+    # AWS LocalStack endpoint (empty = real AWS)
+    aws_endpoint_url: str = ""
+
     @model_validator(mode="after")
     def _validate_secret_key(self) -> Settings:
         if self.secret_key == _INSECURE_DEFAULT:

@@ -117,15 +117,18 @@ class AwsCollector:
         """Decrypt credentials and build boto3 clients."""
         import boto3
 
+        from app.config.settings import settings
+
         creds = decrypt_credentials(account.credential_ref)
         self._region = creds.get("region", "us-east-1")
         self._account_id = account.provider_account_id
+        self._endpoint_url = settings.aws_endpoint_url or None
 
         role_arn = creds.get("role_arn")
         external_id = creds.get("external_id")
 
-        if role_arn:
-            # Cross-account: assume role via STS
+        if role_arn and not self._endpoint_url:
+            # Cross-account: assume role via STS (skip for LocalStack)
             sts_client = boto3.client(
                 "sts",
                 aws_access_key_id=creds["access_key_id"],
@@ -156,17 +159,20 @@ class AwsCollector:
                 region_name=self._region,
             )
 
+        if self._endpoint_url:
+            logger.info("Using custom AWS endpoint: %s (LocalStack)", self._endpoint_url)
+
         # Pre-create commonly used clients
         for svc in ("s3", "ec2", "iam", "rds", "sts"):
             try:
-                self._clients[svc] = self._session.client(svc)
+                self._clients[svc] = self._session.client(svc, endpoint_url=self._endpoint_url)
             except Exception:
                 logger.warning("Failed to create %s client", svc, exc_info=True)
 
     def _get_client(self, service_name: str) -> Any:
         """Get or create a boto3 client for the given service."""
         if service_name not in self._clients:
-            self._clients[service_name] = self._session.client(service_name)
+            self._clients[service_name] = self._session.client(service_name, endpoint_url=self._endpoint_url)
         return self._clients[service_name]
 
     async def _run_sync(self, func, *args, **kwargs):
