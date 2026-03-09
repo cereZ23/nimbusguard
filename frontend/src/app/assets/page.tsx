@@ -469,7 +469,7 @@ function AssetsContent() {
                         aria-label={`View asset: ${asset.name}`}
                         className={`cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset dark:border-gray-700 dark:hover:bg-gray-700/50 ${
                           idx % 2 === 1
-                            ? "bg-gray-50/50 dark:bg-gray-800/50"
+                            ? "bg-gray-50/50 dark:bg-gray-800/70"
                             : ""
                         }`}
                       >

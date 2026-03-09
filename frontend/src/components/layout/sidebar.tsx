@@ -148,7 +148,7 @@ export default function Sidebar({
             {branding.company_name}
           </span>
           <span className="text-[10px] font-medium tracking-wide text-slate-500">
-            v2.0
+            v3.0
           </span>
         </div>
       )}
@@ -273,7 +273,7 @@ export default function Sidebar({
                 {branding.company_name}
               </span>
               <span className="text-[10px] font-medium tracking-wide text-slate-500">
-                v2.0
+                v3.0
               </span>
             </div>
           </div>

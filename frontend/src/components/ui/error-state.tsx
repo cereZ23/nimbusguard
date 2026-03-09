@@ -15,7 +15,7 @@ export default function ErrorState({
 }: ErrorStateProps) {
   return (
     <div
-      className={`flex flex-col items-center justify-center gap-3 py-12 ${className}`}
+      className={`animate-page-in flex flex-col items-center justify-center gap-3 py-12 ${className}`}
     >
       <AlertCircle className="h-10 w-10 text-red-400" />
       <p className="text-sm font-medium text-gray-600 dark:text-gray-400">

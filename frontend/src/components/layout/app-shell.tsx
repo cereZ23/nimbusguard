@@ -44,7 +44,7 @@ export default function AppShell({ children }: AppShellProps) {
             mobileOpen={mobileMenuOpen}
             onMobileClose={handleMobileClose}
           />
-          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden transition-all duration-300">
             <SessionWarning />
             <Topbar onMenuToggle={handleMenuToggle} />
             <main
