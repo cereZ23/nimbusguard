@@ -37,6 +37,21 @@ jobs:
               cd /opt/cspm
             fi
 
+            # Add localhost port mappings for Caddy reverse proxy
+            python3 -c "
+            import yaml
+            with open('docker-compose.prod.yml') as f:
+                c = yaml.safe_load(f)
+            for svc, port in [('cspm-backend','127.0.0.1:8001:8000'),('cspm-frontend','127.0.0.1:3001:3000')]:
+                for k,v in c['services'].items():
+                    if v.get('container_name')==svc:
+                        v.setdefault('ports',[])
+                        if port not in v['ports']:
+                            v['ports'].append(port)
+            with open('docker-compose.prod.yml','w') as f:
+                yaml.dump(c,f,default_flow_style=False,sort_keys=False)
+            "
+
             # Rebuild and restart containers
             docker compose -f docker-compose.prod.yml up -d --build
 
