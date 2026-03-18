@@ -126,8 +126,14 @@ async def patch_sso_config(
 
     # Explicit allowlist to prevent mass assignment of id/tenant_id
     _SSO_PATCH_ALLOWED_FIELDS = {
-        "provider", "client_id", "issuer_url", "metadata_url",
-        "domain_restriction", "auto_provision", "default_role", "is_active",
+        "provider",
+        "client_id",
+        "issuer_url",
+        "metadata_url",
+        "domain_restriction",
+        "auto_provision",
+        "default_role",
+        "is_active",
     }
     for field, value in update_data.items():
         if field in _SSO_PATCH_ALLOWED_FIELDS:

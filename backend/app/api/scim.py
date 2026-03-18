@@ -291,9 +291,7 @@ async def create_user(
         return _scim_error(400, "userName (email) is required", scim_type="invalidValue")
 
     # Check for existing user with same email within this tenant (prevent cross-tenant info leak)
-    existing = await db.execute(
-        select(User).where(User.email == user_data["email"], User.tenant_id == tenant_id)
-    )
+    existing = await db.execute(select(User).where(User.email == user_data["email"], User.tenant_id == tenant_id))
     if existing.scalar_one_or_none() is not None:
         return _scim_error(409, f"User with email {user_data['email']} already exists", scim_type="uniqueness")
 

@@ -243,10 +243,20 @@ def _generate_csv(findings: list[Finding]):
     output = io.StringIO()
     writer = csv.writer(output)
     header = [
-        "ID", "Title", "Status", "Severity", "Waived",
-        "First Detected", "Last Evaluated", "Asset Name",
-        "Asset Type", "Asset Region", "Control Code",
-        "Control Name", "Control Severity", "Cloud Account ID",
+        "ID",
+        "Title",
+        "Status",
+        "Severity",
+        "Waived",
+        "First Detected",
+        "Last Evaluated",
+        "Asset Name",
+        "Asset Type",
+        "Asset Region",
+        "Control Code",
+        "Control Name",
+        "Control Severity",
+        "Cloud Account ID",
     ]
     writer.writerow(header)
     yield output.getvalue()
@@ -255,12 +265,24 @@ def _generate_csv(findings: list[Finding]):
 
     for f in findings:
         d = _finding_to_dict(f)
-        writer.writerow([
-            d["id"], d["title"], d["status"], d["severity"], d["waived"],
-            d["first_detected_at"], d["last_evaluated_at"], d["asset_name"],
-            d["asset_type"], d["asset_region"], d["control_code"],
-            d["control_name"], d["control_severity"], d["cloud_account_id"],
-        ])
+        writer.writerow(
+            [
+                d["id"],
+                d["title"],
+                d["status"],
+                d["severity"],
+                d["waived"],
+                d["first_detected_at"],
+                d["last_evaluated_at"],
+                d["asset_name"],
+                d["asset_type"],
+                d["asset_region"],
+                d["control_code"],
+                d["control_name"],
+                d["control_severity"],
+                d["cloud_account_id"],
+            ]
+        )
         yield output.getvalue()
         output.seek(0)
         output.truncate(0)
