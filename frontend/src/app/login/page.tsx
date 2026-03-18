@@ -74,7 +74,9 @@ function LoginContent() {
 
     try {
       await login({ email, password });
-      router.push("/dashboard");
+      // Full page reload ensures middleware sees the new cookie
+      const redirect = searchParams.get("redirect") || "/dashboard";
+      window.location.href = redirect;
     } catch (err) {
       if (err instanceof MfaRequiredError) {
         setMfaToken(err.mfaToken);
@@ -94,7 +96,8 @@ function LoginContent() {
 
     try {
       await completeMfaLogin(mfaToken, mfaCode.trim());
-      router.push("/dashboard");
+      const redirect = searchParams.get("redirect") || "/dashboard";
+      window.location.href = redirect;
     } catch {
       setError("Invalid verification code. Please try again.");
     } finally {
