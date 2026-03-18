@@ -12,6 +12,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.webhook import Webhook
+from app.services.credentials import encrypt_value
 from app.services.webhook_dispatcher import dispatch_webhooks, send_test_webhook
 
 
@@ -86,7 +87,7 @@ async def test_dispatch_webhooks_skips_non_matching_event() -> None:
 async def test_dispatch_webhooks_includes_hmac_signature() -> None:
     tenant_id = uuid.uuid4()
     secret = "my-secret-key"
-    wh = _make_webhook(tenant_id, secret=secret, events=["scan.completed"])
+    wh = _make_webhook(tenant_id, secret=encrypt_value(secret), events=["scan.completed"])
 
     mock_db = AsyncMock(spec=AsyncSession)
     mock_result = MagicMock()
@@ -172,7 +173,7 @@ async def test_send_test_webhook_success() -> None:
 
 @pytest.mark.asyncio
 async def test_send_test_webhook_with_secret() -> None:
-    wh = _make_webhook(uuid.uuid4(), secret="test-secret")
+    wh = _make_webhook(uuid.uuid4(), secret=encrypt_value("test-secret"))
 
     with patch("app.services.webhook_dispatcher.httpx.AsyncClient") as mock_client_cls:
         mock_client = AsyncMock()

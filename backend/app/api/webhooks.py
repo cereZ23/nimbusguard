@@ -12,6 +12,7 @@ from app.models.webhook import Webhook
 from app.schemas.common import ApiResponse, PaginationMeta
 from app.schemas.webhook import ALLOWED_EVENTS, WebhookCreate, WebhookResponse, WebhookUpdate
 from app.services.audit import record_audit
+from app.services.credentials import encrypt_value
 from app.services.webhook_dispatcher import send_test_webhook
 
 logger = logging.getLogger(__name__)
@@ -50,14 +51,13 @@ async def create_webhook(body: WebhookCreate, db: DB, user: AdminUser) -> dict:
     webhook = Webhook(
         tenant_id=user.tenant_id,
         url=body.url,
-        secret=body.secret,
+        secret=encrypt_value(body.secret) if body.secret else None,
         events=body.events,
         description=body.description,
         is_active=True,
     )
     db.add(webhook)
-    await db.commit()
-    await db.refresh(webhook)
+    await db.flush()
 
     await record_audit(
         db,
@@ -69,6 +69,7 @@ async def create_webhook(body: WebhookCreate, db: DB, user: AdminUser) -> dict:
         detail=f"Created webhook: {webhook.url}",
     )
     await db.commit()
+    await db.refresh(webhook)
 
     logger.info("Webhook created: %s → %s", webhook.id, webhook.url)
     return {"data": webhook, "error": None, "meta": None}
@@ -90,16 +91,13 @@ async def update_webhook(webhook_id: uuid.UUID, body: WebhookUpdate, db: DB, use
     if body.url is not None:
         webhook.url = body.url
     if body.secret is not None:
-        webhook.secret = body.secret
+        webhook.secret = encrypt_value(body.secret) if body.secret else None
     if body.events is not None:
         webhook.events = body.events
     if body.is_active is not None:
         webhook.is_active = body.is_active
     if body.description is not None:
         webhook.description = body.description
-
-    await db.commit()
-    await db.refresh(webhook)
 
     await record_audit(
         db,
@@ -111,6 +109,7 @@ async def update_webhook(webhook_id: uuid.UUID, body: WebhookUpdate, db: DB, use
         detail=f"Updated webhook: {webhook.url}",
     )
     await db.commit()
+    await db.refresh(webhook)
 
     logger.info("Webhook updated: %s", webhook_id)
     return {"data": webhook, "error": None, "meta": None}

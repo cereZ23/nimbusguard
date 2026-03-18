@@ -130,8 +130,9 @@ async def evaluate_all(
     }
     now = datetime.now(UTC)
 
-    # Collect new findings and evidence to flush in batches
-    batch_count = 0
+    # Collect new findings in a batch, then flush once to get IDs for evidence FKs
+    # Also cache check results to avoid running checks twice per asset
+    all_check_results: list[tuple[Asset, str, EvalResult]] = []
 
     for asset in assets:
         checks = evaluate_asset(asset, controls_by_code)
@@ -146,6 +147,9 @@ async def evaluate_all(
                 stats["pass_count"] += 1
             else:
                 stats["fail_count"] += 1
+
+            # Cache for evidence creation later
+            all_check_results.append((asset, control_code, eval_result))
 
             control = controls_by_code[control_code]
             dedup_key = f"eval:{asset.provider_id}:{control_code}"
@@ -172,14 +176,21 @@ async def evaluate_all(
                     last_evaluated_at=now,
                 )
                 db.add(finding)
-                # Flush to get the finding.id for the evidence FK
-                await db.flush()
-                # Add to map so duplicate dedup_keys within this run are handled
                 existing_findings_by_dedup[dedup_key] = finding
                 stats["findings_created"] += 1
 
-            # Create evidence snapshot
-            evidence = Evidence(
+    # Single flush for all new findings — gets IDs in one DB roundtrip
+    await db.flush()
+
+    # Create evidence using cached check results (no second evaluate_asset call)
+    evidence_batch: list[Evidence] = []
+    for asset, control_code, eval_result in all_check_results:
+        dedup_key = f"eval:{asset.provider_id}:{control_code}"
+        finding = existing_findings_by_dedup.get(dedup_key)
+        if finding is None:
+            continue
+        evidence_batch.append(
+            Evidence(
                 finding_id=finding.id,
                 snapshot={
                     "source": "evaluation_engine",
@@ -194,13 +205,12 @@ async def evaluate_all(
                 },
                 collected_at=now,
             )
-            db.add(evidence)
+        )
 
-            # Periodic flush to keep memory bounded on large accounts
-            batch_count += 1
-            if batch_count >= 200:
-                await db.flush()
-                batch_count = 0
+    # Batch add all evidence
+    if evidence_batch:
+        db.add_all(evidence_batch)
+        await db.flush()
 
     # Calculate and update secure score
     total = stats["pass_count"] + stats["fail_count"]

@@ -189,8 +189,7 @@ async def create_account(body: CloudAccountCreate, db: DB, user: AdminUser) -> d
         credential_ref=encrypted,
     )
     db.add(account)
-    await db.commit()
-    await db.refresh(account)
+    await db.flush()
 
     await record_audit(
         db,
@@ -202,6 +201,7 @@ async def create_account(body: CloudAccountCreate, db: DB, user: AdminUser) -> d
         detail=f"Created {account.provider} account: {account.display_name}",
     )
     await db.commit()
+    await db.refresh(account)
 
     logger.info("Cloud account created: %s (%s)", account.display_name, account.provider)
     return {"data": account, "error": None, "meta": None}

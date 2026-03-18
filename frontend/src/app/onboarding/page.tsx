@@ -51,10 +51,15 @@ const STEP_LABELS: Record<WizardStep, string> = {
 
 interface CredentialForm {
   display_name: string;
+  // Azure
   subscription_id: string;
   tenant_id: string;
   client_id: string;
   client_secret: string;
+  // AWS
+  access_key_id: string;
+  secret_access_key: string;
+  region: string;
 }
 
 const EMPTY_FORM: CredentialForm = {
@@ -63,6 +68,9 @@ const EMPTY_FORM: CredentialForm = {
   tenant_id: "",
   client_id: "",
   client_secret: "",
+  access_key_id: "",
+  secret_access_key: "",
+  region: "us-east-1",
 };
 
 // ── Test connection result ──────────────────────────────────────────
@@ -78,7 +86,7 @@ interface TestResult {
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<WizardStep>("welcome");
-  const [provider, setProvider] = useState<"azure" | null>(null);
+  const [provider, setProvider] = useState<"azure" | "aws" | null>(null);
   const [form, setForm] = useState<CredentialForm>(EMPTY_FORM);
   const [showGuide, setShowGuide] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
@@ -117,10 +125,13 @@ export default function OnboardingPage() {
 
   const isCredentialsValid =
     form.display_name.trim().length > 0 &&
-    form.subscription_id.trim().length > 0 &&
-    form.tenant_id.trim().length > 0 &&
-    form.client_id.trim().length > 0 &&
-    form.client_secret.trim().length > 0;
+    (provider === "azure"
+      ? form.subscription_id.trim().length > 0 &&
+        form.tenant_id.trim().length > 0 &&
+        form.client_id.trim().length > 0 &&
+        form.client_secret.trim().length > 0
+      : form.access_key_id.trim().length > 0 &&
+        form.secret_access_key.trim().length > 0);
 
   // ── Test connection handler ─────────────────────────────────────
 
@@ -128,13 +139,22 @@ export default function OnboardingPage() {
     setIsTesting(true);
     setTestResult(null);
     try {
-      const res = await api.post("/accounts/test-connection", {
-        provider: "azure",
-        tenant_id: form.tenant_id,
-        client_id: form.client_id,
-        client_secret: form.client_secret,
-        subscription_id: form.subscription_id,
-      });
+      const connPayload =
+        provider === "azure"
+          ? {
+              provider: "azure",
+              tenant_id: form.tenant_id,
+              client_id: form.client_id,
+              client_secret: form.client_secret,
+              subscription_id: form.subscription_id,
+            }
+          : {
+              provider: "aws",
+              access_key_id: form.access_key_id,
+              secret_access_key: form.secret_access_key,
+              region: form.region,
+            };
+      const res = await api.post("/accounts/test-connection", connPayload);
       const data = res.data.data as TestResult;
       setTestResult(data);
     } catch {
@@ -154,16 +174,29 @@ export default function OnboardingPage() {
     setIsCreating(true);
     setCreateError(null);
     try {
-      const res = await api.post("/accounts", {
-        provider: "azure",
-        display_name: form.display_name,
-        provider_account_id: form.subscription_id,
-        credentials: {
-          tenant_id: form.tenant_id,
-          client_id: form.client_id,
-          client_secret: form.client_secret,
-        },
-      });
+      const accountPayload =
+        provider === "azure"
+          ? {
+              provider: "azure",
+              display_name: form.display_name,
+              provider_account_id: form.subscription_id,
+              credentials: {
+                tenant_id: form.tenant_id,
+                client_id: form.client_id,
+                client_secret: form.client_secret,
+              },
+            }
+          : {
+              provider: "aws",
+              display_name: form.display_name,
+              provider_account_id: form.access_key_id,
+              credentials: {
+                access_key_id: form.access_key_id,
+                secret_access_key: form.secret_access_key,
+                region: form.region,
+              },
+            };
+      const res = await api.post("/accounts", accountPayload);
       const account = res.data.data as { id: string };
       setCreatedAccountId(account.id);
       goNext();
@@ -263,13 +296,19 @@ export default function OnboardingPage() {
               <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">
                 It takes about 2 minutes to complete.
               </p>
-              <div className="mt-8 flex justify-center">
+              <div className="mt-8 flex flex-col items-center gap-3">
                 <button
                   onClick={goNext}
                   className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
                 >
                   Get Started
                   <ArrowRight size={16} />
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  className="text-sm text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  Skip for now
                 </button>
               </div>
             </div>
@@ -314,19 +353,33 @@ export default function OnboardingPage() {
                   </span>
                 </button>
 
-                {/* AWS (Coming Soon) */}
-                <div className="relative flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 opacity-60 dark:border-gray-700 dark:bg-gray-800/50">
+                {/* AWS */}
+                <button
+                  onClick={() => setProvider("aws")}
+                  className={`flex flex-col items-center gap-3 rounded-xl border-2 p-6 transition-all ${
+                    provider === "aws"
+                      ? "border-orange-500 bg-orange-50 dark:border-orange-400 dark:bg-orange-900/20"
+                      : "border-gray-200 bg-white hover:border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-gray-500"
+                  }`}
+                >
                   <Cloud
                     size={32}
-                    className="text-gray-300 dark:text-gray-600"
+                    className={
+                      provider === "aws"
+                        ? "text-orange-500 dark:text-orange-400"
+                        : "text-gray-400"
+                    }
                   />
-                  <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">
+                  <span
+                    className={`text-sm font-semibold ${
+                      provider === "aws"
+                        ? "text-orange-600 dark:text-orange-400"
+                        : "text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
                     Amazon Web Services
                   </span>
-                  <span className="absolute right-3 top-3 rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                    Coming Soon
-                  </span>
-                </div>
+                </button>
               </div>
 
               <div className="mt-8 flex items-center justify-between">
@@ -353,11 +406,14 @@ export default function OnboardingPage() {
           {currentStep === "credentials" && (
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Azure Service Principal
+                {provider === "azure"
+                  ? "Azure Service Principal"
+                  : "AWS Access Credentials"}
               </h2>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Enter the credentials for the Azure Service Principal that will
-                be used to read your cloud resources.
+                {provider === "azure"
+                  ? "Enter the credentials for the Azure Service Principal that will be used to read your cloud resources."
+                  : "Enter the IAM access key for the AWS account you want to monitor."}
               </p>
 
               <div className="mt-6 space-y-4">
@@ -381,91 +437,186 @@ export default function OnboardingPage() {
                   />
                 </div>
 
-                {/* Subscription ID */}
-                <div>
-                  <label
-                    htmlFor="wiz_subscription_id"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Subscription ID
-                  </label>
-                  <input
-                    id="wiz_subscription_id"
-                    type="text"
-                    value={form.subscription_id}
-                    onChange={(e) =>
-                      updateField("subscription_id", e.target.value)
-                    }
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                  />
-                </div>
+                {/* Azure-specific fields */}
+                {provider === "azure" && (
+                  <>
+                    {/* Subscription ID */}
+                    <div>
+                      <label
+                        htmlFor="wiz_subscription_id"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        Subscription ID
+                      </label>
+                      <input
+                        id="wiz_subscription_id"
+                        type="text"
+                        value={form.subscription_id}
+                        onChange={(e) =>
+                          updateField("subscription_id", e.target.value)
+                        }
+                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                      />
+                    </div>
 
-                {/* Tenant ID */}
-                <div>
-                  <label
-                    htmlFor="wiz_tenant_id"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Azure Tenant ID
-                  </label>
-                  <input
-                    id="wiz_tenant_id"
-                    type="text"
-                    value={form.tenant_id}
-                    onChange={(e) => updateField("tenant_id", e.target.value)}
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                  />
-                </div>
+                    {/* Tenant ID */}
+                    <div>
+                      <label
+                        htmlFor="wiz_tenant_id"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        Azure Tenant ID
+                      </label>
+                      <input
+                        id="wiz_tenant_id"
+                        type="text"
+                        value={form.tenant_id}
+                        onChange={(e) =>
+                          updateField("tenant_id", e.target.value)
+                        }
+                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                      />
+                    </div>
 
-                {/* Client ID */}
-                <div>
-                  <label
-                    htmlFor="wiz_client_id"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Client ID (App ID)
-                  </label>
-                  <input
-                    id="wiz_client_id"
-                    type="text"
-                    value={form.client_id}
-                    onChange={(e) => updateField("client_id", e.target.value)}
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                  />
-                </div>
+                    {/* Client ID */}
+                    <div>
+                      <label
+                        htmlFor="wiz_client_id"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        Client ID (App ID)
+                      </label>
+                      <input
+                        id="wiz_client_id"
+                        type="text"
+                        value={form.client_id}
+                        onChange={(e) =>
+                          updateField("client_id", e.target.value)
+                        }
+                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                      />
+                    </div>
 
-                {/* Client Secret */}
-                <div>
-                  <label
-                    htmlFor="wiz_client_secret"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Client Secret
-                  </label>
-                  <div className="relative mt-1">
-                    <input
-                      id="wiz_client_secret"
-                      type={showSecret ? "text" : "password"}
-                      value={form.client_secret}
-                      onChange={(e) =>
-                        updateField("client_secret", e.target.value)
-                      }
-                      placeholder="Enter your client secret"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowSecret(!showSecret)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                      aria-label={showSecret ? "Hide secret" : "Show secret"}
-                    >
-                      {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
+                    {/* Client Secret */}
+                    <div>
+                      <label
+                        htmlFor="wiz_client_secret"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        Client Secret
+                      </label>
+                      <div className="relative mt-1">
+                        <input
+                          id="wiz_client_secret"
+                          type={showSecret ? "text" : "password"}
+                          value={form.client_secret}
+                          onChange={(e) =>
+                            updateField("client_secret", e.target.value)
+                          }
+                          placeholder="Enter your client secret"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSecret(!showSecret)}
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          aria-label={
+                            showSecret ? "Hide secret" : "Show secret"
+                          }
+                        >
+                          {showSecret ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* AWS-specific fields */}
+                {provider === "aws" && (
+                  <>
+                    <div>
+                      <label
+                        htmlFor="wiz_access_key"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        Access Key ID
+                      </label>
+                      <input
+                        id="wiz_access_key"
+                        type="text"
+                        value={form.access_key_id}
+                        onChange={(e) =>
+                          updateField("access_key_id", e.target.value)
+                        }
+                        placeholder="AKIA..."
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="wiz_secret_key"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        Secret Access Key
+                      </label>
+                      <div className="relative mt-1">
+                        <input
+                          id="wiz_secret_key"
+                          type={showSecret ? "text" : "password"}
+                          value={form.secret_access_key}
+                          onChange={(e) =>
+                            updateField("secret_access_key", e.target.value)
+                          }
+                          placeholder="Enter your secret access key"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSecret(!showSecret)}
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          aria-label={
+                            showSecret ? "Hide secret" : "Show secret"
+                          }
+                        >
+                          {showSecret ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="wiz_region"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        Region
+                      </label>
+                      <select
+                        id="wiz_region"
+                        value={form.region}
+                        onChange={(e) => updateField("region", e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                      >
+                        <option value="us-east-1">US East (N. Virginia)</option>
+                        <option value="us-west-2">US West (Oregon)</option>
+                        <option value="eu-west-1">EU (Ireland)</option>
+                        <option value="eu-central-1">EU (Frankfurt)</option>
+                        <option value="ap-southeast-1">
+                          Asia Pacific (Singapore)
+                        </option>
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Collapsible guide */}

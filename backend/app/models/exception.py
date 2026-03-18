@@ -18,7 +18,7 @@ class Exception_(Base, UUIDPrimaryKey, TimestampMixin):
         UUID(as_uuid=True),
         ForeignKey("findings.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True,
+        index=True,
     )
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="requested")  # requested|approved|rejected|expired

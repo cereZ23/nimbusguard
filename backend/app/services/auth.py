@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 _MAX_FAILED_ATTEMPTS = 5
 _LOCKOUT_MINUTES = 15
+# Pre-computed bcrypt hash for timing-safe dummy comparison (avoids ~100ms hash per failed lookup)
+_DUMMY_HASH = bcrypt.hashpw(b"dummy-timing-safe", bcrypt.gensalt()).decode()
 
 
 def validate_password(password: str) -> None:
@@ -99,6 +101,7 @@ async def create_refresh_token(db: AsyncSession, user_id: str, tenant_id: str) -
         user_id=uuid.UUID(user_id),
         token_hash=_hash_token(token),
         expires_at=expires_at,
+        last_used_at=datetime.now(UTC),
         revoked=False,
     )
     db.add(record)
@@ -135,6 +138,22 @@ async def decode_refresh_token(db: AsyncSession, token: str) -> dict | None:
     if record is None:
         logger.warning("Refresh token not found in DB or already revoked")
         return None
+
+    # Idle timeout check: reject if token hasn't been used within the idle window
+    if settings.jwt_idle_timeout_hours > 0 and record.last_used_at is not None:
+        idle_limit = record.last_used_at + timedelta(hours=settings.jwt_idle_timeout_hours)
+        if idle_limit.tzinfo is None:
+            idle_limit = idle_limit.replace(tzinfo=UTC)
+        if datetime.now(UTC) > idle_limit:
+            logger.info("Refresh token idle timeout for user %s", payload.get("sub"))
+            record.revoked = True
+            await db.flush()
+            return None
+
+    # Update last_used_at for idle tracking
+    record.last_used_at = datetime.now(UTC)
+    await db.flush()
+
     return payload
 
 
@@ -144,6 +163,18 @@ async def revoke_refresh_token(db: AsyncSession, token: str) -> None:
     record = result.scalar_one_or_none()
     if record is not None:
         record.revoked = True
+
+
+async def revoke_all_user_tokens(db: AsyncSession, user_id: str) -> int:
+    """Revoke all active refresh tokens for a user. Returns count of revoked tokens."""
+    from sqlalchemy import update
+
+    result = await db.execute(
+        update(RefreshToken)
+        .where(RefreshToken.user_id == uuid.UUID(user_id), RefreshToken.revoked.is_(False))
+        .values(revoked=True)
+    )
+    return result.rowcount  # type: ignore[return-value]
 
 
 async def register_user(
@@ -185,9 +216,12 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> User
     user = result.scalar_one_or_none()
     if user is None:
         # Perform dummy bcrypt comparison to prevent timing oracle (user enumeration)
-        verify_password(password, hash_password("dummy-timing-safe"))
+        verify_password(password, _DUMMY_HASH)
         return None
     if not user.is_active:
+        return None
+    # Block password login for SSO/SCIM-provisioned users
+    if getattr(user, "auth_method", "password") in ("sso", "scim"):
         return None
 
     now = datetime.now(UTC)

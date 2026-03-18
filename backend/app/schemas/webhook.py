@@ -5,6 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.utils.url_validation import validate_public_url
+
 ALLOWED_EVENTS = [
     "scan.completed",
     "scan.failed",
@@ -31,9 +33,7 @@ class WebhookCreate(BaseModel):
     @field_validator("url")
     @classmethod
     def validate_url(cls, v: str) -> str:
-        if not v.startswith(("https://", "http://")):
-            raise ValueError("URL must start with https:// or http://")
-        return v
+        return validate_public_url(v, require_https=False)
 
 
 class WebhookUpdate(BaseModel):
@@ -56,14 +56,15 @@ class WebhookUpdate(BaseModel):
     @field_validator("url")
     @classmethod
     def validate_url(cls, v: str | None) -> str | None:
-        if v is not None and not v.startswith(("https://", "http://")):
-            raise ValueError("URL must start with https:// or http://")
-        return v
+        if v is None:
+            return v
+        return validate_public_url(v, require_https=False)
 
 
 class WebhookResponse(BaseModel):
     id: uuid.UUID
     url: str
+    has_secret: bool = False
     events: list[str]
     is_active: bool
     description: str | None
@@ -72,3 +73,17 @@ class WebhookResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @classmethod
+    def from_webhook(cls, wh: object) -> WebhookResponse:
+        return cls(
+            id=wh.id,  # type: ignore[attr-defined]
+            url=wh.url,  # type: ignore[attr-defined]
+            has_secret=bool(wh.secret),  # type: ignore[attr-defined]
+            events=wh.events,  # type: ignore[attr-defined]
+            is_active=wh.is_active,  # type: ignore[attr-defined]
+            description=wh.description,  # type: ignore[attr-defined]
+            last_triggered_at=wh.last_triggered_at,  # type: ignore[attr-defined]
+            last_status_code=wh.last_status_code,  # type: ignore[attr-defined]
+            created_at=wh.created_at,  # type: ignore[attr-defined]
+        )

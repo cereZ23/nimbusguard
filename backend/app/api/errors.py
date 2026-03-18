@@ -5,6 +5,8 @@ import logging
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
+from app.rate_limit import limiter
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -19,6 +21,7 @@ class ClientError(BaseModel):
 
 
 @router.post("/client-errors", status_code=204)
+@limiter.limit("5/minute")
 async def report_client_error(body: ClientError, request: Request) -> None:
     logger.error(
         "Client error: %s",

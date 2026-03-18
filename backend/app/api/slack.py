@@ -16,6 +16,7 @@ from app.schemas.slack import (
     SlackIntegrationUpdate,
 )
 from app.services.audit import record_audit
+from app.services.credentials import decrypt_value, encrypt_value
 from app.services.slack_notifier import send_test_slack_notification
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ async def list_slack_integrations(
     integrations = result.scalars().all()
 
     return {
-        "data": integrations,
+        "data": [SlackIntegrationResponse.from_integration(i) for i in integrations],
         "error": None,
         "meta": PaginationMeta(total=total, page=page, size=size),
     }
@@ -57,15 +58,14 @@ async def create_slack_integration(body: SlackIntegrationCreate, db: DB, user: A
     """Create a new Slack integration for the current tenant."""
     integration = SlackIntegration(
         tenant_id=user.tenant_id,
-        webhook_url=body.webhook_url,
+        webhook_url=encrypt_value(body.webhook_url),
         channel_name=body.channel_name,
         events=body.events,
         is_active=body.is_active,
         created_by=user.id,
     )
     db.add(integration)
-    await db.commit()
-    await db.refresh(integration)
+    await db.flush()
 
     await record_audit(
         db,
@@ -77,9 +77,10 @@ async def create_slack_integration(body: SlackIntegrationCreate, db: DB, user: A
         detail=f"Created Slack integration: {integration.channel_name or integration.webhook_url}",
     )
     await db.commit()
+    await db.refresh(integration)
 
     logger.info("Slack integration created: %s", integration.id)
-    return {"data": integration, "error": None, "meta": None}
+    return {"data": SlackIntegrationResponse.from_integration(integration), "error": None, "meta": None}
 
 
 @router.put("/{integration_id}", response_model=ApiResponse[SlackIntegrationResponse])
@@ -104,16 +105,13 @@ async def update_slack_integration(
         )
 
     if body.webhook_url is not None:
-        integration.webhook_url = body.webhook_url
+        integration.webhook_url = encrypt_value(body.webhook_url)
     if body.channel_name is not None:
         integration.channel_name = body.channel_name
     if body.events is not None:
         integration.events = body.events
     if body.is_active is not None:
         integration.is_active = body.is_active
-
-    await db.commit()
-    await db.refresh(integration)
 
     await record_audit(
         db,
@@ -125,9 +123,10 @@ async def update_slack_integration(
         detail=f"Updated Slack integration: {integration.channel_name or integration.webhook_url}",
     )
     await db.commit()
+    await db.refresh(integration)
 
     logger.info("Slack integration updated: %s", integration_id)
-    return {"data": integration, "error": None, "meta": None}
+    return {"data": SlackIntegrationResponse.from_integration(integration), "error": None, "meta": None}
 
 
 @router.delete("/{integration_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -177,7 +176,8 @@ async def test_slack_integration(integration_id: uuid.UUID, db: DB, user: AdminU
         )
 
     try:
-        success, response_body = await send_test_slack_notification(integration.webhook_url)
+        plain_url = decrypt_value(integration.webhook_url)
+        success, response_body = await send_test_slack_notification(plain_url)
 
         return {
             "data": {

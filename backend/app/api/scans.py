@@ -48,8 +48,7 @@ async def create_scan(request: Request, body: ScanCreate, db: DB, user: AdminUse
         status="pending",
     )
     db.add(scan)
-    await db.commit()
-    await db.refresh(scan)
+    await db.flush()
 
     await record_audit(
         db,
@@ -62,6 +61,7 @@ async def create_scan(request: Request, body: ScanCreate, db: DB, user: AdminUse
         ip_address=request.client.host if request.client else None,
     )
     await db.commit()
+    await db.refresh(scan)
 
     # Dispatch Celery task
     from app.worker.tasks import run_scan

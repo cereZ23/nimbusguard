@@ -62,7 +62,7 @@ class SlackIntegrationUpdate(BaseModel):
 
 class SlackIntegrationResponse(BaseModel):
     id: uuid.UUID
-    webhook_url: str
+    webhook_url_masked: str = ""
     channel_name: str | None
     events: list[str]
     is_active: bool
@@ -70,3 +70,15 @@ class SlackIntegrationResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @classmethod
+    def from_integration(cls, obj: object) -> SlackIntegrationResponse:
+        return cls(
+            id=obj.id,  # type: ignore[attr-defined]
+            webhook_url_masked="https://hooks.slack.com/services/****",
+            channel_name=obj.channel_name,  # type: ignore[attr-defined]
+            events=obj.events,  # type: ignore[attr-defined]
+            is_active=obj.is_active,  # type: ignore[attr-defined]
+            created_by=obj.created_by,  # type: ignore[attr-defined]
+            created_at=obj.created_at,  # type: ignore[attr-defined]
+        )

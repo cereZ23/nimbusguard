@@ -371,16 +371,6 @@ async def assign_finding(finding_id: uuid.UUID, body: AssignRequest, db: DB, use
         user_id=user.id,
     )
 
-    await db.commit()
-    await db.refresh(finding)
-
-    # Eagerly load assignee for the response
-    if finding.assigned_to:
-        assignee_result = await db.execute(select(User).where(User.id == finding.assigned_to))
-        assignee_user = assignee_result.scalar_one_or_none()
-    else:
-        assignee_user = None
-
     await record_audit(
         db,
         tenant_id=str(user.tenant_id),
@@ -391,6 +381,14 @@ async def assign_finding(finding_id: uuid.UUID, body: AssignRequest, db: DB, use
         detail=f"Assigned to {body.user_id}" if body.user_id else f"Unassigned from {previous_assignee}",
     )
     await db.commit()
+    await db.refresh(finding)
+
+    # Eagerly load assignee for the response
+    if finding.assigned_to:
+        assignee_result = await db.execute(select(User).where(User.id == finding.assigned_to))
+        assignee_user = assignee_result.scalar_one_or_none()
+    else:
+        assignee_user = None
 
     data = {
         "id": finding.id,

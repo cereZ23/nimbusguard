@@ -17,7 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
-  HelpCircle,
   Lock,
   Network,
   X,
@@ -53,7 +52,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Reports", href: "/reports", icon: FileDown },
       { label: "Settings", href: "/settings", icon: Settings },
-      { label: "Help", href: "/help", icon: HelpCircle },
     ],
   },
 ];

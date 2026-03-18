@@ -28,7 +28,8 @@ class Settings(BaseSettings):
     # JWT
     jwt_algorithm: str = "HS256"
     jwt_access_expire_minutes: int = 15
-    jwt_refresh_expire_days: int = 7
+    jwt_refresh_expire_days: int = 1  # Max session duration (absolute)
+    jwt_idle_timeout_hours: int = 2  # Session expires after inactivity
 
     # Azure
     azure_tenant_id: str = ""
@@ -49,6 +50,11 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # Database pool
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
+    db_pool_recycle: int = 3600
+
     # Encryption key for credentials at rest
     credential_encryption_key: str = ""
 
@@ -64,6 +70,25 @@ class Settings(BaseSettings):
 
     # AWS LocalStack endpoint (empty = real AWS)
     aws_endpoint_url: str = ""
+
+    @model_validator(mode="after")
+    def _validate_encryption_key(self) -> Settings:
+        key = self.credential_encryption_key
+        if not key and not self.debug:
+            msg = (
+                "CREDENTIAL_ENCRYPTION_KEY must be set in production. "
+                "Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+            )
+            raise RuntimeError(msg)
+        if key:
+            try:
+                from cryptography.fernet import Fernet
+
+                Fernet(key.encode())
+            except Exception as exc:
+                msg = f"CREDENTIAL_ENCRYPTION_KEY is not a valid Fernet key: {exc}"
+                raise RuntimeError(msg) from exc
+        return self
 
     @model_validator(mode="after")
     def _validate_secret_key(self) -> Settings:
