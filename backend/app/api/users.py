@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 import uuid
 
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.deps import DB, AdminUser, CurrentUser
 from app.models.role import Role
 from app.models.user import User
-from app.schemas.common import ApiResponse
+from app.schemas.common import ApiResponse, PaginationMeta
 from app.schemas.users import InviteUserRequest, UpdateRoleRequest, UserResponse
 from app.services.auth import hash_password, revoke_all_user_tokens, validate_password
 
@@ -19,12 +19,22 @@ router = APIRouter()
 
 
 @router.get("", response_model=ApiResponse[list[UserResponse]])
-async def list_users(db: DB, user: CurrentUser) -> dict:
+async def list_users(
+    db: DB,
+    user: CurrentUser,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+) -> dict:
+    total_q = await db.execute(select(func.count(User.id)).where(User.tenant_id == user.tenant_id))
+    total = total_q.scalar() or 0
+
     result = await db.execute(
         select(User)
         .options(selectinload(User.custom_role))
         .where(User.tenant_id == user.tenant_id)
         .order_by(User.created_at)
+        .offset((page - 1) * size)
+        .limit(size)
     )
     users = result.scalars().all()
     data = []
@@ -40,7 +50,7 @@ async def list_users(db: DB, user: CurrentUser) -> dict:
             "created_at": u.created_at,
         }
         data.append(user_dict)
-    return {"data": data, "error": None, "meta": None}
+    return {"data": data, "error": None, "meta": PaginationMeta(total=total, page=page, size=size)}
 
 
 @router.post("", response_model=ApiResponse[UserResponse], status_code=status.HTTP_201_CREATED)

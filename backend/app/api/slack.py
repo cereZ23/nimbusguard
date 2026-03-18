@@ -65,8 +65,7 @@ async def create_slack_integration(body: SlackIntegrationCreate, db: DB, user: A
         created_by=user.id,
     )
     db.add(integration)
-    await db.commit()
-    await db.refresh(integration)
+    await db.flush()
 
     await record_audit(
         db,
@@ -78,6 +77,7 @@ async def create_slack_integration(body: SlackIntegrationCreate, db: DB, user: A
         detail=f"Created Slack integration: {integration.channel_name or integration.webhook_url}",
     )
     await db.commit()
+    await db.refresh(integration)
 
     logger.info("Slack integration created: %s", integration.id)
     return {"data": integration, "error": None, "meta": None}
@@ -113,9 +113,6 @@ async def update_slack_integration(
     if body.is_active is not None:
         integration.is_active = body.is_active
 
-    await db.commit()
-    await db.refresh(integration)
-
     await record_audit(
         db,
         tenant_id=str(user.tenant_id),
@@ -126,6 +123,7 @@ async def update_slack_integration(
         detail=f"Updated Slack integration: {integration.channel_name or integration.webhook_url}",
     )
     await db.commit()
+    await db.refresh(integration)
 
     logger.info("Slack integration updated: %s", integration_id)
     return {"data": integration, "error": None, "meta": None}

@@ -27,46 +27,27 @@ async def list_controls(
 ) -> dict:
     tenant_id = user.tenant_id
 
-    # Subquery for pass/fail counts scoped to tenant
-    fail_count = (
-        select(func.count(Finding.id))
-        .join(CloudAccount, CloudAccount.id == Finding.cloud_account_id)
-        .where(
-            Finding.control_id == Control.id,
-            Finding.status == "fail",
-            CloudAccount.tenant_id == tenant_id,
+    # Single grouped LEFT JOIN instead of 3 correlated subqueries
+    # This reduces 3*N subquery evaluations to 1 join + group
+    counts_subq = (
+        select(
+            Finding.control_id,
+            func.count(case((Finding.status == "pass", 1))).label("pass_count"),
+            func.count(case((Finding.status == "fail", 1))).label("fail_count"),
+            func.count(Finding.id).label("total_count"),
         )
-        .correlate(Control)
-        .scalar_subquery()
-    )
-    pass_count = (
-        select(func.count(Finding.id))
         .join(CloudAccount, CloudAccount.id == Finding.cloud_account_id)
-        .where(
-            Finding.control_id == Control.id,
-            Finding.status == "pass",
-            CloudAccount.tenant_id == tenant_id,
-        )
-        .correlate(Control)
-        .scalar_subquery()
-    )
-    total_count = (
-        select(func.count(Finding.id))
-        .join(CloudAccount, CloudAccount.id == Finding.cloud_account_id)
-        .where(
-            Finding.control_id == Control.id,
-            CloudAccount.tenant_id == tenant_id,
-        )
-        .correlate(Control)
-        .scalar_subquery()
+        .where(CloudAccount.tenant_id == tenant_id)
+        .group_by(Finding.control_id)
+        .subquery()
     )
 
     base = select(
         Control,
-        func.coalesce(pass_count, 0).label("pass_count"),
-        func.coalesce(fail_count, 0).label("fail_count"),
-        func.coalesce(total_count, 0).label("total_count"),
-    )
+        func.coalesce(counts_subq.c.pass_count, 0).label("pass_count"),
+        func.coalesce(counts_subq.c.fail_count, 0).label("fail_count"),
+        func.coalesce(counts_subq.c.total_count, 0).label("total_count"),
+    ).outerjoin(counts_subq, Control.id == counts_subq.c.control_id)
 
     count_base = select(func.count(Control.id))
     if search:

@@ -72,8 +72,7 @@ async def create_jira_integration(
         created_by=user.id,
     )
     db.add(integration)
-    await db.commit()
-    await db.refresh(integration)
+    await db.flush()
 
     await record_audit(
         db,
@@ -85,6 +84,7 @@ async def create_jira_integration(
         detail=f"Created Jira integration: {integration.base_url} ({integration.project_key})",
     )
     await db.commit()
+    await db.refresh(integration)
 
     logger.info(
         "Jira integration created: %s (%s) for tenant %s",
@@ -129,9 +129,6 @@ async def update_jira_integration(
     if body.is_active is not None:
         integration.is_active = body.is_active
 
-    await db.commit()
-    await db.refresh(integration)
-
     await record_audit(
         db,
         tenant_id=str(user.tenant_id),
@@ -142,6 +139,7 @@ async def update_jira_integration(
         detail=f"Updated Jira integration: {integration.base_url}",
     )
     await db.commit()
+    await db.refresh(integration)
 
     logger.info("Jira integration updated: %s", integration.id)
     return {"data": integration, "error": None, "meta": None}

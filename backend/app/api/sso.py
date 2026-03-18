@@ -84,8 +84,7 @@ async def upsert_sso_config(
         config.default_role = body.default_role
         action = "sso.config.updated"
 
-    await db.commit()
-    await db.refresh(config)
+    await db.flush()
 
     await record_audit(
         db,
@@ -97,6 +96,7 @@ async def upsert_sso_config(
         ip_address=request.client.host if request.client else None,
     )
     await db.commit()
+    await db.refresh(config)
 
     logger.info("SSO config %s for tenant %s (provider=%s)", action, tenant_id, body.provider)
     return {"data": SsoConfigResponse.model_validate(config), "error": None, "meta": None}
@@ -133,9 +133,6 @@ async def patch_sso_config(
         if field in _SSO_PATCH_ALLOWED_FIELDS:
             setattr(config, field, value)
 
-    await db.commit()
-    await db.refresh(config)
-
     await record_audit(
         db,
         tenant_id=tenant_id,
@@ -147,6 +144,7 @@ async def patch_sso_config(
         ip_address=request.client.host if request.client else None,
     )
     await db.commit()
+    await db.refresh(config)
 
     return {"data": SsoConfigResponse.model_validate(config), "error": None, "meta": None}
 
@@ -167,8 +165,6 @@ async def delete_sso_config(
         )
 
     config_id = str(config.id)
-    await db.delete(config)
-    await db.commit()
 
     await record_audit(
         db,
@@ -179,6 +175,7 @@ async def delete_sso_config(
         resource_id=config_id,
         ip_address=request.client.host if request.client else None,
     )
+    await db.delete(config)
     await db.commit()
 
     logger.info("SSO config deleted for tenant %s", tenant_id)

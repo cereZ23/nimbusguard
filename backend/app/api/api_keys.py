@@ -63,8 +63,7 @@ async def create_api_key(body: ApiKeyCreate, db: DB, user: AdminUser) -> dict:
         expires_at=expires_at,
     )
     db.add(api_key)
-    await db.commit()
-    await db.refresh(api_key)
+    await db.flush()
 
     await record_audit(
         db,
@@ -76,6 +75,7 @@ async def create_api_key(body: ApiKeyCreate, db: DB, user: AdminUser) -> dict:
         detail=f"Created API key: {api_key.name} (prefix: {prefix})",
     )
     await db.commit()
+    await db.refresh(api_key)
 
     logger.info("API key created: %s (prefix=%s) by user=%s", api_key.id, prefix, user.id)
 

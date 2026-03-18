@@ -58,10 +58,31 @@ async def cache_invalidate_pattern(pattern: str) -> None:
     try:
         r = await get_redis()
         keys = []
-        async for key in r.scan_iter(match=pattern):
+        async for key in r.scan_iter(match=pattern, count=100):
             keys.append(key)
         if keys:
             await r.delete(*keys)
             logger.info("Cache invalidated %d keys matching %s", len(keys), pattern)
     except Exception:
         logger.debug("Cache invalidation failed for pattern=%s", pattern)
+
+
+async def cache_invalidate_tenant(tenant_id: str) -> None:
+    """Invalidate all dashboard cache keys for a tenant using explicit key list.
+
+    Faster than scan_iter for known key patterns.
+    """
+    prefixes = ["dashboard:summary", "dashboard:trend", "dashboard:compliance-trend", "dashboard:cross-cloud"]
+    try:
+        r = await get_redis()
+        # Build explicit keys for known patterns
+        keys_to_delete = [f"{prefix}:{tenant_id}" for prefix in prefixes]
+        # Trend keys have extra suffixes — use scan_iter only for those
+        for prefix in ["dashboard:trend", "dashboard:compliance-trend"]:
+            async for key in r.scan_iter(match=f"{prefix}:{tenant_id}:*", count=50):
+                keys_to_delete.append(key)
+        if keys_to_delete:
+            await r.delete(*keys_to_delete)
+            logger.info("Cache invalidated %d keys for tenant %s", len(keys_to_delete), tenant_id)
+    except Exception:
+        logger.debug("Cache invalidation failed for tenant=%s", tenant_id)

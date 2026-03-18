@@ -57,8 +57,7 @@ async def create_webhook(body: WebhookCreate, db: DB, user: AdminUser) -> dict:
         is_active=True,
     )
     db.add(webhook)
-    await db.commit()
-    await db.refresh(webhook)
+    await db.flush()
 
     await record_audit(
         db,
@@ -70,6 +69,7 @@ async def create_webhook(body: WebhookCreate, db: DB, user: AdminUser) -> dict:
         detail=f"Created webhook: {webhook.url}",
     )
     await db.commit()
+    await db.refresh(webhook)
 
     logger.info("Webhook created: %s → %s", webhook.id, webhook.url)
     return {"data": webhook, "error": None, "meta": None}
@@ -99,9 +99,6 @@ async def update_webhook(webhook_id: uuid.UUID, body: WebhookUpdate, db: DB, use
     if body.description is not None:
         webhook.description = body.description
 
-    await db.commit()
-    await db.refresh(webhook)
-
     await record_audit(
         db,
         tenant_id=str(user.tenant_id),
@@ -112,6 +109,7 @@ async def update_webhook(webhook_id: uuid.UUID, body: WebhookUpdate, db: DB, use
         detail=f"Updated webhook: {webhook.url}",
     )
     await db.commit()
+    await db.refresh(webhook)
 
     logger.info("Webhook updated: %s", webhook_id)
     return {"data": webhook, "error": None, "meta": None}
