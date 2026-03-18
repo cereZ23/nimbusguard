@@ -74,7 +74,7 @@ jobs:
         run: ruff format --check app/ tests/
 
       - name: Run tests with coverage
-        run: pytest --tb=short -q --cov=app --cov-report=term-missing --cov-fail-under=60
+        run: pytest --tb=short -q --cov=app --cov-report=term-missing --cov-fail-under=70
 
   # ── Frontend: lint + typecheck + build ────────────────────────────────
   test-frontend:
@@ -117,3 +117,47 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # ── Docker image build (verify Dockerfiles work) ─────────────────────
+  build-images:
+    name: Docker — build images
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t cspm-backend:ci ./backend
+
+      - name: Build frontend image
+        run: docker build -t cspm-frontend:ci ./frontend
+
+  # ── Security scan with Trivy ─────────────────────────────────────────
+  security-scan:
+    name: Security — Trivy vulnerability scan
+    runs-on: ubuntu-latest
+    needs: [build-images]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image for scanning
+        run: docker build -t cspm-backend:scan ./backend
+
+      - name: Run Trivy on backend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "cspm-backend:scan"
+          format: "table"
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
+
+      - name: Trivy filesystem scan (source code)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "table"
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
