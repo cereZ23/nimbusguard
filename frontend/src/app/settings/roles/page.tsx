@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Pencil, Plus, Shield, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Shield, Trash2 } from "lucide-react";
+import Button from "@/components/ui/button";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import Modal from "@/components/ui/modal";
 import ErrorState from "@/components/ui/error-state";
 import api from "@/lib/api";
 import type { PermissionListResponse, Role } from "@/types";
@@ -93,13 +96,12 @@ export default function RolesPage() {
     }
   };
 
-  const handleDeleteRole = async (roleId: string, roleName: string) => {
-    if (
-      !window.confirm(
-        `Delete role "${roleName}"? Users with this role will lose their custom permissions.`,
-      )
-    )
-      return;
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const handleDeleteRole = async (roleId: string) => {
     setActionError(null);
     try {
       await api.delete(`/roles/${roleId}`);
@@ -117,13 +119,10 @@ export default function RolesPage() {
     <>
       {/* Action buttons */}
       <div className="flex justify-end">
-        <button
-          onClick={handleOpenCreateRole}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-        >
+        <Button variant="primary" onClick={handleOpenCreateRole}>
           <Plus size={16} />
           Create Role
-        </button>
+        </Button>
       </div>
 
       {/* Error state for initial load */}
@@ -192,7 +191,9 @@ export default function RolesPage() {
                         <Pencil size={16} />
                       </button>
                       <button
-                        onClick={() => handleDeleteRole(r.id, r.name)}
+                        onClick={() =>
+                          setDeleteTarget({ id: r.id, name: r.name })
+                        }
                         className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                         title="Delete role"
                       >
@@ -215,146 +216,145 @@ export default function RolesPage() {
       )}
 
       {/* Role Create/Edit Modal */}
-      {showRoleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editingRole ? "Edit Role" : "Create Role"}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowRoleModal(false);
-                  setEditingRole(null);
-                  setFormError(null);
-                }}
-                className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleSaveRole} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="role_name"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Role Name
-                </label>
-                <input
-                  id="role_name"
-                  type="text"
-                  required
-                  maxLength={50}
-                  value={roleForm.name}
-                  onChange={(e) =>
-                    setRoleForm((p) => ({ ...p, name: e.target.value }))
-                  }
-                  placeholder="e.g. Security Analyst"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="role_desc"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="role_desc"
-                  rows={2}
-                  value={roleForm.description}
-                  onChange={(e) =>
-                    setRoleForm((p) => ({ ...p, description: e.target.value }))
-                  }
-                  placeholder="Brief description of this role"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Permissions
-                </label>
-                <div className="max-h-64 space-y-4 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-gray-600">
-                  {permissionsCatalog?.categories &&
-                    Object.entries(permissionsCatalog.categories).map(
-                      ([category, perms]) => (
-                        <div key={category}>
-                          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                            {category}
-                          </p>
-                          <div className="space-y-1">
-                            {perms.map((perm) => {
-                              const info = permissionsCatalog.permissions.find(
-                                (p) => p.permission === perm,
-                              );
-                              return (
-                                <label
-                                  key={perm}
-                                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={roleForm.permissions.includes(
-                                      perm,
-                                    )}
-                                    onChange={() => toggleRolePermission(perm)}
-                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                  />
-                                  <span className="text-sm text-gray-900 dark:text-gray-100">
-                                    {info?.description ?? perm}
-                                  </span>
-                                  <span className="ml-auto font-mono text-xs text-gray-400">
-                                    {perm}
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ),
-                    )}
-                </div>
-                {roleForm.permissions.length === 0 && (
-                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                    Select at least one permission
-                  </p>
-                )}
-              </div>
-              {formError && (
-                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                  {formError}
-                </div>
-              )}
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRoleModal(false);
-                    setEditingRole(null);
-                    setFormError(null);
-                  }}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || roleForm.permissions.length === 0}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSubmitting
-                    ? "Saving..."
-                    : editingRole
-                      ? "Update Role"
-                      : "Create Role"}
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showRoleModal}
+        onClose={() => {
+          setShowRoleModal(false);
+          setEditingRole(null);
+          setFormError(null);
+        }}
+        title={editingRole ? "Edit Role" : "Create Role"}
+      >
+        <form onSubmit={handleSaveRole} className="space-y-4">
+          <div>
+            <label
+              htmlFor="role_name"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Role Name
+            </label>
+            <input
+              id="role_name"
+              type="text"
+              required
+              maxLength={50}
+              value={roleForm.name}
+              onChange={(e) =>
+                setRoleForm((p) => ({ ...p, name: e.target.value }))
+              }
+              placeholder="e.g. Security Analyst"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
           </div>
-        </div>
-      )}
+          <div>
+            <label
+              htmlFor="role_desc"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Description
+            </label>
+            <textarea
+              id="role_desc"
+              rows={2}
+              value={roleForm.description}
+              onChange={(e) =>
+                setRoleForm((p) => ({ ...p, description: e.target.value }))
+              }
+              placeholder="Brief description of this role"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Permissions
+            </label>
+            <div className="max-h-64 space-y-4 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-gray-600">
+              {permissionsCatalog?.categories &&
+                Object.entries(permissionsCatalog.categories).map(
+                  ([category, perms]) => (
+                    <div key={category}>
+                      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        {category}
+                      </p>
+                      <div className="space-y-1">
+                        {perms.map((perm) => {
+                          const info = permissionsCatalog.permissions.find(
+                            (p) => p.permission === perm,
+                          );
+                          return (
+                            <label
+                              key={perm}
+                              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={roleForm.permissions.includes(perm)}
+                                onChange={() => toggleRolePermission(perm)}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                                {info?.description ?? perm}
+                              </span>
+                              <span className="ml-auto font-mono text-xs text-gray-400">
+                                {perm}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ),
+                )}
+            </div>
+            {roleForm.permissions.length === 0 && (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                Select at least one permission
+              </p>
+            )}
+          </div>
+          {formError && (
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+              {formError}
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowRoleModal(false);
+                setEditingRole(null);
+                setFormError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={roleForm.permissions.length === 0}
+              loading={isSubmitting}
+            >
+              {editingRole ? "Update Role" : "Create Role"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Role Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) {
+            handleDeleteRole(deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
+        title="Delete Role"
+        message={`Delete role "${deleteTarget?.name ?? ""}"? Users with this role will lose their custom permissions.`}
+        confirmLabel="Delete"
+      />
     </>
   );
 }

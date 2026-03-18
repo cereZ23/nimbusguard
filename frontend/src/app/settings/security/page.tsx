@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { Check, Copy, Shield, X } from "lucide-react";
+import Button from "@/components/ui/button";
 import BrandingSection from "@/components/settings/branding-section";
 import ScimSection from "@/components/settings/scim-section";
 import SsoSection from "@/components/settings/sso-section";
@@ -319,30 +320,27 @@ export default function SecurityPage() {
                   />
                 </div>
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     type="submit"
-                    disabled={mfaLoading || mfaVerifyCode.trim().length !== 6}
-                    className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    variant="primary"
+                    disabled={mfaVerifyCode.trim().length !== 6}
+                    loading={mfaLoading}
                   >
-                    {mfaLoading ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    ) : (
-                      <Check size={14} />
-                    )}
+                    <Check size={14} />
                     Verify and enable
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={() => {
                       setShowMfaSetup(false);
                       setMfaSetupData(null);
                       setMfaVerifyCode("");
                       setMfaError(null);
                     }}
-                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -362,29 +360,26 @@ export default function SecurityPage() {
                   required
                 />
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     type="submit"
-                    disabled={mfaLoading || !mfaDisablePassword}
-                    className="flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    variant="danger"
+                    disabled={!mfaDisablePassword}
+                    loading={mfaLoading}
                   >
-                    {mfaLoading ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    ) : (
-                      <X size={14} />
-                    )}
+                    <X size={14} />
                     Disable 2FA
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={() => {
                       setShowMfaDisable(false);
                       setMfaDisablePassword("");
                       setMfaError(null);
                     }}
-                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -403,18 +398,14 @@ export default function SecurityPage() {
                   <X size={14} /> Disable 2FA
                 </button>
               ) : (
-                <button
+                <Button
+                  variant="primary"
                   onClick={handleMfaSetup}
-                  disabled={mfaLoading}
-                  className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  loading={mfaLoading}
                 >
-                  {mfaLoading ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  ) : (
-                    <Shield size={14} />
-                  )}
+                  <Shield size={14} />
                   Enable 2FA
-                </button>
+                </Button>
               )}
             </div>
           )}

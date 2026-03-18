@@ -12,6 +12,9 @@ import {
   Users,
   X,
 } from "lucide-react";
+import Button from "@/components/ui/button";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import Modal from "@/components/ui/modal";
 import ErrorState from "@/components/ui/error-state";
 import api from "@/lib/api";
 import type { Invitation, InvitationCreated, Role, TenantUser } from "@/types";
@@ -95,11 +98,13 @@ export default function UsersPage() {
     setTimeout(() => setCopiedInviteUrl(false), 2000);
   };
 
-  const handleRevokeInvitation = async (
-    invitationId: string,
-    email: string,
-  ) => {
-    if (!window.confirm(`Revoke invitation for "${email}"?`)) return;
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: "user" | "invitation";
+    id: string;
+    label: string;
+  } | null>(null);
+
+  const handleRevokeInvitation = async (invitationId: string) => {
     setActionError(null);
     try {
       await api.delete(`/invitations/${invitationId}`);
@@ -159,8 +164,7 @@ export default function UsersPage() {
     return u.role;
   };
 
-  const handleRemoveUser = async (userId: string, email: string) => {
-    if (!window.confirm(`Remove "${email}" from the team?`)) return;
+  const handleRemoveUser = async (userId: string) => {
     setActionError(null);
     try {
       await api.delete(`/users/${userId}`);
@@ -187,13 +191,10 @@ export default function UsersPage() {
     <>
       {/* Action buttons */}
       <div className="flex justify-end">
-        <button
-          onClick={() => setShowInviteModal(true)}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-        >
+        <Button variant="primary" onClick={() => setShowInviteModal(true)}>
           <UserPlus size={16} />
           Invite User
-        </button>
+        </Button>
       </div>
 
       {/* Error state for initial load */}
@@ -265,7 +266,13 @@ export default function UsersPage() {
                         )}
                       </select>
                       <button
-                        onClick={() => handleRemoveUser(u.id, u.email)}
+                        onClick={() =>
+                          setDeleteTarget({
+                            type: "user",
+                            id: u.id,
+                            label: u.email,
+                          })
+                        }
                         className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                         title="Remove user"
                       >
@@ -320,7 +327,11 @@ export default function UsersPage() {
                           </button>
                           <button
                             onClick={() =>
-                              handleRevokeInvitation(inv.id, inv.email)
+                              setDeleteTarget({
+                                type: "invitation",
+                                id: inv.id,
+                                label: inv.email,
+                              })
                             }
                             className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                             title="Revoke invitation"
@@ -339,159 +350,171 @@ export default function UsersPage() {
       )}
 
       {/* Invite User Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Invite User
-              </h2>
-              <button
+      <Modal
+        isOpen={showInviteModal}
+        onClose={() => {
+          setShowInviteModal(false);
+          setFormError(null);
+          setLastInviteUrl(null);
+          setCopiedInviteUrl(false);
+        }}
+        title="Invite User"
+        size="md"
+      >
+        {lastInviteUrl ? (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800 dark:bg-green-900/20">
+              <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                Invitation sent successfully!
+              </p>
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+                If SMTP is not configured, share this link with the user
+                directly. The link expires in 7 days.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Invitation Link
+              </label>
+              <div className="mt-1 flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={lastInviteUrl}
+                  className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300"
+                />
+                <button
+                  onClick={() => handleCopyInviteUrl(lastInviteUrl)}
+                  className="flex shrink-0 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                  title="Copy link"
+                >
+                  {copiedInviteUrl ? (
+                    <Check size={14} className="text-green-600" />
+                  ) : (
+                    <Copy size={14} />
+                  )}
+                </button>
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button
+                variant="primary"
                 onClick={() => {
-                  setShowInviteModal(false);
-                  setFormError(null);
                   setLastInviteUrl(null);
                   setCopiedInviteUrl(false);
                 }}
-                className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
               >
-                <X size={20} />
-              </button>
+                Invite Another
+              </Button>
             </div>
-
-            {lastInviteUrl ? (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800 dark:bg-green-900/20">
-                  <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                    Invitation sent successfully!
-                  </p>
-                  <p className="mt-1 text-xs text-green-600 dark:text-green-400">
-                    If SMTP is not configured, share this link with the user
-                    directly. The link expires in 7 days.
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Invitation Link
-                  </label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={lastInviteUrl}
-                      className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300"
-                    />
-                    <button
-                      onClick={() => handleCopyInviteUrl(lastInviteUrl)}
-                      className="flex shrink-0 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
-                      title="Copy link"
-                    >
-                      {copiedInviteUrl ? (
-                        <Check size={14} className="text-green-600" />
-                      ) : (
-                        <Copy size={14} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={() => {
-                      setLastInviteUrl(null);
-                      setCopiedInviteUrl(false);
-                    }}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-                  >
-                    Invite Another
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleInviteUser} className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="inv_email"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Email
-                  </label>
-                  <input
-                    id="inv_email"
-                    type="email"
-                    required
-                    value={inviteForm.email}
-                    onChange={(e) =>
-                      setInviteForm((p) => ({ ...p, email: e.target.value }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                    placeholder="user@company.com"
-                  />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    An invitation link will be sent. The user will set their own
-                    name and password.
-                  </p>
-                </div>
-                <div>
-                  <label
-                    htmlFor="inv_role"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Role
-                  </label>
-                  <select
-                    id="inv_role"
-                    value={inviteForm.role}
-                    onChange={(e) =>
-                      setInviteForm((p) => ({ ...p, role: e.target.value }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                  >
-                    <optgroup label="System Roles">
-                      <option value="viewer">Viewer</option>
-                      <option value="admin">Administrator</option>
-                    </optgroup>
-                    {roles.filter((r) => !r.is_system).length > 0 && (
-                      <optgroup label="Custom Roles">
-                        {roles
-                          .filter((r) => !r.is_system)
-                          .map((r) => (
-                            <option key={r.id} value={r.name}>
-                              {r.name}
-                            </option>
-                          ))}
-                      </optgroup>
-                    )}
-                  </select>
-                </div>
-                {formError && (
-                  <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                    {formError}
-                  </div>
-                )}
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowInviteModal(false);
-                      setFormError(null);
-                    }}
-                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSubmitting ? "Sending..." : "Send Invitation"}
-                  </button>
-                </div>
-              </form>
-            )}
           </div>
-        </div>
-      )}
+        ) : (
+          <form onSubmit={handleInviteUser} className="space-y-4">
+            <div>
+              <label
+                htmlFor="inv_email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Email
+              </label>
+              <input
+                id="inv_email"
+                type="email"
+                required
+                value={inviteForm.email}
+                onChange={(e) =>
+                  setInviteForm((p) => ({ ...p, email: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                placeholder="user@company.com"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                An invitation link will be sent. The user will set their own
+                name and password.
+              </p>
+            </div>
+            <div>
+              <label
+                htmlFor="inv_role"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Role
+              </label>
+              <select
+                id="inv_role"
+                value={inviteForm.role}
+                onChange={(e) =>
+                  setInviteForm((p) => ({ ...p, role: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+              >
+                <optgroup label="System Roles">
+                  <option value="viewer">Viewer</option>
+                  <option value="admin">Administrator</option>
+                </optgroup>
+                {roles.filter((r) => !r.is_system).length > 0 && (
+                  <optgroup label="Custom Roles">
+                    {roles
+                      .filter((r) => !r.is_system)
+                      .map((r) => (
+                        <option key={r.id} value={r.name}>
+                          {r.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                )}
+              </select>
+            </div>
+            {formError && (
+              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                {formError}
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setFormError(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" loading={isSubmitting}>
+                Send Invitation
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Delete/Revoke Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) {
+            if (deleteTarget.type === "user") {
+              handleRemoveUser(deleteTarget.id);
+            } else {
+              handleRevokeInvitation(deleteTarget.id);
+            }
+            setDeleteTarget(null);
+          }
+        }}
+        title={
+          deleteTarget?.type === "user"
+            ? "Remove Team Member"
+            : "Revoke Invitation"
+        }
+        message={
+          deleteTarget?.type === "user"
+            ? `Remove "${deleteTarget?.label ?? ""}" from the team?`
+            : `Revoke invitation for "${deleteTarget?.label ?? ""}"?`
+        }
+        confirmLabel={deleteTarget?.type === "user" ? "Remove" : "Revoke"}
+      />
     </>
   );
 }

@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Calendar, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { Calendar, Plus, RefreshCw, Trash2 } from "lucide-react";
+import Button from "@/components/ui/button";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import Modal from "@/components/ui/modal";
 import ErrorState from "@/components/ui/error-state";
 import api from "@/lib/api";
 import type { CloudAccount, CloudProvider } from "@/types";
@@ -181,10 +184,12 @@ export default function AccountsPage() {
     }
   };
 
-  const handleDeleteAccount = async (accountId: string, name: string) => {
-    if (!window.confirm(`Remove "${name}"? Associated data will be deleted.`)) {
-      return;
-    }
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const handleDeleteAccount = async (accountId: string) => {
     setActionError(null);
     try {
       await api.delete(`/accounts/${accountId}`);
@@ -218,13 +223,10 @@ export default function AccountsPage() {
     <>
       {/* Action buttons */}
       <div className="flex justify-end">
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-        >
+        <Button variant="primary" onClick={() => setShowAddModal(true)}>
           <Plus size={16} />
           Add Account
-        </button>
+        </Button>
       </div>
 
       {/* Error state for initial load */}
@@ -313,7 +315,10 @@ export default function AccountsPage() {
                       </button>
                       <button
                         onClick={() =>
-                          handleDeleteAccount(account.id, account.display_name)
+                          setDeleteTarget({
+                            id: account.id,
+                            name: account.display_name,
+                          })
                         }
                         className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
                         title="Remove account"
@@ -366,327 +371,314 @@ export default function AccountsPage() {
       )}
 
       {/* Add Account Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Add Cloud Account
-              </h2>
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setForm(EMPTY_FORM);
+          setFormError(null);
+          setTestConnectionResult(null);
+        }}
+        title="Add Cloud Account"
+      >
+        <form onSubmit={handleAddAccount} className="space-y-4">
+          {/* Provider */}
+          <div>
+            <label
+              htmlFor="provider"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Cloud Provider
+            </label>
+            <select
+              id="provider"
+              value={form.provider}
+              onChange={(e) => updateField("provider", e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            >
+              <option value="azure">Azure</option>
+              <option value="aws">AWS</option>
+            </select>
+          </div>
+
+          {/* Display Name */}
+          <div>
+            <label
+              htmlFor="display_name"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Display Name
+            </label>
+            <input
+              id="display_name"
+              type="text"
+              required
+              value={form.display_name}
+              onChange={(e) => updateField("display_name", e.target.value)}
+              placeholder="Production Subscription"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
+          </div>
+
+          {/* Subscription / Account ID */}
+          <div>
+            <label
+              htmlFor="provider_account_id"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              {form.provider === "azure" ? "Subscription ID" : "AWS Account ID"}
+            </label>
+            <input
+              id="provider_account_id"
+              type="text"
+              required
+              value={form.provider_account_id}
+              onChange={(e) =>
+                updateField("provider_account_id", e.target.value)
+              }
+              placeholder={
+                form.provider === "azure"
+                  ? "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  : "123456789012"
+              }
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
+          </div>
+
+          {/* Credentials section */}
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-900/50">
+            <h3 className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+              {form.provider === "azure"
+                ? "Azure Service Principal"
+                : "AWS Credentials"}
+            </h3>
+
+            {form.provider === "azure" ? (
+              <>
+                <div className="mb-3">
+                  <label
+                    htmlFor="azure_tenant_id"
+                    className="block text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Azure Tenant ID
+                  </label>
+                  <input
+                    id="azure_tenant_id"
+                    type="text"
+                    required
+                    value={form.tenant_id}
+                    onChange={(e) => updateField("tenant_id", e.target.value)}
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="mb-3">
+                  <label
+                    htmlFor="azure_client_id"
+                    className="block text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Client ID (App ID)
+                  </label>
+                  <input
+                    id="azure_client_id"
+                    type="text"
+                    required
+                    value={form.client_id}
+                    onChange={(e) => updateField("client_id", e.target.value)}
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="azure_client_secret"
+                    className="block text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Client Secret
+                  </label>
+                  <input
+                    id="azure_client_secret"
+                    type="password"
+                    required
+                    value={form.client_secret}
+                    onChange={(e) =>
+                      updateField("client_secret", e.target.value)
+                    }
+                    placeholder="••••••••••••"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mb-3">
+                  <label
+                    htmlFor="aws_access_key_id"
+                    className="block text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Access Key ID
+                  </label>
+                  <input
+                    id="aws_access_key_id"
+                    type="text"
+                    required
+                    value={form.access_key_id}
+                    onChange={(e) =>
+                      updateField("access_key_id", e.target.value)
+                    }
+                    placeholder="AKIAIOSFODNN7EXAMPLE"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="mb-3">
+                  <label
+                    htmlFor="aws_secret_access_key"
+                    className="block text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Secret Access Key
+                  </label>
+                  <input
+                    id="aws_secret_access_key"
+                    type="password"
+                    required
+                    value={form.secret_access_key}
+                    onChange={(e) =>
+                      updateField("secret_access_key", e.target.value)
+                    }
+                    placeholder="••••••••••••"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="mb-3">
+                  <label
+                    htmlFor="aws_region"
+                    className="block text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Region
+                  </label>
+                  <select
+                    id="aws_region"
+                    value={form.region}
+                    onChange={(e) => updateField("region", e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                  >
+                    <option value="us-east-1">US East (N. Virginia)</option>
+                    <option value="us-east-2">US East (Ohio)</option>
+                    <option value="us-west-1">US West (N. California)</option>
+                    <option value="us-west-2">US West (Oregon)</option>
+                    <option value="eu-west-1">EU (Ireland)</option>
+                    <option value="eu-west-2">EU (London)</option>
+                    <option value="eu-west-3">EU (Paris)</option>
+                    <option value="eu-central-1">EU (Frankfurt)</option>
+                    <option value="ap-southeast-1">
+                      Asia Pacific (Singapore)
+                    </option>
+                    <option value="ap-southeast-2">
+                      Asia Pacific (Sydney)
+                    </option>
+                    <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="aws_role_arn"
+                    className="block text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Role ARN{" "}
+                    <span className="text-gray-400">
+                      (optional, for cross-account)
+                    </span>
+                  </label>
+                  <input
+                    id="aws_role_arn"
+                    type="text"
+                    value={form.role_arn}
+                    onChange={(e) => updateField("role_arn", e.target.value)}
+                    placeholder="arn:aws:iam::123456789012:role/NimbusGuardRole"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Test Connection */}
+          {(form.provider === "azure" || form.provider === "aws") && (
+            <div className="space-y-2">
               <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setForm(EMPTY_FORM);
-                  setFormError(null);
-                  setTestConnectionResult(null);
-                }}
-                className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                type="button"
+                onClick={handleTestConnection}
+                disabled={isTestingConnection || !isTestConnectionReady}
+                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddAccount} className="space-y-4">
-              {/* Provider */}
-              <div>
-                <label
-                  htmlFor="provider"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Cloud Provider
-                </label>
-                <select
-                  id="provider"
-                  value={form.provider}
-                  onChange={(e) => updateField("provider", e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                >
-                  <option value="azure">Azure</option>
-                  <option value="aws">AWS</option>
-                </select>
-              </div>
-
-              {/* Display Name */}
-              <div>
-                <label
-                  htmlFor="display_name"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Display Name
-                </label>
-                <input
-                  id="display_name"
-                  type="text"
-                  required
-                  value={form.display_name}
-                  onChange={(e) => updateField("display_name", e.target.value)}
-                  placeholder="Production Subscription"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-
-              {/* Subscription / Account ID */}
-              <div>
-                <label
-                  htmlFor="provider_account_id"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  {form.provider === "azure"
-                    ? "Subscription ID"
-                    : "AWS Account ID"}
-                </label>
-                <input
-                  id="provider_account_id"
-                  type="text"
-                  required
-                  value={form.provider_account_id}
-                  onChange={(e) =>
-                    updateField("provider_account_id", e.target.value)
-                  }
-                  placeholder={
-                    form.provider === "azure"
-                      ? "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                      : "123456789012"
-                  }
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-
-              {/* Credentials section */}
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-900/50">
-                <h3 className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {form.provider === "azure"
-                    ? "Azure Service Principal"
-                    : "AWS Credentials"}
-                </h3>
-
-                {form.provider === "azure" ? (
+                {isTestingConnection ? (
                   <>
-                    <div className="mb-3">
-                      <label
-                        htmlFor="azure_tenant_id"
-                        className="block text-sm text-gray-600 dark:text-gray-400"
-                      >
-                        Azure Tenant ID
-                      </label>
-                      <input
-                        id="azure_tenant_id"
-                        type="text"
-                        required
-                        value={form.tenant_id}
-                        onChange={(e) =>
-                          updateField("tenant_id", e.target.value)
-                        }
-                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label
-                        htmlFor="azure_client_id"
-                        className="block text-sm text-gray-600 dark:text-gray-400"
-                      >
-                        Client ID (App ID)
-                      </label>
-                      <input
-                        id="azure_client_id"
-                        type="text"
-                        required
-                        value={form.client_id}
-                        onChange={(e) =>
-                          updateField("client_id", e.target.value)
-                        }
-                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="azure_client_secret"
-                        className="block text-sm text-gray-600 dark:text-gray-400"
-                      >
-                        Client Secret
-                      </label>
-                      <input
-                        id="azure_client_secret"
-                        type="password"
-                        required
-                        value={form.client_secret}
-                        onChange={(e) =>
-                          updateField("client_secret", e.target.value)
-                        }
-                        placeholder="••••••••••••"
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      />
-                    </div>
+                    <RefreshCw size={14} className="animate-spin" />
+                    Testing...
                   </>
                 ) : (
                   <>
-                    <div className="mb-3">
-                      <label
-                        htmlFor="aws_access_key_id"
-                        className="block text-sm text-gray-600 dark:text-gray-400"
-                      >
-                        Access Key ID
-                      </label>
-                      <input
-                        id="aws_access_key_id"
-                        type="text"
-                        required
-                        value={form.access_key_id}
-                        onChange={(e) =>
-                          updateField("access_key_id", e.target.value)
-                        }
-                        placeholder="AKIAIOSFODNN7EXAMPLE"
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label
-                        htmlFor="aws_secret_access_key"
-                        className="block text-sm text-gray-600 dark:text-gray-400"
-                      >
-                        Secret Access Key
-                      </label>
-                      <input
-                        id="aws_secret_access_key"
-                        type="password"
-                        required
-                        value={form.secret_access_key}
-                        onChange={(e) =>
-                          updateField("secret_access_key", e.target.value)
-                        }
-                        placeholder="••••••••••••"
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label
-                        htmlFor="aws_region"
-                        className="block text-sm text-gray-600 dark:text-gray-400"
-                      >
-                        Region
-                      </label>
-                      <select
-                        id="aws_region"
-                        value={form.region}
-                        onChange={(e) => updateField("region", e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      >
-                        <option value="us-east-1">US East (N. Virginia)</option>
-                        <option value="us-east-2">US East (Ohio)</option>
-                        <option value="us-west-1">
-                          US West (N. California)
-                        </option>
-                        <option value="us-west-2">US West (Oregon)</option>
-                        <option value="eu-west-1">EU (Ireland)</option>
-                        <option value="eu-west-2">EU (London)</option>
-                        <option value="eu-west-3">EU (Paris)</option>
-                        <option value="eu-central-1">EU (Frankfurt)</option>
-                        <option value="ap-southeast-1">
-                          Asia Pacific (Singapore)
-                        </option>
-                        <option value="ap-southeast-2">
-                          Asia Pacific (Sydney)
-                        </option>
-                        <option value="ap-northeast-1">
-                          Asia Pacific (Tokyo)
-                        </option>
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="aws_role_arn"
-                        className="block text-sm text-gray-600 dark:text-gray-400"
-                      >
-                        Role ARN{" "}
-                        <span className="text-gray-400">
-                          (optional, for cross-account)
-                        </span>
-                      </label>
-                      <input
-                        id="aws_role_arn"
-                        type="text"
-                        value={form.role_arn}
-                        onChange={(e) =>
-                          updateField("role_arn", e.target.value)
-                        }
-                        placeholder="arn:aws:iam::123456789012:role/NimbusGuardRole"
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      />
-                    </div>
+                    <RefreshCw size={14} />
+                    Test Connection
                   </>
                 )}
-              </div>
-
-              {/* Test Connection */}
-              {(form.provider === "azure" || form.provider === "aws") && (
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={handleTestConnection}
-                    disabled={isTestingConnection || !isTestConnectionReady}
-                    className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                  >
-                    {isTestingConnection ? (
-                      <>
-                        <RefreshCw size={14} className="animate-spin" />
-                        Testing...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw size={14} />
-                        Test Connection
-                      </>
-                    )}
-                  </button>
-                  {testConnectionResult && (
-                    <div
-                      className={`rounded-lg px-4 py-3 text-sm ${
-                        testConnectionResult.success
-                          ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                          : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-                      }`}
-                    >
-                      {testConnectionResult.message}
-                    </div>
-                  )}
+              </button>
+              {testConnectionResult && (
+                <div
+                  className={`rounded-lg px-4 py-3 text-sm ${
+                    testConnectionResult.success
+                      ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                      : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                  }`}
+                >
+                  {testConnectionResult.message}
                 </div>
               )}
+            </div>
+          )}
 
-              {/* Error message */}
-              {formError && (
-                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                  {formError}
-                </div>
-              )}
+          {/* Error message */}
+          {formError && (
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+              {formError}
+            </div>
+          )}
 
-              {/* Actions */}
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setForm(EMPTY_FORM);
-                    setFormError(null);
-                    setTestConnectionResult(null);
-                  }}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSubmitting ? "Adding..." : "Add Account"}
-                </button>
-              </div>
-            </form>
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowAddModal(false);
+                setForm(EMPTY_FORM);
+                setFormError(null);
+                setTestConnectionResult(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" loading={isSubmitting}>
+              Add Account
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
+
+      {/* Delete Account Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) {
+            handleDeleteAccount(deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
+        title="Remove Account"
+        message={`Remove "${deleteTarget?.name ?? ""}"? Associated data will be deleted.`}
+        confirmLabel="Remove"
+      />
     </>
   );
 }

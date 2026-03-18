@@ -13,8 +13,10 @@ import {
   Plus,
   Send,
   Trash2,
-  X,
 } from "lucide-react";
+import Button from "@/components/ui/button";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import Modal from "@/components/ui/modal";
 import ErrorState from "@/components/ui/error-state";
 import api from "@/lib/api";
 import type { ReportHistoryEntry, ScheduledReport } from "@/types";
@@ -163,11 +165,12 @@ export default function ReportsPage() {
     }
   };
 
-  const handleDeleteScheduledReport = async (
-    reportId: string,
-    name: string,
-  ) => {
-    if (!window.confirm(`Delete scheduled report "${name}"?`)) return;
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const handleDeleteScheduledReport = async (reportId: string) => {
     setActionError(null);
     try {
       await api.delete(`/scheduled-reports/${reportId}`);
@@ -546,7 +549,7 @@ export default function ReportsPage() {
                     </button>
                     <button
                       onClick={() =>
-                        handleDeleteScheduledReport(sr.id, sr.name)
+                        setDeleteTarget({ id: sr.id, name: sr.name })
                       }
                       className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
                       title="Delete scheduled report"
@@ -786,177 +789,183 @@ export default function ReportsPage() {
       </div>
 
       {/* Add Scheduled Report Modal */}
-      {showScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Add Scheduled Report
-              </h2>
-              <button
-                onClick={() => {
-                  setShowScheduleModal(false);
-                  setFormError(null);
-                }}
-                className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleCreateScheduledReport} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="sr_name"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Name
-                </label>
-                <input
-                  id="sr_name"
-                  type="text"
-                  required
-                  maxLength={100}
-                  value={scheduleForm.name}
-                  onChange={(e) =>
-                    setScheduleForm((p) => ({ ...p, name: e.target.value }))
-                  }
-                  placeholder="Weekly Executive Summary"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="sr_type"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Report Type
-                </label>
-                <select
-                  id="sr_type"
-                  value={scheduleForm.report_type}
-                  onChange={(e) =>
-                    setScheduleForm((p) => ({
-                      ...p,
-                      report_type: e.target.value,
-                    }))
-                  }
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                >
-                  <option value="executive_summary">Executive Summary</option>
-                  <option value="compliance">Compliance</option>
-                  <option value="technical_detail">Technical Detail</option>
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="sr_schedule"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Schedule
-                </label>
-                <select
-                  id="sr_schedule"
-                  value={scheduleForm.schedule}
-                  onChange={(e) =>
-                    setScheduleForm((p) => ({
-                      ...p,
-                      schedule: e.target.value,
-                    }))
-                  }
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                >
-                  <option value="daily">Daily (midnight UTC)</option>
-                  <option value="weekly">Weekly (Monday midnight UTC)</option>
-                  <option value="monthly">Monthly (1st of month UTC)</option>
-                </select>
-              </div>
-
-              {/* Conditional config options based on report type */}
-              {scheduleForm.report_type === "compliance" && (
-                <div>
-                  <label
-                    htmlFor="sr_framework"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Compliance Framework
-                  </label>
-                  <select
-                    id="sr_framework"
-                    value={scheduleForm.config_framework}
-                    onChange={(e) =>
-                      setScheduleForm((p) => ({
-                        ...p,
-                        config_framework: e.target.value,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                  >
-                    <option value="cis_azure">CIS Azure</option>
-                    <option value="soc2">SOC 2</option>
-                    <option value="nist">NIST CSF</option>
-                    <option value="iso27001">ISO 27001</option>
-                  </select>
-                </div>
-              )}
-
-              {scheduleForm.report_type === "technical_detail" && (
-                <div>
-                  <label
-                    htmlFor="sr_severity"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Severity Filter (optional)
-                  </label>
-                  <select
-                    id="sr_severity"
-                    value={scheduleForm.config_severity}
-                    onChange={(e) =>
-                      setScheduleForm((p) => ({
-                        ...p,
-                        config_severity: e.target.value,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                  >
-                    <option value="">All severities</option>
-                    <option value="high">High only</option>
-                    <option value="medium">Medium only</option>
-                    <option value="low">Low only</option>
-                  </select>
-                </div>
-              )}
-
-              {formError && (
-                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                  {formError}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowScheduleModal(false);
-                    setFormError(null);
-                  }}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !scheduleForm.name.trim()}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSubmitting ? "Creating..." : "Create Schedule"}
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showScheduleModal}
+        onClose={() => {
+          setShowScheduleModal(false);
+          setFormError(null);
+        }}
+        title="Add Scheduled Report"
+        size="md"
+      >
+        <form onSubmit={handleCreateScheduledReport} className="space-y-4">
+          <div>
+            <label
+              htmlFor="sr_name"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Name
+            </label>
+            <input
+              id="sr_name"
+              type="text"
+              required
+              maxLength={100}
+              value={scheduleForm.name}
+              onChange={(e) =>
+                setScheduleForm((p) => ({ ...p, name: e.target.value }))
+              }
+              placeholder="Weekly Executive Summary"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
           </div>
-        </div>
-      )}
+
+          <div>
+            <label
+              htmlFor="sr_type"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Report Type
+            </label>
+            <select
+              id="sr_type"
+              value={scheduleForm.report_type}
+              onChange={(e) =>
+                setScheduleForm((p) => ({
+                  ...p,
+                  report_type: e.target.value,
+                }))
+              }
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            >
+              <option value="executive_summary">Executive Summary</option>
+              <option value="compliance">Compliance</option>
+              <option value="technical_detail">Technical Detail</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="sr_schedule"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Schedule
+            </label>
+            <select
+              id="sr_schedule"
+              value={scheduleForm.schedule}
+              onChange={(e) =>
+                setScheduleForm((p) => ({
+                  ...p,
+                  schedule: e.target.value,
+                }))
+              }
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            >
+              <option value="daily">Daily (midnight UTC)</option>
+              <option value="weekly">Weekly (Monday midnight UTC)</option>
+              <option value="monthly">Monthly (1st of month UTC)</option>
+            </select>
+          </div>
+
+          {/* Conditional config options based on report type */}
+          {scheduleForm.report_type === "compliance" && (
+            <div>
+              <label
+                htmlFor="sr_framework"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Compliance Framework
+              </label>
+              <select
+                id="sr_framework"
+                value={scheduleForm.config_framework}
+                onChange={(e) =>
+                  setScheduleForm((p) => ({
+                    ...p,
+                    config_framework: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+              >
+                <option value="cis_azure">CIS Azure</option>
+                <option value="soc2">SOC 2</option>
+                <option value="nist">NIST CSF</option>
+                <option value="iso27001">ISO 27001</option>
+              </select>
+            </div>
+          )}
+
+          {scheduleForm.report_type === "technical_detail" && (
+            <div>
+              <label
+                htmlFor="sr_severity"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Severity Filter (optional)
+              </label>
+              <select
+                id="sr_severity"
+                value={scheduleForm.config_severity}
+                onChange={(e) =>
+                  setScheduleForm((p) => ({
+                    ...p,
+                    config_severity: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+              >
+                <option value="">All severities</option>
+                <option value="high">High only</option>
+                <option value="medium">Medium only</option>
+                <option value="low">Low only</option>
+              </select>
+            </div>
+          )}
+
+          {formError && (
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+              {formError}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowScheduleModal(false);
+                setFormError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!scheduleForm.name.trim()}
+              loading={isSubmitting}
+            >
+              Create Schedule
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Scheduled Report Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) {
+            handleDeleteScheduledReport(deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
+        title="Delete Scheduled Report"
+        message={`Delete scheduled report "${deleteTarget?.name ?? ""}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+      />
     </>
   );
 }

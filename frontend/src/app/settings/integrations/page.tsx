@@ -10,8 +10,10 @@ import {
   Plus,
   Send,
   Trash2,
-  X,
 } from "lucide-react";
+import Button from "@/components/ui/button";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import Modal from "@/components/ui/modal";
 import ErrorState from "@/components/ui/error-state";
 import api from "@/lib/api";
 import type {
@@ -90,6 +92,13 @@ export default function IntegrationsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // -- Delete confirmation state --
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: "webhook" | "slack" | "jira";
+    id: string;
+    label: string;
+  } | null>(null);
+
   // -- Webhook state --
   const [showWebhookModal, setShowWebhookModal] = useState(false);
   const [webhookForm, setWebhookForm] = useState({
@@ -126,8 +135,7 @@ export default function IntegrationsPage() {
     }
   };
 
-  const handleDeleteWebhook = async (webhookId: string, url: string) => {
-    if (!window.confirm(`Remove webhook "${url}"?`)) return;
+  const handleDeleteWebhook = async (webhookId: string) => {
     setActionError(null);
     try {
       await api.delete(`/webhooks/${webhookId}`);
@@ -238,8 +246,7 @@ export default function IntegrationsPage() {
     }
   };
 
-  const handleDeleteSlack = async (integrationId: string, name: string) => {
-    if (!window.confirm(`Remove Slack integration "${name}"?`)) return;
+  const handleDeleteSlack = async (integrationId: string) => {
     setActionError(null);
     try {
       await api.delete(`/integrations/slack/${integrationId}`);
@@ -362,8 +369,7 @@ export default function IntegrationsPage() {
     }
   };
 
-  const handleDeleteJira = async (integrationId: string, baseUrl: string) => {
-    if (!window.confirm(`Remove Jira integration "${baseUrl}"?`)) return;
+  const handleDeleteJira = async (integrationId: string) => {
     setActionError(null);
     try {
       await api.delete(`/integrations/jira/${integrationId}`);
@@ -587,7 +593,13 @@ export default function IntegrationsPage() {
                           {wh.is_active ? "Disable" : "Enable"}
                         </button>
                         <button
-                          onClick={() => handleDeleteWebhook(wh.id, wh.url)}
+                          onClick={() =>
+                            setDeleteTarget({
+                              type: "webhook",
+                              id: wh.id,
+                              label: wh.description || wh.url,
+                            })
+                          }
                           className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
                           title="Remove webhook"
                         >
@@ -708,10 +720,11 @@ export default function IntegrationsPage() {
                         </button>
                         <button
                           onClick={() =>
-                            handleDeleteSlack(
-                              si.id,
-                              si.channel_name || "Slack Webhook",
-                            )
+                            setDeleteTarget({
+                              type: "slack",
+                              id: si.id,
+                              label: si.channel_name || "Slack Webhook",
+                            })
                           }
                           className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
                           title="Remove Slack integration"
@@ -827,7 +840,13 @@ export default function IntegrationsPage() {
                           {ji.is_active ? "Disable" : "Enable"}
                         </button>
                         <button
-                          onClick={() => handleDeleteJira(ji.id, ji.base_url)}
+                          onClick={() =>
+                            setDeleteTarget({
+                              type: "jira",
+                              id: ji.id,
+                              label: `${ji.project_key} (${ji.base_url})`,
+                            })
+                          }
                           className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
                           title="Remove Jira integration"
                         >
@@ -855,482 +874,466 @@ export default function IntegrationsPage() {
       )}
 
       {/* Add Webhook Modal */}
-      {showWebhookModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Add Webhook
-              </h2>
-              <button
-                onClick={() => {
-                  setShowWebhookModal(false);
-                  setWebhookForm({
-                    url: "",
-                    secret: "",
-                    events: [],
-                    description: "",
-                  });
-                  setFormError(null);
-                }}
-                className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleAddWebhook} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="wh_url"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Webhook URL
-                </label>
-                <input
-                  id="wh_url"
-                  type="url"
-                  required
-                  value={webhookForm.url}
-                  onChange={(e) =>
-                    setWebhookForm((p) => ({ ...p, url: e.target.value }))
-                  }
-                  placeholder="https://example.com/webhook"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="wh_desc"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Description (optional)
-                </label>
-                <input
-                  id="wh_desc"
-                  type="text"
-                  value={webhookForm.description}
-                  onChange={(e) =>
-                    setWebhookForm((p) => ({
-                      ...p,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Slack notification channel"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Events
-                </label>
-                <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                  Select which events trigger this webhook
-                </p>
-                <div className="space-y-2">
-                  {ALLOWED_EVENTS.map((ev) => (
-                    <label
-                      key={ev}
-                      className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={webhookForm.events.includes(ev)}
-                        onChange={() => toggleWebhookEvent(ev)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="font-mono text-xs">{ev}</span>
-                      <span className="text-xs text-gray-400">
-                        {ev === "scan.completed" &&
-                          "- Scan finished successfully"}
-                        {ev === "scan.failed" && "- Scan encountered an error"}
-                        {ev === "finding.high" &&
-                          "- High-severity findings detected"}
-                        {ev === "finding.critical_change" &&
-                          "- Critical finding status changed"}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {webhookForm.events.length === 0 && (
-                  <p className="mt-1 text-xs text-red-500">
-                    Select at least one event.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="wh_secret"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Signing Secret (optional)
-                </label>
-                <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">
-                  Used to generate HMAC-SHA256 signature header
-                </p>
-                <input
-                  id="wh_secret"
-                  type="password"
-                  value={webhookForm.secret}
-                  onChange={(e) =>
-                    setWebhookForm((p) => ({ ...p, secret: e.target.value }))
-                  }
-                  placeholder="your-signing-secret"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-
-              {formError && (
-                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                  {formError}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowWebhookModal(false);
-                    setWebhookForm({
-                      url: "",
-                      secret: "",
-                      events: [],
-                      description: "",
-                    });
-                    setFormError(null);
-                  }}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || webhookForm.events.length === 0}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSubmitting ? "Creating..." : "Create Webhook"}
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showWebhookModal}
+        onClose={() => {
+          setShowWebhookModal(false);
+          setWebhookForm({
+            url: "",
+            secret: "",
+            events: [],
+            description: "",
+          });
+          setFormError(null);
+        }}
+        title="Add Webhook"
+      >
+        <form onSubmit={handleAddWebhook} className="space-y-4">
+          <div>
+            <label
+              htmlFor="wh_url"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Webhook URL
+            </label>
+            <input
+              id="wh_url"
+              type="url"
+              required
+              value={webhookForm.url}
+              onChange={(e) =>
+                setWebhookForm((p) => ({ ...p, url: e.target.value }))
+              }
+              placeholder="https://example.com/webhook"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
           </div>
-        </div>
-      )}
+
+          <div>
+            <label
+              htmlFor="wh_desc"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Description (optional)
+            </label>
+            <input
+              id="wh_desc"
+              type="text"
+              value={webhookForm.description}
+              onChange={(e) =>
+                setWebhookForm((p) => ({
+                  ...p,
+                  description: e.target.value,
+                }))
+              }
+              placeholder="Slack notification channel"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Events
+            </label>
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+              Select which events trigger this webhook
+            </p>
+            <div className="space-y-2">
+              {ALLOWED_EVENTS.map((ev) => (
+                <label
+                  key={ev}
+                  className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  <input
+                    type="checkbox"
+                    checked={webhookForm.events.includes(ev)}
+                    onChange={() => toggleWebhookEvent(ev)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="font-mono text-xs">{ev}</span>
+                  <span className="text-xs text-gray-400">
+                    {ev === "scan.completed" && "- Scan finished successfully"}
+                    {ev === "scan.failed" && "- Scan encountered an error"}
+                    {ev === "finding.high" &&
+                      "- High-severity findings detected"}
+                    {ev === "finding.critical_change" &&
+                      "- Critical finding status changed"}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {webhookForm.events.length === 0 && (
+              <p className="mt-1 text-xs text-red-500">
+                Select at least one event.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="wh_secret"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Signing Secret (optional)
+            </label>
+            <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">
+              Used to generate HMAC-SHA256 signature header
+            </p>
+            <input
+              id="wh_secret"
+              type="password"
+              value={webhookForm.secret}
+              onChange={(e) =>
+                setWebhookForm((p) => ({ ...p, secret: e.target.value }))
+              }
+              placeholder="your-signing-secret"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
+          </div>
+
+          {formError && (
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+              {formError}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowWebhookModal(false);
+                setWebhookForm({
+                  url: "",
+                  secret: "",
+                  events: [],
+                  description: "",
+                });
+                setFormError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={webhookForm.events.length === 0}
+              loading={isSubmitting}
+            >
+              Create Webhook
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Add Slack Integration Modal */}
-      {showSlackModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Add Slack Integration
-              </h2>
-              <button
-                onClick={() => {
-                  setShowSlackModal(false);
-                  setSlackForm({
-                    webhook_url: "",
-                    channel_name: "",
-                    events: [],
-                  });
-                  setFormError(null);
-                }}
-                className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleAddSlack} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="slack_url"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Slack Webhook URL
-                </label>
-                <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">
-                  Create an Incoming Webhook in your Slack workspace settings
-                </p>
-                <input
-                  id="slack_url"
-                  type="url"
-                  required
-                  value={slackForm.webhook_url}
-                  onChange={(e) =>
-                    setSlackForm((p) => ({
-                      ...p,
-                      webhook_url: e.target.value,
-                    }))
-                  }
-                  placeholder="https://hooks.slack.com/services/T.../B.../..."
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="slack_channel"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Channel Name (display only)
-                </label>
-                <div className="relative mt-1">
-                  <Hash
-                    size={14}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  />
-                  <input
-                    id="slack_channel"
-                    type="text"
-                    value={slackForm.channel_name}
-                    onChange={(e) =>
-                      setSlackForm((p) => ({
-                        ...p,
-                        channel_name: e.target.value,
-                      }))
-                    }
-                    placeholder="security-alerts"
-                    className="w-full rounded-lg border border-gray-300 py-2 pl-8 pr-3 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Events
-                </label>
-                <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                  Select which events trigger Slack notifications
-                </p>
-                <div className="space-y-2">
-                  {SLACK_EVENTS.map((ev) => (
-                    <label
-                      key={ev}
-                      className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={slackForm.events.includes(ev)}
-                        onChange={() => toggleSlackEvent(ev)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="font-mono text-xs">{ev}</span>
-                      <span className="text-xs text-gray-400">
-                        {ev === "scan.completed" &&
-                          "- Scan finished successfully"}
-                        {ev === "scan.failed" && "- Scan encountered an error"}
-                        {ev === "finding.high" &&
-                          "- High-severity findings detected"}
-                        {ev === "finding.critical_change" &&
-                          "- Critical finding status changed"}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {slackForm.events.length === 0 && (
-                  <p className="mt-1 text-xs text-red-500">
-                    Select at least one event.
-                  </p>
-                )}
-              </div>
-
-              {formError && (
-                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                  {formError}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSlackModal(false);
-                    setSlackForm({
-                      webhook_url: "",
-                      channel_name: "",
-                      events: [],
-                    });
-                    setFormError(null);
-                  }}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || slackForm.events.length === 0}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSubmitting ? "Creating..." : "Add Integration"}
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showSlackModal}
+        onClose={() => {
+          setShowSlackModal(false);
+          setSlackForm({
+            webhook_url: "",
+            channel_name: "",
+            events: [],
+          });
+          setFormError(null);
+        }}
+        title="Add Slack Integration"
+      >
+        <form onSubmit={handleAddSlack} className="space-y-4">
+          <div>
+            <label
+              htmlFor="slack_url"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Slack Webhook URL
+            </label>
+            <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">
+              Create an Incoming Webhook in your Slack workspace settings
+            </p>
+            <input
+              id="slack_url"
+              type="url"
+              required
+              value={slackForm.webhook_url}
+              onChange={(e) =>
+                setSlackForm((p) => ({
+                  ...p,
+                  webhook_url: e.target.value,
+                }))
+              }
+              placeholder="https://hooks.slack.com/services/T.../B.../..."
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
           </div>
-        </div>
-      )}
+
+          <div>
+            <label
+              htmlFor="slack_channel"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Channel Name (display only)
+            </label>
+            <div className="relative mt-1">
+              <Hash
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                id="slack_channel"
+                type="text"
+                value={slackForm.channel_name}
+                onChange={(e) =>
+                  setSlackForm((p) => ({
+                    ...p,
+                    channel_name: e.target.value,
+                  }))
+                }
+                placeholder="security-alerts"
+                className="w-full rounded-lg border border-gray-300 py-2 pl-8 pr-3 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Events
+            </label>
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+              Select which events trigger Slack notifications
+            </p>
+            <div className="space-y-2">
+              {SLACK_EVENTS.map((ev) => (
+                <label
+                  key={ev}
+                  className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  <input
+                    type="checkbox"
+                    checked={slackForm.events.includes(ev)}
+                    onChange={() => toggleSlackEvent(ev)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="font-mono text-xs">{ev}</span>
+                  <span className="text-xs text-gray-400">
+                    {ev === "scan.completed" && "- Scan finished successfully"}
+                    {ev === "scan.failed" && "- Scan encountered an error"}
+                    {ev === "finding.high" &&
+                      "- High-severity findings detected"}
+                    {ev === "finding.critical_change" &&
+                      "- Critical finding status changed"}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {slackForm.events.length === 0 && (
+              <p className="mt-1 text-xs text-red-500">
+                Select at least one event.
+              </p>
+            )}
+          </div>
+
+          {formError && (
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+              {formError}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowSlackModal(false);
+                setSlackForm({
+                  webhook_url: "",
+                  channel_name: "",
+                  events: [],
+                });
+                setFormError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={slackForm.events.length === 0}
+              loading={isSubmitting}
+            >
+              Add Integration
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Add Jira Integration Modal */}
-      {showJiraModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Add Jira Integration
-              </h2>
-              <button
-                onClick={() => {
-                  setShowJiraModal(false);
-                  setJiraForm({
-                    base_url: "",
-                    email: "",
-                    api_token: "",
-                    project_key: "",
-                    issue_type: "Bug",
-                  });
-                  setFormError(null);
-                }}
-                className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleAddJira} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="jira_base_url"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Jira Base URL
-                </label>
-                <input
-                  id="jira_base_url"
-                  type="url"
-                  required
-                  value={jiraForm.base_url}
-                  onChange={(e) =>
-                    setJiraForm((p) => ({ ...p, base_url: e.target.value }))
-                  }
-                  placeholder="https://yourcompany.atlassian.net"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="jira_email"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Email
-                </label>
-                <input
-                  id="jira_email"
-                  type="email"
-                  required
-                  value={jiraForm.email}
-                  onChange={(e) =>
-                    setJiraForm((p) => ({ ...p, email: e.target.value }))
-                  }
-                  placeholder="user@company.com"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="jira_api_token"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  API Token
-                </label>
-                <input
-                  id="jira_api_token"
-                  type="password"
-                  required
-                  value={jiraForm.api_token}
-                  onChange={(e) =>
-                    setJiraForm((p) => ({ ...p, api_token: e.target.value }))
-                  }
-                  placeholder="••••••••••••"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="jira_project_key"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Project Key
-                </label>
-                <input
-                  id="jira_project_key"
-                  type="text"
-                  required
-                  value={jiraForm.project_key}
-                  onChange={(e) =>
-                    setJiraForm((p) => ({ ...p, project_key: e.target.value }))
-                  }
-                  placeholder="SEC"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="jira_issue_type"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Issue Type
-                </label>
-                <select
-                  id="jira_issue_type"
-                  value={jiraForm.issue_type}
-                  onChange={(e) =>
-                    setJiraForm((p) => ({ ...p, issue_type: e.target.value }))
-                  }
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                >
-                  {JIRA_ISSUE_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {formError && (
-                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                  {formError}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowJiraModal(false);
-                    setJiraForm({
-                      base_url: "",
-                      email: "",
-                      api_token: "",
-                      project_key: "",
-                      issue_type: "Bug",
-                    });
-                    setFormError(null);
-                  }}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSubmitting ? "Creating..." : "Add Integration"}
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showJiraModal}
+        onClose={() => {
+          setShowJiraModal(false);
+          setJiraForm({
+            base_url: "",
+            email: "",
+            api_token: "",
+            project_key: "",
+            issue_type: "Bug",
+          });
+          setFormError(null);
+        }}
+        title="Add Jira Integration"
+      >
+        <form onSubmit={handleAddJira} className="space-y-4">
+          <div>
+            <label
+              htmlFor="jira_base_url"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Jira Base URL
+            </label>
+            <input
+              id="jira_base_url"
+              type="url"
+              required
+              value={jiraForm.base_url}
+              onChange={(e) =>
+                setJiraForm((p) => ({ ...p, base_url: e.target.value }))
+              }
+              placeholder="https://yourcompany.atlassian.net"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
           </div>
-        </div>
-      )}
+          <div>
+            <label
+              htmlFor="jira_email"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Email
+            </label>
+            <input
+              id="jira_email"
+              type="email"
+              required
+              value={jiraForm.email}
+              onChange={(e) =>
+                setJiraForm((p) => ({ ...p, email: e.target.value }))
+              }
+              placeholder="user@company.com"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="jira_api_token"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              API Token
+            </label>
+            <input
+              id="jira_api_token"
+              type="password"
+              required
+              value={jiraForm.api_token}
+              onChange={(e) =>
+                setJiraForm((p) => ({ ...p, api_token: e.target.value }))
+              }
+              placeholder="••••••••••••"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="jira_project_key"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Project Key
+            </label>
+            <input
+              id="jira_project_key"
+              type="text"
+              required
+              value={jiraForm.project_key}
+              onChange={(e) =>
+                setJiraForm((p) => ({ ...p, project_key: e.target.value }))
+              }
+              placeholder="SEC"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="jira_issue_type"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Issue Type
+            </label>
+            <select
+              id="jira_issue_type"
+              value={jiraForm.issue_type}
+              onChange={(e) =>
+                setJiraForm((p) => ({ ...p, issue_type: e.target.value }))
+              }
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            >
+              {JIRA_ISSUE_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {formError && (
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+              {formError}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowJiraModal(false);
+                setJiraForm({
+                  base_url: "",
+                  email: "",
+                  api_token: "",
+                  project_key: "",
+                  issue_type: "Bug",
+                });
+                setFormError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" loading={isSubmitting}>
+              Add Integration
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) {
+            if (deleteTarget.type === "webhook") {
+              handleDeleteWebhook(deleteTarget.id);
+            } else if (deleteTarget.type === "slack") {
+              handleDeleteSlack(deleteTarget.id);
+            } else {
+              handleDeleteJira(deleteTarget.id);
+            }
+            setDeleteTarget(null);
+          }
+        }}
+        title={`Remove ${deleteTarget?.type === "webhook" ? "Webhook" : deleteTarget?.type === "slack" ? "Slack Integration" : "Jira Integration"}`}
+        message={`Remove "${deleteTarget?.label ?? ""}"? This action cannot be undone.`}
+        confirmLabel="Remove"
+      />
     </>
   );
 }
