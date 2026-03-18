@@ -111,5 +111,14 @@ async def health_check() -> dict:
     }
 
 
+# Prometheus metrics — exposes /metrics endpoint
+from prometheus_fastapi_instrumentator import Instrumentator
+
+Instrumentator(
+    should_group_status_codes=True,
+    should_ignore_untemplated=True,
+    excluded_handlers=["/health", "/metrics"],
+).instrument(app).expose(app, include_in_schema=False)
+
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(scim_router, prefix="/scim/v2", tags=["scim"])
