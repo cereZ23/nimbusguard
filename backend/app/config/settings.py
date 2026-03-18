@@ -28,7 +28,8 @@ class Settings(BaseSettings):
     # JWT
     jwt_algorithm: str = "HS256"
     jwt_access_expire_minutes: int = 15
-    jwt_refresh_expire_days: int = 7
+    jwt_refresh_expire_days: int = 1  # Max session duration (absolute)
+    jwt_idle_timeout_hours: int = 2  # Session expires after inactivity
 
     # Azure
     azure_tenant_id: str = ""

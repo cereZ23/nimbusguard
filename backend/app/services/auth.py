@@ -101,6 +101,7 @@ async def create_refresh_token(db: AsyncSession, user_id: str, tenant_id: str) -
         user_id=uuid.UUID(user_id),
         token_hash=_hash_token(token),
         expires_at=expires_at,
+        last_used_at=datetime.now(UTC),
         revoked=False,
     )
     db.add(record)
@@ -137,6 +138,22 @@ async def decode_refresh_token(db: AsyncSession, token: str) -> dict | None:
     if record is None:
         logger.warning("Refresh token not found in DB or already revoked")
         return None
+
+    # Idle timeout check: reject if token hasn't been used within the idle window
+    if settings.jwt_idle_timeout_hours > 0 and record.last_used_at is not None:
+        idle_limit = record.last_used_at + timedelta(hours=settings.jwt_idle_timeout_hours)
+        if idle_limit.tzinfo is None:
+            idle_limit = idle_limit.replace(tzinfo=UTC)
+        if datetime.now(UTC) > idle_limit:
+            logger.info("Refresh token idle timeout for user %s", payload.get("sub"))
+            record.revoked = True
+            await db.flush()
+            return None
+
+    # Update last_used_at for idle tracking
+    record.last_used_at = datetime.now(UTC)
+    await db.flush()
+
     return payload
 
 
