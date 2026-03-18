@@ -63,7 +63,7 @@ router = APIRouter()
 # Cookie configuration constants
 _ACCESS_COOKIE = "access_token"
 _REFRESH_COOKIE = "refresh_token"
-_ACCESS_PATH = "/api"
+_ACCESS_PATH = "/"
 _REFRESH_PATH = "/api/v1/auth"
 
 
