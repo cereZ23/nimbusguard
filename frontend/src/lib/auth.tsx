@@ -120,6 +120,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (credentials: LoginRequest) => {
+      // Clear any stale auth cookies before logging in
+      try {
+        await api.post("/auth/logout");
+      } catch {
+        // Ignore — no valid session to clear
+      }
+
       // POST /auth/login sets httpOnly cookies automatically
       const loginRes = await api.post("/auth/login", credentials);
 
