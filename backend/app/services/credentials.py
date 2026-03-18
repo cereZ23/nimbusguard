@@ -30,6 +30,18 @@ def decrypt_credentials(encrypted: str) -> dict:
     return json.loads(plaintext)
 
 
+def encrypt_value(value: str) -> str:
+    """Encrypt a single string value. Use for secrets, tokens, URLs at rest."""
+    f = _get_fernet()
+    return f.encrypt(value.encode()).decode()
+
+
+def decrypt_value(encrypted: str) -> str:
+    """Decrypt a single string value previously encrypted with encrypt_value."""
+    f = _get_fernet()
+    return f.decrypt(encrypted.encode()).decode()
+
+
 def generate_encryption_key() -> str:
     """Generate a new Fernet encryption key. Run once during setup."""
     return Fernet.generate_key().decode()

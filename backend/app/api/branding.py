@@ -20,7 +20,6 @@ UPLOAD_BASE_DIR = "/tmp/uploads"
 ALLOWED_CONTENT_TYPES = {
     "image/png": "png",
     "image/jpeg": "jpg",
-    "image/svg+xml": "svg",
 }
 MAX_FILE_SIZE = 500 * 1024  # 500 KB
 
@@ -85,7 +84,7 @@ async def upload_logo(file: UploadFile, user: AdminUser, db: DB) -> dict:
     if content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file type: {content_type}. Allowed: PNG, JPG, SVG.",
+            detail=f"Invalid file type: {content_type}. Allowed: PNG, JPG.",
         )
 
     # Read and validate file size

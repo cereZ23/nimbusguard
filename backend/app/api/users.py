@@ -12,7 +12,7 @@ from app.models.role import Role
 from app.models.user import User
 from app.schemas.common import ApiResponse
 from app.schemas.users import InviteUserRequest, UpdateRoleRequest, UserResponse
-from app.services.auth import hash_password
+from app.services.auth import hash_password, revoke_all_user_tokens, validate_password
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -63,6 +63,15 @@ async def invite_user(body: InviteUserRequest, db: DB, user: AdminUser) -> dict:
                 detail="Invalid role_id — role not found in this tenant",
             )
 
+    # Enforce password policy on invites
+    try:
+        validate_password(body.password)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
+
     new_user = User(
         tenant_id=user.tenant_id,
         email=body.email,
@@ -112,11 +121,14 @@ async def update_user_role(user_id: uuid.UUID, body: UpdateRoleRequest, db: DB, 
     if body.role is not None:
         target.role = body.role
 
+    # Invalidate all sessions — role change must force re-authentication
+    await revoke_all_user_tokens(db, str(target.id))
+
     await db.commit()
     await db.refresh(target)
 
     logger.info(
-        "User %s role updated to %s (role_id=%s) by %s",
+        "User %s role updated to %s (role_id=%s) by %s — sessions invalidated",
         target.email,
         target.role,
         target.role_id,

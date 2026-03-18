@@ -27,6 +27,7 @@ from app.schemas.auth import (
     UserResponse,
 )
 from app.schemas.common import ApiResponse
+from app.services.credentials import decrypt_value, encrypt_value
 from app.schemas.sso import SsoPublicConfig
 from app.services.audit import record_audit
 from app.services.auth import (
@@ -257,9 +258,9 @@ async def mfa_setup(user: CurrentUser, db: DB) -> dict:
 
     secret = generate_mfa_secret()
 
-    # Store the secret (pending verification) on the user
+    # Store the secret encrypted (pending verification) on the user
     db_user = await _get_user_by_id(db, str(user.id))
-    db_user.mfa_secret = secret
+    db_user.mfa_secret = encrypt_value(secret)
     await db.commit()
 
     provisioning_uri = generate_provisioning_uri(secret, user.email)
@@ -288,7 +289,8 @@ async def mfa_verify(body: MfaVerifyRequest, user: CurrentUser, db: DB) -> dict:
             detail="MFA setup has not been initiated. Call /auth/mfa/setup first.",
         )
 
-    if not verify_totp(db_user.mfa_secret, body.code):
+    plain_secret = decrypt_value(db_user.mfa_secret)
+    if not verify_totp(plain_secret, body.code):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid TOTP code",
@@ -388,12 +390,13 @@ async def mfa_login(request: Request, body: MfaLoginRequest, db: DB, response: R
             detail="MFA is not enabled for this account",
         )
 
+    plain_mfa_secret = decrypt_value(db_user.mfa_secret)
     code = body.code.strip()
     verified = False
 
     # Try TOTP verification first (6-digit codes)
     if len(code) == 6 and code.isdigit():
-        verified = verify_totp(db_user.mfa_secret, code)
+        verified = verify_totp(plain_mfa_secret, code)
 
     # Try backup code verification (8-char hex codes)
     if not verified and db_user.mfa_backup_codes:

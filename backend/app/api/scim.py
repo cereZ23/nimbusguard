@@ -290,17 +290,23 @@ async def create_user(
     if not user_data.get("email"):
         return _scim_error(400, "userName (email) is required", scim_type="invalidValue")
 
-    # Check for existing user with same email
-    existing = await db.execute(select(User).where(User.email == user_data["email"]))
+    # Check for existing user with same email within this tenant (prevent cross-tenant info leak)
+    existing = await db.execute(
+        select(User).where(User.email == user_data["email"], User.tenant_id == tenant_id)
+    )
     if existing.scalar_one_or_none() is not None:
         return _scim_error(409, f"User with email {user_data['email']} already exists", scim_type="uniqueness")
 
-    # Create user with a random password (SCIM-provisioned users use SSO to login)
+    # Create user with a proper bcrypt hash of a random password
+    # SCIM-provisioned users use SSO to login; auth_method="scim" blocks password login
+    from app.services.auth import hash_password
+
     user = User(
         tenant_id=tenant_id,
         email=user_data["email"],
         full_name=user_data.get("full_name", ""),
-        hashed_password=f"scim_provisioned_{secrets.token_hex(32)}",
+        hashed_password=hash_password(secrets.token_urlsafe(48)),
+        auth_method="scim",
         role="viewer",  # SCIM-provisioned users default to viewer
         is_active=user_data.get("is_active", True),
         scim_external_id=user_data.get("scim_external_id"),

@@ -21,7 +21,7 @@ async def test_invite_user(client: AsyncClient, auth_headers: dict) -> None:
         json={
             "email": "newuser@test.com",
             "full_name": "New User",
-            "password": "newpassword123",
+            "password": "Test@pass123",
             "role": "viewer",
         },
     )
@@ -39,7 +39,7 @@ async def test_invite_duplicate_email(client: AsyncClient, auth_headers: dict) -
         json={
             "email": "dup@test.com",
             "full_name": "Dup",
-            "password": "password123",
+            "password": "Test@pass123",
             "role": "viewer",
         },
     )
@@ -49,7 +49,7 @@ async def test_invite_duplicate_email(client: AsyncClient, auth_headers: dict) -
         json={
             "email": "dup@test.com",
             "full_name": "Dup2",
-            "password": "password123",
+            "password": "Test@pass123",
             "role": "viewer",
         },
     )
@@ -64,7 +64,7 @@ async def test_update_user_role(client: AsyncClient, auth_headers: dict) -> None
         json={
             "email": "rolechange@test.com",
             "full_name": "Role User",
-            "password": "password123",
+            "password": "Test@pass123",
             "role": "viewer",
         },
     )
@@ -101,7 +101,7 @@ async def test_remove_user(client: AsyncClient, auth_headers: dict) -> None:
         json={
             "email": "toremove@test.com",
             "full_name": "Remove Me",
-            "password": "password123",
+            "password": "Test@pass123",
             "role": "viewer",
         },
     )

@@ -1,40 +1,15 @@
 from __future__ import annotations
 
-import ipaddress
-import socket
 import uuid
-from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, field_validator
+
+from app.utils.url_validation import validate_public_url
 
 
 def _validate_https_public_url(url: str) -> str:
     """Validate that a URL uses HTTPS and does not point to private/internal addresses."""
-    parsed = urlparse(url)
-    if parsed.scheme != "https":
-        msg = "URL must use https:// scheme"
-        raise ValueError(msg)
-    hostname = parsed.hostname
-    if not hostname:
-        msg = "URL must contain a valid hostname"
-        raise ValueError(msg)
-    # Block well-known internal hostnames
-    blocked = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]"}
-    if hostname.lower() in blocked:
-        msg = "URL must not point to localhost or loopback addresses"
-        raise ValueError(msg)
-    # Resolve hostname and block private/link-local IP ranges
-    try:
-        addrs = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
-        for _family, _type, _proto, _canonname, sockaddr in addrs:
-            ip = ipaddress.ip_address(sockaddr[0])
-            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-                msg = f"URL must not resolve to a private or reserved IP address ({ip})"
-                raise ValueError(msg)
-    except socket.gaierror:
-        # DNS resolution failed — allow (IdP may not be resolvable from build-time)
-        pass
-    return url
+    return validate_public_url(url, require_https=True)
 
 
 class SsoConfigCreate(BaseModel):

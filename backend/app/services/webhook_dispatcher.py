@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.webhook import Webhook
+from app.services.credentials import decrypt_value
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,8 @@ async def dispatch_webhooks(
             body_bytes = json.dumps(payload).encode()
 
             if wh.secret:
-                sig = hmac.new(wh.secret.encode(), body_bytes, hashlib.sha256).hexdigest()
+                plain_secret = decrypt_value(wh.secret)
+                sig = hmac.new(plain_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
                 headers["X-CSPM-Signature"] = f"sha256={sig}"
 
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
@@ -91,7 +93,8 @@ async def send_test_webhook(webhook: Webhook) -> tuple[int, str]:
     body_bytes = json.dumps(payload).encode()
 
     if webhook.secret:
-        sig = hmac.new(webhook.secret.encode(), body_bytes, hashlib.sha256).hexdigest()
+        plain_secret = decrypt_value(webhook.secret)
+        sig = hmac.new(plain_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
         headers["X-CSPM-Signature"] = f"sha256={sig}"
 
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:

@@ -5,6 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.utils.url_validation import validate_public_url
+
 
 class JiraIntegrationCreate(BaseModel):
     base_url: str = Field(max_length=500)
@@ -16,9 +18,8 @@ class JiraIntegrationCreate(BaseModel):
     @field_validator("base_url")
     @classmethod
     def validate_base_url(cls, v: str) -> str:
-        if not v.startswith(("https://", "http://")):
-            raise ValueError("Base URL must start with https:// or http://")
-        return v.rstrip("/")
+        validated = validate_public_url(v, require_https=False)
+        return validated.rstrip("/")
 
     @field_validator("issue_type")
     @classmethod
@@ -41,9 +42,10 @@ class JiraIntegrationUpdate(BaseModel):
     @field_validator("base_url")
     @classmethod
     def validate_base_url(cls, v: str | None) -> str | None:
-        if v is not None and not v.startswith(("https://", "http://")):
-            raise ValueError("Base URL must start with https:// or http://")
-        return v.rstrip("/") if v else v
+        if v is None:
+            return v
+        validated = validate_public_url(v, require_https=False)
+        return validated.rstrip("/")
 
     @field_validator("issue_type")
     @classmethod

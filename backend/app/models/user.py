@@ -29,8 +29,11 @@ class User(Base, UUIDPrimaryKey, TimestampMixin):
     role: Mapped[str] = mapped_column(String(20), default="admin")  # admin | viewer
     is_active: Mapped[bool] = mapped_column(default=True)
 
-    # MFA fields
-    mfa_secret: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Authentication method: "password" (default), "sso", "scim"
+    auth_method: Mapped[str] = mapped_column(String(20), default="password", nullable=False, server_default="password")
+
+    # MFA fields (mfa_secret is Fernet-encrypted, needs longer column)
+    mfa_secret: Mapped[str | None] = mapped_column(String(500), nullable=True)
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     mfa_backup_codes: Mapped[list | None] = mapped_column(JSON, nullable=True)
 

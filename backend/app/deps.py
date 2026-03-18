@@ -82,6 +82,12 @@ async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends
             detail="User not found",
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account is deactivated",
+        )
+
     request.state.tenant_id = str(user.tenant_id)
     request.state.user_id = str(user.id)
 

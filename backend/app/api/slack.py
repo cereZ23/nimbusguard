@@ -16,6 +16,7 @@ from app.schemas.slack import (
     SlackIntegrationUpdate,
 )
 from app.services.audit import record_audit
+from app.services.credentials import decrypt_value, encrypt_value
 from app.services.slack_notifier import send_test_slack_notification
 
 logger = logging.getLogger(__name__)
@@ -57,7 +58,7 @@ async def create_slack_integration(body: SlackIntegrationCreate, db: DB, user: A
     """Create a new Slack integration for the current tenant."""
     integration = SlackIntegration(
         tenant_id=user.tenant_id,
-        webhook_url=body.webhook_url,
+        webhook_url=encrypt_value(body.webhook_url),
         channel_name=body.channel_name,
         events=body.events,
         is_active=body.is_active,
@@ -104,7 +105,7 @@ async def update_slack_integration(
         )
 
     if body.webhook_url is not None:
-        integration.webhook_url = body.webhook_url
+        integration.webhook_url = encrypt_value(body.webhook_url)
     if body.channel_name is not None:
         integration.channel_name = body.channel_name
     if body.events is not None:
@@ -177,7 +178,8 @@ async def test_slack_integration(integration_id: uuid.UUID, db: DB, user: AdminU
         )
 
     try:
-        success, response_body = await send_test_slack_notification(integration.webhook_url)
+        plain_url = decrypt_value(integration.webhook_url)
+        success, response_body = await send_test_slack_notification(plain_url)
 
         return {
             "data": {

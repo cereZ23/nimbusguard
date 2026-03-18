@@ -120,12 +120,18 @@ async def patch_sso_config(
 
     update_data = body.model_dump(exclude_unset=True)
     if "client_secret" in update_data and update_data["client_secret"] is not None:
-        update_data["client_secret_encrypted"] = encrypt_client_secret(update_data.pop("client_secret"))
+        config.client_secret_encrypted = encrypt_client_secret(update_data.pop("client_secret"))
     else:
         update_data.pop("client_secret", None)
 
+    # Explicit allowlist to prevent mass assignment of id/tenant_id
+    _SSO_PATCH_ALLOWED_FIELDS = {
+        "provider", "client_id", "issuer_url", "metadata_url",
+        "domain_restriction", "auto_provision", "default_role", "is_active",
+    }
     for field, value in update_data.items():
-        setattr(config, field, value)
+        if field in _SSO_PATCH_ALLOWED_FIELDS:
+            setattr(config, field, value)
 
     await db.commit()
     await db.refresh(config)

@@ -131,15 +131,25 @@ async def download_report_history(
             detail="Report file is not available",
         )
 
-    if not os.path.exists(entry.file_path):
+    # Prevent path traversal — ensure file is within the expected reports directory
+    REPORTS_BASE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "reports")
+    real_path = os.path.realpath(entry.file_path)
+    real_base = os.path.realpath(REPORTS_BASE_DIR)
+    if not real_path.startswith(real_base + os.sep) and real_path != real_base:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    if not os.path.exists(real_path):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Report file not found on disk",
         )
 
-    filename = os.path.basename(entry.file_path)
+    filename = os.path.basename(real_path)
     return FileResponse(
-        path=entry.file_path,
+        path=real_path,
         media_type="application/pdf",
         filename=filename,
     )

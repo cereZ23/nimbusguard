@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.slack_integration import SlackIntegration
+from app.services.credentials import decrypt_value
 
 logger = logging.getLogger(__name__)
 
@@ -349,7 +350,8 @@ async def dispatch_slack_notifications(
             continue
 
         dispatched += 1
-        await send_slack_notification(integration.webhook_url, event_type, payload)
+        plain_url = decrypt_value(integration.webhook_url)
+        await send_slack_notification(plain_url, event_type, payload)
 
     if dispatched:
         logger.info(
