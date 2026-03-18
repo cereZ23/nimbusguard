@@ -200,15 +200,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Export history placeholder */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Export History
-          </h2>
-          <div className="mt-6 flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
-            <p className="text-sm">Export history coming soon</p>
-          </div>
-        </div>
+        {/* Export history — scheduled reports track their own history via /settings/reports */}
       </div>
     </AppShell>
   );

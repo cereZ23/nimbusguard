@@ -31,6 +31,16 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         count = await seed_controls(db)
         logger.info("Startup: seeded %d controls", count)
     yield
+    # Shutdown: close Redis connection pool
+    try:
+        from app.services.cache import get_redis, _redis
+
+        if _redis is not None:
+            r = await get_redis()
+            await r.aclose()
+            logger.info("Redis connection closed")
+    except Exception:
+        pass
 
 
 app = FastAPI(
