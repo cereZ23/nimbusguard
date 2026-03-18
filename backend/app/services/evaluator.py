@@ -131,7 +131,8 @@ async def evaluate_all(
     now = datetime.now(UTC)
 
     # Collect new findings in a batch, then flush once to get IDs for evidence FKs
-    new_findings: list[tuple[Finding, Asset, str, EvalResult]] = []
+    # Also cache check results to avoid running checks twice per asset
+    all_check_results: list[tuple[Asset, str, EvalResult]] = []
 
     for asset in assets:
         checks = evaluate_asset(asset, controls_by_code)
@@ -146,6 +147,9 @@ async def evaluate_all(
                 stats["pass_count"] += 1
             else:
                 stats["fail_count"] += 1
+
+            # Cache for evidence creation later
+            all_check_results.append((asset, control_code, eval_result))
 
             control = controls_by_code[control_code]
             dedup_key = f"eval:{asset.provider_id}:{control_code}"
@@ -173,39 +177,35 @@ async def evaluate_all(
                 )
                 db.add(finding)
                 existing_findings_by_dedup[dedup_key] = finding
-                new_findings.append((finding, asset, control_code, eval_result))
                 stats["findings_created"] += 1
 
     # Single flush for all new findings — gets IDs in one DB roundtrip
-    if new_findings:
-        await db.flush()
+    await db.flush()
 
-    # Now create evidence for ALL findings (new + updated)
+    # Create evidence using cached check results (no second evaluate_asset call)
     evidence_batch: list[Evidence] = []
-    for asset in assets:
-        checks = evaluate_asset(asset, controls_by_code)
-        for control_code, eval_result in checks:
-            dedup_key = f"eval:{asset.provider_id}:{control_code}"
-            finding = existing_findings_by_dedup.get(dedup_key)
-            if finding is None:
-                continue
-            evidence_batch.append(
-                Evidence(
-                    finding_id=finding.id,
-                    snapshot={
-                        "source": "evaluation_engine",
-                        "control_code": control_code,
-                        "status": eval_result.status,
-                        "description": eval_result.description,
-                        "resource_id": asset.provider_id,
-                        "resource_name": asset.name,
-                        "resource_type": asset.resource_type,
-                        "properties": eval_result.evidence,
-                        "evaluated_at": now.isoformat(),
-                    },
-                    collected_at=now,
-                )
+    for asset, control_code, eval_result in all_check_results:
+        dedup_key = f"eval:{asset.provider_id}:{control_code}"
+        finding = existing_findings_by_dedup.get(dedup_key)
+        if finding is None:
+            continue
+        evidence_batch.append(
+            Evidence(
+                finding_id=finding.id,
+                snapshot={
+                    "source": "evaluation_engine",
+                    "control_code": control_code,
+                    "status": eval_result.status,
+                    "description": eval_result.description,
+                    "resource_id": asset.provider_id,
+                    "resource_name": asset.name,
+                    "resource_type": asset.resource_type,
+                    "properties": eval_result.evidence,
+                    "evaluated_at": now.isoformat(),
+                },
+                collected_at=now,
             )
+        )
 
     # Batch add all evidence
     if evidence_batch:

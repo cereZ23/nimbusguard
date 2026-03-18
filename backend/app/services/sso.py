@@ -275,6 +275,7 @@ async def process_sso_login(
         hashed_password=hash_password(random_password),
         full_name=full_name,
         role=sso_config.default_role,
+        auth_method="sso",
     )
     db.add(user)
     await db.flush()

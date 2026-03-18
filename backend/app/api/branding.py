@@ -143,7 +143,7 @@ async def serve_logo(tenant_id: str, filename: str) -> FileResponse:
 
     # Determine media type from extension
     ext = safe_filename.rsplit(".", 1)[-1].lower() if "." in safe_filename else ""
-    media_types = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "svg": "image/svg+xml"}
+    media_types = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg"}
     media_type = media_types.get(ext, "application/octet-stream")
 
     return FileResponse(filepath, media_type=media_type)

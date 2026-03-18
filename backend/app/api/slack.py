@@ -43,7 +43,7 @@ async def list_slack_integrations(
     integrations = result.scalars().all()
 
     return {
-        "data": integrations,
+        "data": [SlackIntegrationResponse.from_integration(i) for i in integrations],
         "error": None,
         "meta": PaginationMeta(total=total, page=page, size=size),
     }
@@ -80,7 +80,7 @@ async def create_slack_integration(body: SlackIntegrationCreate, db: DB, user: A
     await db.refresh(integration)
 
     logger.info("Slack integration created: %s", integration.id)
-    return {"data": integration, "error": None, "meta": None}
+    return {"data": SlackIntegrationResponse.from_integration(integration), "error": None, "meta": None}
 
 
 @router.put("/{integration_id}", response_model=ApiResponse[SlackIntegrationResponse])
@@ -126,7 +126,7 @@ async def update_slack_integration(
     await db.refresh(integration)
 
     logger.info("Slack integration updated: %s", integration_id)
-    return {"data": integration, "error": None, "meta": None}
+    return {"data": SlackIntegrationResponse.from_integration(integration), "error": None, "meta": None}
 
 
 @router.delete("/{integration_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -73,6 +73,12 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _validate_encryption_key(self) -> Settings:
         key = self.credential_encryption_key
+        if not key and not self.debug:
+            msg = (
+                "CREDENTIAL_ENCRYPTION_KEY must be set in production. "
+                "Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+            )
+            raise RuntimeError(msg)
         if key:
             try:
                 from cryptography.fernet import Fernet

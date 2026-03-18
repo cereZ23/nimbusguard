@@ -101,7 +101,8 @@ async def health_check() -> dict:
             await db.execute(select(1))
         checks["db"] = "ok"
     except Exception as exc:
-        checks["db"] = f"error: {exc}"
+        checks["db"] = "error"
+        logger.warning("Health check: DB failed — %s", exc)
         healthy = False
 
     # Redis check
@@ -112,13 +113,17 @@ async def health_check() -> dict:
         await r.ping()
         checks["redis"] = "ok"
     except Exception as exc:
-        checks["redis"] = f"error: {exc}"
+        checks["redis"] = "error"
+        logger.warning("Health check: Redis failed — %s", exc)
         healthy = False
 
-    return {
-        "status": "healthy" if healthy else "degraded",
-        "checks": checks,
-    }
+    status_code = 200 if healthy else 503
+    from starlette.responses import JSONResponse as _JSONResponse
+
+    return _JSONResponse(
+        content={"status": "healthy" if healthy else "degraded", "checks": checks},
+        status_code=status_code,
+    )
 
 
 # Prometheus metrics — exposes /metrics endpoint
