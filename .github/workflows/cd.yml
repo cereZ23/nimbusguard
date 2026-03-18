@@ -1,0 +1,56 @@
+name: CD — Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    needs: []
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 146.190.178.108
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /opt/cspm
+
+            # Sync code from GitHub (rsync from checkout not possible, use git)
+            # If .git exists, pull; otherwise clone
+            if [ -d ".git" ]; then
+              git fetch origin main
+              git reset --hard origin/main
+            else
+              cd /opt
+              rm -rf cspm
+              git clone --depth 1 https://${{ secrets.GH_TOKEN }}@github.com/cereZ23/nimbusguard.git cspm
+              cd /opt/cspm
+            fi
+
+            # Rebuild and restart containers
+            docker compose -f docker-compose.prod.yml up -d --build
+
+            # Wait for backend to be healthy
+            echo "Waiting for backend health..."
+            for i in $(seq 1 30); do
+              if curl -sf http://127.0.0.1:8001/health > /dev/null 2>&1; then
+                echo "Backend healthy!"
+                break
+              fi
+              sleep 5
+            done
+
+            # Verify
+            curl -s http://127.0.0.1:8001/health
+            echo ""
+            echo "Deploy complete."
