@@ -100,17 +100,20 @@ api.interceptors.response.use(
         isRefreshing = true;
         refreshPromise = tryRefresh().finally(() => {
           isRefreshing = false;
-          refreshPromise = null;
+          // Note: do NOT null refreshPromise here — other waiters may still need it
         });
       }
 
-      const refreshed = await refreshPromise;
+      // Capture reference before awaiting to prevent null resolution race
+      const pendingRefresh = refreshPromise;
+      const refreshed = pendingRefresh ? await pendingRefresh : false;
       if (refreshed) {
         // Retry the original request -- cookies are now updated
         return api(originalRequest);
       }
 
       // Refresh failed -- redirect to login
+      refreshPromise = null;
       if (!window.location.pathname.startsWith("/login")) {
         window.location.href = "/login";
       }
