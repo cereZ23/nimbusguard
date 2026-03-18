@@ -6,7 +6,6 @@ import ipaddress
 import socket
 from urllib.parse import urlparse
 
-
 _BLOCKED_HOSTNAMES = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]"}
 
 
@@ -42,8 +41,8 @@ def validate_public_url(url: str, *, require_https: bool = True) -> str:
             if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
                 msg = f"URL must not resolve to a private or reserved IP address ({ip})"
                 raise ValueError(msg)
-    except socket.gaierror:
+    except socket.gaierror as exc:
         msg = f"Cannot resolve hostname: {hostname}"
-        raise ValueError(msg)
+        raise ValueError(msg) from exc
 
     return url

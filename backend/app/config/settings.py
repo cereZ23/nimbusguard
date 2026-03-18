@@ -77,7 +77,8 @@ class Settings(BaseSettings):
         if not key and not self.debug:
             msg = (
                 "CREDENTIAL_ENCRYPTION_KEY must be set in production. "
-                "Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+                "Generate with: python -c "
+                "'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
             )
             raise RuntimeError(msg)
         if key:

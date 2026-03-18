@@ -33,7 +33,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     yield
     # Shutdown: close Redis connection pool
     try:
-        from app.services.cache import get_redis, _redis
+        from app.services.cache import _redis, get_redis
 
         if _redis is not None:
             r = await get_redis()
@@ -126,8 +126,7 @@ async def health_check() -> dict:
     )
 
 
-# Prometheus metrics — exposes /metrics endpoint
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_fastapi_instrumentator import Instrumentator  # noqa: E402
 
 Instrumentator(
     should_group_status_codes=True,

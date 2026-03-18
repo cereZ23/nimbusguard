@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from starlette.requests import Request
-
 from slowapi import Limiter
+from starlette.requests import Request
 
 from app.config.settings import settings
 

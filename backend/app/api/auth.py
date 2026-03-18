@@ -27,7 +27,6 @@ from app.schemas.auth import (
     UserResponse,
 )
 from app.schemas.common import ApiResponse
-from app.services.credentials import decrypt_value, encrypt_value
 from app.schemas.sso import SsoPublicConfig
 from app.services.audit import record_audit
 from app.services.auth import (
@@ -41,6 +40,7 @@ from app.services.auth import (
     revoke_refresh_token,
     verify_password,
 )
+from app.services.credentials import decrypt_value, encrypt_value
 from app.services.mfa import (
     generate_backup_codes,
     generate_mfa_secret,
