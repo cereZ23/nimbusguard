@@ -71,6 +71,19 @@ class Settings(BaseSettings):
     aws_endpoint_url: str = ""
 
     @model_validator(mode="after")
+    def _validate_encryption_key(self) -> Settings:
+        key = self.credential_encryption_key
+        if key:
+            try:
+                from cryptography.fernet import Fernet
+
+                Fernet(key.encode())
+            except Exception as exc:
+                msg = f"CREDENTIAL_ENCRYPTION_KEY is not a valid Fernet key: {exc}"
+                raise RuntimeError(msg) from exc
+        return self
+
+    @model_validator(mode="after")
     def _validate_secret_key(self) -> Settings:
         if self.secret_key == _INSECURE_DEFAULT:
             if not self.debug:

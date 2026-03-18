@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy import select
 
 from app.api.router import api_router
 from app.api.scim import router as scim_router
@@ -80,7 +81,34 @@ async def domain_error_handler(_request: Request, exc: DomainError) -> JSONRespo
 
 @app.get("/health")
 async def health_check() -> dict:
-    return {"status": "ok"}
+    """Health check — verifies DB and Redis connectivity."""
+    checks: dict = {}
+    healthy = True
+
+    # Database check
+    try:
+        async with async_session() as db:
+            await db.execute(select(1))
+        checks["db"] = "ok"
+    except Exception as exc:
+        checks["db"] = f"error: {exc}"
+        healthy = False
+
+    # Redis check
+    try:
+        from app.services.cache import get_redis
+
+        r = await get_redis()
+        await r.ping()
+        checks["redis"] = "ok"
+    except Exception as exc:
+        checks["redis"] = f"error: {exc}"
+        healthy = False
+
+    return {
+        "status": "healthy" if healthy else "degraded",
+        "checks": checks,
+    }
 
 
 app.include_router(api_router, prefix="/api/v1")

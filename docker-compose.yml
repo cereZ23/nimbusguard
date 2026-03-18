@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: cspm
       POSTGRES_DB: cspm
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -23,7 +23,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -48,6 +48,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/1
+      AWS_ENDPOINT_URL: http://localstack:4566
     depends_on:
       db:
         condition: service_healthy
@@ -79,6 +80,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/1
+      AWS_ENDPOINT_URL: http://localstack:4566
     depends_on:
       db:
         condition: service_healthy
@@ -123,7 +125,7 @@ services:
   localstack:
     image: localstack/localstack:latest
     ports:
-      - "4566:4566"
+      - "127.0.0.1:4566:4566"
     environment:
       SERVICES: s3,ec2,iam,rds,lambda,sts,cloudtrail,guardduty
       DEFAULT_REGION: us-east-1
