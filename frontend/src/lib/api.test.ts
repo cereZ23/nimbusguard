@@ -23,18 +23,14 @@ beforeEach(async () => {
   refreshCalls = 0;
   refreshShouldSucceed = true;
 
-  // Mock window and location
-  if (typeof globalThis.window === "undefined") {
-    // @ts-expect-error -- test-only global setup
-    globalThis.window = {
-      location: { href: "/dashboard", pathname: "/dashboard" },
-    };
-  } else {
-    Object.defineProperty(window, "location", {
-      writable: true,
-      value: { href: "/dashboard", pathname: "/dashboard" },
-    });
-  }
+  // Mock window.location for tests
+  Object.defineProperty(window, "location", {
+    writable: true,
+    value: {
+      href: "/dashboard",
+      pathname: "/dashboard",
+    } as unknown as Location,
+  });
 
   // Mock axios.post for refresh calls
   vi.spyOn(axios, "post").mockImplementation(async (url: string) => {
