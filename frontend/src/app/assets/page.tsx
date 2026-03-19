@@ -17,6 +17,8 @@ import { TableSkeleton } from "@/components/ui/skeleton";
 import Pagination from "@/components/ui/pagination";
 import SortIndicator from "@/components/ui/sort-indicator";
 import api from "@/lib/api";
+import { extractApiError } from "@/lib/errors";
+import { formatDate } from "@/lib/dates";
 import type { Asset, CloudAccount } from "@/types";
 
 type AssetsSortColumn = "name" | "resource_type" | "region" | "last_seen_at";
@@ -207,9 +209,7 @@ function AssetsContent() {
           setTotal(res.data.meta.total ?? 0);
         }
       })
-      .catch((err) =>
-        setError(err?.response?.data?.error || "Failed to load assets"),
-      )
+      .catch((err: unknown) => setError(extractApiError(err)))
       .finally(() => setIsLoading(false));
   }, [
     page,
@@ -483,7 +483,7 @@ function AssetsContent() {
                           {asset.region ?? "\u2014"}
                         </td>
                         <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                          {new Date(asset.last_seen_at).toLocaleDateString()}
+                          {formatDate(asset.last_seen_at)}
                         </td>
                       </tr>
                     ))}

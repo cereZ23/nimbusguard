@@ -14,6 +14,7 @@ import {
 import AppShell from "@/components/layout/app-shell";
 import ErrorState from "@/components/ui/error-state";
 import api from "@/lib/api";
+import { formatDate } from "@/lib/dates";
 import type { CustomDashboard } from "@/types";
 
 export default function DashboardsPage() {
@@ -207,7 +208,7 @@ export default function DashboardsPage() {
                   </span>
                   <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                     <Clock className="h-3 w-3" />
-                    {new Date(dashboard.created_at).toLocaleDateString()}
+                    {formatDate(dashboard.created_at)}
                   </span>
                 </div>
               </button>

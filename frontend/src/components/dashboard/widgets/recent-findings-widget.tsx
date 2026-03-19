@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Eye, ChevronRight } from "lucide-react";
 import WidgetWrapper from "./widget-wrapper";
+import { formatDate } from "@/lib/dates";
 
 interface FindingItem {
   id: string;
@@ -90,7 +91,7 @@ export default function RecentFindingsWidget({
               </span>
               {finding.first_detected_at && (
                 <span className="shrink-0 text-[10px] tabular-nums text-gray-400">
-                  {new Date(finding.first_detected_at).toLocaleDateString()}
+                  {formatDate(finding.first_detected_at)}
                 </span>
               )}
               <ChevronRight className="h-3 w-3 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-500 dark:text-gray-600" />

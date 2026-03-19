@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Shield,
@@ -450,6 +451,16 @@ function LoginContent() {
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
+                  </div>
+
+                  {/* Forgot password link */}
+                  <div className="mt-1.5 text-right">
+                    <Link
+                      href="/forgot-password"
+                      className="text-sm text-indigo-400 transition-colors hover:text-indigo-300"
+                    >
+                      Forgot password?
+                    </Link>
                   </div>
                 </div>
 

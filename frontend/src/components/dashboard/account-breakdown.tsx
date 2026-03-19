@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Building2, ChevronRight } from "lucide-react";
 import { GlassCard, SectionHeader } from "./chart-section";
+import { formatDateTime } from "@/lib/dates";
 import type { CloudAccount } from "@/types";
 
 interface AccountBreakdownProps {
@@ -87,12 +88,7 @@ export default function AccountBreakdown({
                 : "text-red-600 dark:text-red-400";
 
           const lastScan = account.last_scan_at
-            ? new Date(account.last_scan_at).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
+            ? formatDateTime(account.last_scan_at)
             : "Never";
 
           return (

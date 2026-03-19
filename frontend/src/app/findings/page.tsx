@@ -20,6 +20,8 @@ import FilterPanel from "@/components/ui/filter-panel";
 import type { FilterConfig } from "@/components/ui/filter-panel";
 import SortIndicator from "@/components/ui/sort-indicator";
 import api from "@/lib/api";
+import { extractApiError } from "@/lib/errors";
+import { formatDate } from "@/lib/dates";
 import type { Finding, CloudAccount } from "@/types";
 
 type FindingsSortColumn =
@@ -271,9 +273,7 @@ function FindingsContent() {
           setTotal(res.data.meta.total ?? 0);
         }
       })
-      .catch((err) =>
-        setError(err?.response?.data?.error || "Failed to load findings"),
-      )
+      .catch((err: unknown) => setError(extractApiError(err)))
       .finally(() => setIsLoading(false));
   }, [
     page,
@@ -354,14 +354,7 @@ function FindingsContent() {
       // Auto-dismiss success message
       setTimeout(() => setWaiveSuccess(null), 5000);
     } catch (err: unknown) {
-      const axiosErr = err as {
-        response?: { data?: { detail?: string; error?: string } };
-      };
-      setWaiveError(
-        axiosErr.response?.data?.detail ??
-          axiosErr.response?.data?.error ??
-          "Failed to submit bulk waiver request",
-      );
+      setWaiveError(extractApiError(err));
     } finally {
       setWaiveSubmitting(false);
     }
@@ -633,14 +626,10 @@ function FindingsContent() {
                           {finding.waived ? "Yes" : "No"}
                         </td>
                         <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                          {new Date(
-                            finding.first_detected_at,
-                          ).toLocaleDateString()}
+                          {formatDate(finding.first_detected_at)}
                         </td>
                         <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                          {new Date(
-                            finding.last_evaluated_at,
-                          ).toLocaleDateString()}
+                          {formatDate(finding.last_evaluated_at)}
                         </td>
                       </tr>
                     ))}

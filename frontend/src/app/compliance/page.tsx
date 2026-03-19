@@ -11,6 +11,8 @@ import StatusBadge from "@/components/ui/status-badge";
 import ErrorState from "@/components/ui/error-state";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
+import { extractApiError } from "@/lib/errors";
+import { formatDate } from "@/lib/dates";
 import type {
   ComplianceTrendPoint,
   ComplianceTrendResponse,
@@ -453,10 +455,7 @@ function FrameworkBuilderModal({
       const created = res.data?.data as CustomFramework;
       onCreated(created);
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { detail?: string } } };
-      setSaveError(
-        axiosErr?.response?.data?.detail ?? "Failed to create framework",
-      );
+      setSaveError(extractApiError(err));
     } finally {
       setSaving(false);
     }
@@ -1111,9 +1110,7 @@ export default function CompliancePage() {
                               <StatusBadge status={f.status} />
                             </td>
                             <td className="px-3 py-2 text-gray-500 dark:text-gray-400">
-                              {new Date(
-                                f.last_evaluated_at,
-                              ).toLocaleDateString()}
+                              {formatDate(f.last_evaluated_at)}
                             </td>
                           </tr>
                         ))}

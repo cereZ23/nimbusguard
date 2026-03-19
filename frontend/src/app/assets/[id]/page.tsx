@@ -18,6 +18,8 @@ import StatusBadge from "@/components/ui/status-badge";
 import ErrorState from "@/components/ui/error-state";
 import { AssetDetailSkeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
+import { extractApiError } from "@/lib/errors";
+import { formatDate } from "@/lib/dates";
 import type { Asset, AssetRelationship, Finding } from "@/types";
 
 export default function AssetDetailPage() {
@@ -46,8 +48,8 @@ export default function AssetDetailPage() {
         setFindings((findingsRes.data?.data as Finding[]) ?? []);
         setRelationships((relRes.data?.data as AssetRelationship[]) ?? []);
       })
-      .catch((err) => {
-        setError(err?.response?.data?.error ?? "Failed to load asset");
+      .catch((err: unknown) => {
+        setError(extractApiError(err));
       })
       .finally(() => setIsLoading(false));
   };
@@ -162,7 +164,7 @@ export default function AssetDetailPage() {
               First Seen
             </div>
             <p className="mt-1 font-medium text-gray-900 dark:text-white">
-              {new Date(asset.first_seen_at).toLocaleDateString()}
+              {formatDate(asset.first_seen_at)}
             </p>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:bg-gray-800 dark:border-gray-700">
@@ -171,7 +173,7 @@ export default function AssetDetailPage() {
               Last Seen
             </div>
             <p className="mt-1 font-medium text-gray-900 dark:text-white">
-              {new Date(asset.last_seen_at).toLocaleDateString()}
+              {formatDate(asset.last_seen_at)}
             </p>
           </div>
         </div>
@@ -309,7 +311,7 @@ export default function AssetDetailPage() {
                       <StatusBadge status={f.status} />
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                      {new Date(f.last_evaluated_at).toLocaleDateString()}
+                      {formatDate(f.last_evaluated_at)}
                     </td>
                   </tr>
                 ))}

@@ -10,6 +10,7 @@ import { Eye, ChevronRight } from "lucide-react";
 import SeverityBadge from "@/components/ui/severity-badge";
 import StatusBadge from "@/components/ui/status-badge";
 import { GlassCard, SectionHeader } from "./chart-section";
+import { formatDate } from "@/lib/dates";
 import type { Finding } from "@/types";
 
 interface RecentFindingsProps {
@@ -76,7 +77,7 @@ export default function RecentFindings({ findings }: RecentFindingsProps) {
                   <StatusBadge status={finding.status} />
                 </td>
                 <td className="py-3.5 pr-4 text-gray-500 dark:text-gray-400">
-                  {new Date(finding.first_detected_at).toLocaleDateString()}
+                  {formatDate(finding.first_detected_at)}
                 </td>
                 <td className="py-3.5">
                   <ChevronRight className="h-4 w-4 text-gray-300 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-indigo-500 dark:text-gray-600 dark:group-hover:text-indigo-400" />

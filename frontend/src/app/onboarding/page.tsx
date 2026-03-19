@@ -18,6 +18,8 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import api from "@/lib/api";
+import { extractApiError } from "@/lib/errors";
+import Input from "@/components/ui/input";
 
 // ── Step definitions ────────────────────────────────────────────────
 
@@ -201,10 +203,7 @@ export default function OnboardingPage() {
       setCreatedAccountId(account.id);
       goNext();
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { error?: string } } };
-      setCreateError(
-        axiosErr.response?.data?.error ?? "Failed to create account.",
-      );
+      setCreateError(extractApiError(err));
     } finally {
       setIsCreating(false);
     }
@@ -222,14 +221,12 @@ export default function OnboardingPage() {
       setTimeout(() => router.push("/dashboard"), 2000);
     } catch (err: unknown) {
       const axiosErr = err as {
-        response?: { status?: number; data?: { detail?: string } };
+        response?: { status?: number };
       };
       if (axiosErr.response?.status === 409) {
         setScanMessage("A scan is already running.");
       } else {
-        setScanMessage(
-          axiosErr.response?.data?.detail ?? "Failed to start scan.",
-        );
+        setScanMessage(extractApiError(err));
       }
     } finally {
       setIsScanning(false);
@@ -418,87 +415,52 @@ export default function OnboardingPage() {
 
               <div className="mt-6 space-y-4">
                 {/* Display Name */}
-                <div>
-                  <label
-                    htmlFor="wiz_display_name"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Display Name
-                  </label>
-                  <input
-                    id="wiz_display_name"
-                    type="text"
-                    value={form.display_name}
-                    onChange={(e) =>
-                      updateField("display_name", e.target.value)
-                    }
-                    placeholder="e.g. Production Subscription"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                  />
-                </div>
+                <Input
+                  id="wiz_display_name"
+                  label="Display Name"
+                  type="text"
+                  value={form.display_name}
+                  onChange={(e) => updateField("display_name", e.target.value)}
+                  placeholder="e.g. Production Subscription"
+                />
 
                 {/* Azure-specific fields */}
                 {provider === "azure" && (
                   <>
                     {/* Subscription ID */}
-                    <div>
-                      <label
-                        htmlFor="wiz_subscription_id"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        Subscription ID
-                      </label>
-                      <input
-                        id="wiz_subscription_id"
-                        type="text"
-                        value={form.subscription_id}
-                        onChange={(e) =>
-                          updateField("subscription_id", e.target.value)
-                        }
-                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      />
-                    </div>
+                    <Input
+                      id="wiz_subscription_id"
+                      label="Subscription ID"
+                      type="text"
+                      value={form.subscription_id}
+                      onChange={(e) =>
+                        updateField("subscription_id", e.target.value)
+                      }
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      className="font-mono"
+                    />
 
                     {/* Tenant ID */}
-                    <div>
-                      <label
-                        htmlFor="wiz_tenant_id"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        Azure Tenant ID
-                      </label>
-                      <input
-                        id="wiz_tenant_id"
-                        type="text"
-                        value={form.tenant_id}
-                        onChange={(e) =>
-                          updateField("tenant_id", e.target.value)
-                        }
-                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      />
-                    </div>
+                    <Input
+                      id="wiz_tenant_id"
+                      label="Azure Tenant ID"
+                      type="text"
+                      value={form.tenant_id}
+                      onChange={(e) => updateField("tenant_id", e.target.value)}
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      className="font-mono"
+                    />
 
                     {/* Client ID */}
-                    <div>
-                      <label
-                        htmlFor="wiz_client_id"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        Client ID (App ID)
-                      </label>
-                      <input
-                        id="wiz_client_id"
-                        type="text"
-                        value={form.client_id}
-                        onChange={(e) =>
-                          updateField("client_id", e.target.value)
-                        }
-                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      />
-                    </div>
+                    <Input
+                      id="wiz_client_id"
+                      label="Client ID (App ID)"
+                      type="text"
+                      value={form.client_id}
+                      onChange={(e) => updateField("client_id", e.target.value)}
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      className="font-mono"
+                    />
 
                     {/* Client Secret */}
                     <div>
@@ -541,24 +503,17 @@ export default function OnboardingPage() {
                 {/* AWS-specific fields */}
                 {provider === "aws" && (
                   <>
-                    <div>
-                      <label
-                        htmlFor="wiz_access_key"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        Access Key ID
-                      </label>
-                      <input
-                        id="wiz_access_key"
-                        type="text"
-                        value={form.access_key_id}
-                        onChange={(e) =>
-                          updateField("access_key_id", e.target.value)
-                        }
-                        placeholder="AKIA..."
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      />
-                    </div>
+                    <Input
+                      id="wiz_access_key"
+                      label="Access Key ID"
+                      type="text"
+                      value={form.access_key_id}
+                      onChange={(e) =>
+                        updateField("access_key_id", e.target.value)
+                      }
+                      placeholder="AKIA..."
+                      className="font-mono"
+                    />
                     <div>
                       <label
                         htmlFor="wiz_secret_key"

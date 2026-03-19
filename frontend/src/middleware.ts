@@ -8,7 +8,12 @@ import type { NextRequest } from "next/server";
  * redirects to /login (unless the request is for a public route).
  */
 
-const PUBLIC_PATHS = new Set(["/login", "/accept-invite"]);
+const PUBLIC_PATHS = new Set([
+  "/login",
+  "/accept-invite",
+  "/forgot-password",
+  "/reset-password",
+]);
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;

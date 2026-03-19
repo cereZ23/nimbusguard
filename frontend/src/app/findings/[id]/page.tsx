@@ -33,6 +33,8 @@ import StatusBadge from "@/components/ui/status-badge";
 import ErrorState from "@/components/ui/error-state";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { extractApiError } from "@/lib/errors";
+import { formatDate, formatDateTime, formatRelative } from "@/lib/dates";
 import type {
   FindingComment,
   FindingEvent,
@@ -298,22 +300,6 @@ function formatEventDescription(event: FindingEvent): string {
   }
 }
 
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSeconds < 60) return "just now";
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
 function TimelineItem({ event }: { event: FindingEvent }) {
   return (
     <div className="relative flex gap-3 pl-0">
@@ -335,7 +321,7 @@ function TimelineItem({ event }: { event: FindingEvent }) {
           </p>
         )}
         <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-          {formatRelativeTime(event.created_at)}
+          {formatRelative(event.created_at)}
         </p>
       </div>
     </div>
@@ -394,8 +380,8 @@ export default function FindingDetailPage() {
       .then((res) => {
         setFinding(res.data?.data as FindingDetailData);
       })
-      .catch((err) => {
-        setError(err?.response?.data?.error ?? "Failed to load finding");
+      .catch((err: unknown) => {
+        setError(extractApiError(err));
       })
       .finally(() => setIsLoading(false));
   }, [id]);
@@ -499,10 +485,7 @@ export default function FindingDetailPage() {
       setWaiverReason("");
       fetchTimeline();
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { detail?: string } } };
-      setWaiverError(
-        axiosErr.response?.data?.detail ?? "Failed to submit waiver request",
-      );
+      setWaiverError(extractApiError(err));
     } finally {
       setWaiverSubmitting(false);
     }
@@ -528,10 +511,7 @@ export default function FindingDetailPage() {
       }
       fetchTimeline();
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { detail?: string } } };
-      setAssignError(
-        axiosErr.response?.data?.detail ?? "Failed to assign finding",
-      );
+      setAssignError(extractApiError(err));
     } finally {
       setAssignLoading(false);
     }
@@ -550,10 +530,7 @@ export default function FindingDetailPage() {
       fetchComments();
       fetchTimeline();
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { detail?: string } } };
-      setCommentError(
-        axiosErr.response?.data?.detail ?? "Failed to add comment",
-      );
+      setCommentError(extractApiError(err));
     } finally {
       setCommentSubmitting(false);
     }
@@ -566,10 +543,7 @@ export default function FindingDetailPage() {
       await api.delete(`/findings/${id}/comments/${commentId}`);
       fetchComments();
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { detail?: string } } };
-      setCommentError(
-        axiosErr.response?.data?.detail ?? "Failed to delete comment",
-      );
+      setCommentError(extractApiError(err));
     }
   };
 
@@ -766,7 +740,7 @@ export default function FindingDetailPage() {
               First Detected
             </div>
             <p className="mt-1 font-medium text-gray-900 dark:text-white">
-              {new Date(finding.first_detected_at).toLocaleDateString()}
+              {formatDate(finding.first_detected_at)}
             </p>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -775,7 +749,7 @@ export default function FindingDetailPage() {
               Last Evaluated
             </div>
             <p className="mt-1 font-medium text-gray-900 dark:text-white">
-              {new Date(finding.last_evaluated_at).toLocaleDateString()}
+              {formatDate(finding.last_evaluated_at)}
             </p>
           </div>
 
@@ -842,7 +816,7 @@ export default function FindingDetailPage() {
               {finding.evidences.map((ev) => (
                 <div key={ev.id} className="p-4">
                   <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">
-                    Collected: {new Date(ev.collected_at).toLocaleString()}
+                    Collected: {formatDateTime(ev.collected_at)}
                   </p>
                   <pre className="max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-900 dark:text-gray-300">
                     {JSON.stringify(ev.snapshot, null, 2)}
@@ -1036,7 +1010,7 @@ export default function FindingDetailPage() {
                           </span>
                         )}
                         <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                          {new Date(comment.created_at).toLocaleString()}
+                          {formatDateTime(comment.created_at)}
                         </span>
                       </div>
                     </div>
