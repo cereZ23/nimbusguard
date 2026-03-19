@@ -91,8 +91,9 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str)
 
 
 def _clear_auth_cookies(response: Response) -> None:
-    """Clear both auth cookies."""
+    """Clear both auth cookies (current + legacy paths)."""
     response.delete_cookie(key=_ACCESS_COOKIE, path=_ACCESS_PATH)
+    response.delete_cookie(key=_ACCESS_COOKIE, path="/api")  # legacy path
     response.delete_cookie(key=_REFRESH_COOKIE, path=_REFRESH_PATH)
 
 
