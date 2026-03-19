@@ -14,7 +14,7 @@ import type { TenantBranding } from "@/types";
 const DEFAULT_BRANDING: TenantBranding = {
   logo_url: null,
   primary_color: "#6366f1",
-  company_name: "CSPM",
+  company_name: "PostureOne",
   favicon_url: null,
 };
 

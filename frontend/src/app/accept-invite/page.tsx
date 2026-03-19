@@ -155,7 +155,7 @@ function AcceptInviteContent() {
             <Shield size={20} className="text-indigo-400" />
           </div>
           <span className="text-sm font-semibold tracking-wider text-slate-300 uppercase">
-            CSPM Platform
+            PostureOne
           </span>
         </div>
 
@@ -236,8 +236,8 @@ function AcceptInviteContent() {
                   Accept Invitation
                 </h2>
                 <p className="mt-2 text-sm font-light text-slate-400">
-                  You have been invited to join the CSPM platform. Set your
-                  password to complete your account setup.
+                  You have been invited to join PostureOne. Set your password to
+                  complete your account setup.
                 </p>
               </div>
 

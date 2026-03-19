@@ -169,7 +169,7 @@ function LoginContent() {
             <Shield size={20} className="text-indigo-400" />
           </div>
           <span className="text-sm font-semibold tracking-wider text-slate-300 uppercase">
-            CSPM Platform
+            PostureOne
           </span>
         </div>
 
@@ -203,7 +203,9 @@ function LoginContent() {
           </div>
 
           <h1 className="text-5xl font-bold tracking-tight text-white xl:text-6xl">
-            <span className="block tracking-widest text-indigo-400">CSPM</span>
+            <span className="block tracking-widest text-indigo-400">
+              PostureOne
+            </span>
             <span className="mt-2 block text-2xl font-light tracking-wider text-slate-400 xl:text-3xl">
               Cloud Security Posture Management
             </span>
@@ -211,7 +213,7 @@ function LoginContent() {
 
           <p className="mt-6 max-w-md text-base leading-relaxed text-slate-500">
             Unified visibility into your cloud security posture. Detect
-            misconfigurations, enforce compliance, and remediate threats before
+            misconfigurations, enforce compliance, and remediate risks before
             they become incidents.
           </p>
 
@@ -252,10 +254,15 @@ function LoginContent() {
             <Shield size={28} className="text-indigo-400" />
           </div>
           <h1 className="text-2xl font-bold tracking-widest text-white uppercase">
-            CSPM
+            PostureOne
           </h1>
           <p className="mt-1 text-sm font-light tracking-wider text-slate-400">
             Cloud Security Posture Management
+          </p>
+          <p className="mt-3 max-w-xs mx-auto text-xs leading-relaxed text-slate-500">
+            Unified visibility into your cloud security posture. Detect
+            misconfigurations, enforce compliance, and remediate risks before
+            they become incidents.
           </p>
         </div>
 

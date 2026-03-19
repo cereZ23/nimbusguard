@@ -594,7 +594,7 @@ export default function AccountsPage() {
                     type="text"
                     value={form.role_arn}
                     onChange={(e) => updateField("role_arn", e.target.value)}
-                    placeholder="arn:aws:iam::123456789012:role/NimbusGuardRole"
+                    placeholder="arn:aws:iam::123456789012:role/PostureOneRole"
                     className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
                   />
                 </div>

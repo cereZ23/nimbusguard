@@ -43,11 +43,11 @@ export const HELP_CONTENT = {
   },
   settings: {
     apiKeys:
-      "API keys allow programmatic access to the CSPM API for CI/CD integration and automation.",
+      "API keys allow programmatic access to the PostureOne API for CI/CD integration and automation.",
     webhooks:
       "Webhooks send HTTP POST notifications to your endpoints when security events occur.",
     mfa: "Two-factor authentication adds an extra layer of security to your account using time-based codes.",
     cloudAccount:
-      "A cloud account connects CSPM to your Azure subscription. CSPM requires Reader and Security Reader roles.",
+      "A cloud account connects PostureOne to your Azure subscription. PostureOne requires Reader and Security Reader roles.",
   },
 } as const;

@@ -286,7 +286,7 @@ export default function OnboardingPage() {
                 />
               </div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Welcome to CSPM
+                Welcome to PostureOne
               </h1>
               <p className="mx-auto mt-3 max-w-md text-gray-500 dark:text-gray-400">
                 Let&apos;s connect your first cloud account. This wizard will
@@ -644,7 +644,7 @@ export default function OnboardingPage() {
                       </li>
                       <li>
                         Click <strong>New registration</strong>. Name it
-                        &quot;CSPM Reader&quot; and register.
+                        &quot;PostureOne Reader&quot; and register.
                       </li>
                       <li>
                         Copy the <strong>Application (client) ID</strong> and{" "}
@@ -699,8 +699,8 @@ export default function OnboardingPage() {
                 Test Connection
               </h2>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Verify that CSPM can connect to your Azure subscription before
-                proceeding.
+                Verify that PostureOne can connect to your Azure subscription
+                before proceeding.
               </p>
 
               <div className="mt-6 flex flex-col items-center gap-4">

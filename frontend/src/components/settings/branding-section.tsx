@@ -122,7 +122,7 @@ export default function BrandingSection({
               }))
             }
             className="w-full max-w-sm rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
-            placeholder="CSPM"
+            placeholder="PostureOne"
           />
         </div>
 
@@ -213,7 +213,7 @@ export default function BrandingSection({
                 color: isColorValid ? brandingForm.primary_color : "#6366f1",
               }}
             >
-              {brandingForm.company_name || "CSPM"}
+              {brandingForm.company_name || "PostureOne"}
             </span>
           </div>
         </div>

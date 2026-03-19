@@ -16,8 +16,8 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "NimbusGuard — Cloud Security",
-    template: "%s | NimbusGuard",
+    default: "PostureOne — Cloud Security Posture Management",
+    template: "%s | PostureOne",
   },
   description:
     "Cloud Security Posture Management — continuous assessment for Azure and AWS",
