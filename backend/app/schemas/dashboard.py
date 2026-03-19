@@ -5,8 +5,10 @@ from pydantic import BaseModel
 
 class DashboardSummary(BaseModel):
     secure_score: float | None
+    total_accounts: int = 0
     total_assets: int
     total_findings: int
+    failing_findings: int = 0
     findings_by_severity: dict[str, int]
     top_failing_controls: list[FailingControl]
     assets_by_type: dict[str, int]

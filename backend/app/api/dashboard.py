@@ -116,10 +116,21 @@ async def dashboard_summary(db: DB, user: CurrentUser) -> dict:
     if score_row and isinstance(score_row, dict):
         secure_score = score_row.get("secure_score")
 
+    # Count accounts
+    total_accounts = (
+        await db.execute(
+            select(func.count(CloudAccount.id)).where(CloudAccount.tenant_id == tenant_id)
+        )
+    ).scalar() or 0
+
+    failing_findings = findings_agg[1] or 0
+
     summary = DashboardSummary(
         secure_score=secure_score,
+        total_accounts=total_accounts,
         total_assets=total_assets,
         total_findings=total_findings,
+        failing_findings=failing_findings,
         findings_by_severity=findings_by_severity,
         top_failing_controls=top_failing,
         assets_by_type=assets_by_type,
