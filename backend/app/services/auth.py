@@ -211,6 +211,70 @@ async def register_user(
     return user, tenant
 
 
+def create_password_reset_token(user_id: str) -> str:
+    """Create a short-lived JWT for password reset (1 hour)."""
+    payload = {
+        "sub": user_id,
+        "type": "password_reset",
+        "exp": datetime.now(UTC) + timedelta(hours=1),
+        "iat": datetime.now(UTC),
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
+
+
+def decode_password_reset_token(token: str) -> dict | None:
+    """Decode and validate a password reset token. Returns payload or None."""
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
+        if payload.get("type") != "password_reset":
+            return None
+        return payload
+    except jwt.PyJWTError:
+        logger.debug("Invalid password reset token")
+        return None
+
+
+async def request_password_reset(db: AsyncSession, email: str) -> str | None:
+    """Create a password reset token. Returns token or None if user not found.
+
+    Does not reveal whether the user exists (caller should always return 204).
+    """
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+    if user is None:
+        return None
+    if not user.is_active:
+        return None
+    return create_password_reset_token(str(user.id))
+
+
+async def reset_password(db: AsyncSession, token: str, new_password: str) -> bool:
+    """Reset password using a reset token. Returns True on success."""
+    payload = decode_password_reset_token(token)
+    if payload is None:
+        return False
+
+    user_id = payload["sub"]
+    validate_password(new_password)
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None or not user.is_active:
+        return False
+
+    user.hashed_password = hash_password(new_password)
+    # Clear any lockout state
+    user.failed_login_attempts = 0
+    user.locked_until = None
+
+    # Revoke all active refresh tokens so existing sessions are invalidated
+    await revoke_all_user_tokens(db, user_id)
+
+    await db.commit()
+    logger.info("Password reset completed for user %s", user.email)
+    return True
+
+
 async def authenticate_user(db: AsyncSession, email: str, password: str) -> User | None:
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()

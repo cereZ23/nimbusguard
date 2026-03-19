@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.webhook import Webhook
 from app.services.credentials import decrypt_value
+from app.utils.url_validation import create_ssrf_safe_client
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ async def dispatch_webhooks(
                 sig = hmac.new(plain_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
                 headers["X-CSPM-Signature"] = f"sha256={sig}"
 
-            async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            async with create_ssrf_safe_client(timeout=TIMEOUT) as client:
                 resp = await client.post(wh.url, content=body_bytes, headers=headers)
 
             wh.last_triggered_at = datetime.now(UTC)
@@ -97,7 +98,7 @@ async def send_test_webhook(webhook: Webhook) -> tuple[int, str]:
         sig = hmac.new(plain_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
         headers["X-CSPM-Signature"] = f"sha256={sig}"
 
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+    async with create_ssrf_safe_client(timeout=TIMEOUT) as client:
         resp = await client.post(webhook.url, content=body_bytes, headers=headers)
 
     return resp.status_code, resp.text

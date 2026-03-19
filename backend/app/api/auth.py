@@ -15,6 +15,7 @@ from app.models.user import User
 from app.rate_limit import limiter
 from app.schemas.auth import (
     AuthCookieResponse,
+    ForgotPasswordRequest,
     LoginRequest,
     MfaBackupCodesResponse,
     MfaDisableRequest,
@@ -24,6 +25,7 @@ from app.schemas.auth import (
     MfaSetupResponse,
     MfaVerifyRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     UserResponse,
 )
 from app.schemas.common import ApiResponse
@@ -37,6 +39,8 @@ from app.services.auth import (
     decode_mfa_token,
     decode_refresh_token,
     register_user,
+    request_password_reset,
+    reset_password,
     revoke_refresh_token,
     verify_password,
 )
@@ -233,6 +237,40 @@ async def logout(request: Request, db: DB, response: Response) -> dict:
         await db.commit()
 
     _clear_auth_cookies(response)
+    return {"data": None, "error": None, "meta": None}
+
+
+# ── Password Reset Endpoints ─────────────────────────────────────────
+
+
+@router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/hour")
+async def forgot_password(request: Request, body: ForgotPasswordRequest, db: DB) -> None:
+    """Request a password reset link. Always returns 204 to prevent user enumeration."""
+    token = await request_password_reset(db, body.email)
+    if token:
+        reset_url = f"{settings.frontend_url}/reset-password?token={token}"
+        logger.info("Password reset requested for %s: %s", body.email, reset_url)
+    # Always return 204 regardless of whether the user exists
+
+
+@router.post("/reset-password")
+async def reset_password_endpoint(body: ResetPasswordRequest, db: DB) -> dict:
+    """Reset password using a valid reset token."""
+    try:
+        success = await reset_password(db, body.token, body.new_password)
+    except ValueError as e:
+        # Password policy violation
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid or expired reset token",
+        )
     return {"data": None, "error": None, "meta": None}
 
 

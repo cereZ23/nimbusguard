@@ -344,7 +344,9 @@ async def replace_user(
     if user_data.get("email"):
         # Check uniqueness for new email
         if user_data["email"] != user.email:
-            existing = await db.execute(select(User).where(User.email == user_data["email"]))
+            existing = await db.execute(
+                select(User).where(User.email == user_data["email"], User.tenant_id == tenant_id)
+            )
             if existing.scalar_one_or_none() is not None:
                 return _scim_error(409, f"User with email {user_data['email']} already exists", scim_type="uniqueness")
         user.email = user_data["email"]
@@ -385,8 +387,21 @@ async def patch_user(
     if user is None:
         return _scim_error(404, "User not found")
 
+    old_email = user.email
     operations = [op.model_dump() for op in body.Operations]
     apply_scim_patch(user, operations)
+
+    # Validate email uniqueness within tenant if email was changed
+    if user.email != old_email:
+        dup = await db.execute(
+            select(User).where(
+                User.email == user.email,
+                User.tenant_id == tenant_id,
+                User.id != user.id,
+            )
+        )
+        if dup.scalar_one_or_none() is not None:
+            return _scim_error(409, f"User with email {user.email} already exists", scim_type="uniqueness")
 
     await db.commit()
     await db.refresh(user)

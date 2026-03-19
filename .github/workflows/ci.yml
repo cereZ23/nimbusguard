@@ -273,7 +273,10 @@ jobs:
                 yaml.dump(c,f,default_flow_style=False,sort_keys=False)
             "
 
-            # Rebuild and restart
+            # Pull pre-built GHCR images (scanned by Trivy in CI) and restart
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker pull ghcr.io/cerez23/nimbusguard/backend:latest || true
+            docker pull ghcr.io/cerez23/nimbusguard/frontend:latest || true
             docker compose -f docker-compose.prod.yml up -d --build
 
             # Wait for health
@@ -292,11 +295,17 @@ jobs:
           HTTP_CODE=$(curl -skL -o /dev/null -w "%{http_code}" --connect-timeout 10 "https://cspm.securekt.com/health" 2>/dev/null || echo "000")
           echo "Health check: HTTP $HTTP_CODE"
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "::warning::Health check returned $HTTP_CODE"
+            echo "::error::Health check returned $HTTP_CODE — deploy may have failed"
+            exit 1
           fi
 
           HTTP_CODE=$(curl -skL -o /dev/null -w "%{http_code}" --connect-timeout 10 "https://cspm.securekt.com/" 2>/dev/null || echo "000")
           echo "Frontend check: HTTP $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "307" ]; then
+            echo "::error::Frontend returned $HTTP_CODE"
+            exit 1
+          fi
+          echo "Smoke tests passed."
 
   # ── Pipeline Summary ───────────────────────────────────────────
   pipeline-summary:
