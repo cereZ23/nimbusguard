@@ -17,6 +17,7 @@ from app.models.sso_config import SsoConfig
 from app.models.user import User
 from app.services.auth import hash_password
 from app.services.credentials import decrypt_credentials, encrypt_credentials
+from app.utils.url_validation import create_ssrf_safe_client, validate_public_url
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +85,15 @@ async def discover_oidc_config(issuer_url: str, metadata_url: str | None = None)
                 resp.raise_for_status()
                 config = resp.json()
                 logger.info("OIDC discovery successful from %s", url)
+
+                # SSRF validation: ensure returned endpoints point to public URLs
+                token_ep = config.get("token_endpoint", "")
+                if token_ep:
+                    validate_public_url(token_ep, require_https=True)
+                jwks = config.get("jwks_uri", "")
+                if jwks:
+                    validate_public_url(jwks, require_https=True)
+
                 return config
             except httpx.HTTPError as exc:
                 logger.warning("OIDC discovery failed for %s: %s", url, exc)
@@ -155,7 +165,7 @@ async def exchange_code(
         "client_secret": client_secret,
     }
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with create_ssrf_safe_client(timeout=10) as client:
         resp = await client.post(
             token_endpoint,
             data=token_data,

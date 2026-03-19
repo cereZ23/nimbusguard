@@ -401,9 +401,16 @@ async def _check_mfa_brute_force(mfa_token: str) -> None:
             )
     except HTTPException:
         raise
+    except (ConnectionError, OSError, TimeoutError) as exc:
+        # Fail closed on Redis connection issues — deny MFA to prevent brute-force
+        logger.warning("MFA brute-force check failed (Redis unavailable) — denying request")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service temporarily unavailable",
+        ) from exc
     except Exception:
-        # Redis down — fall through to global rate limit only
-        logger.debug("MFA brute-force check skipped (Redis unavailable)")
+        # Non-connection errors (e.g., serialization bugs) — log but allow through
+        logger.warning("MFA brute-force check error (non-connection)")
 
 
 @router.post("/mfa/login", response_model=ApiResponse[MfaLoginResponse])

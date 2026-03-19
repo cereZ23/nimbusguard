@@ -22,6 +22,12 @@ class Finding(Base, UUIDPrimaryKey, TimestampMixin):
         Index("ix_findings_last_evaluated", "last_evaluated_at"),
     )
 
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=True,  # nullable for backward compat, backfill later
+        index=True,
+    )
     cloud_account_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("cloud_accounts.id", ondelete="CASCADE"),

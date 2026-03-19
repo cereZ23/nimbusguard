@@ -1,3 +1,4 @@
+import React from "react";
 import type { Severity } from "@/types";
 
 const config: Record<
@@ -27,11 +28,7 @@ const config: Record<
   },
 };
 
-export default function SeverityBadge({
-  severity,
-}: {
-  severity: Severity | string;
-}) {
+function SeverityBadge({ severity }: { severity: Severity | string }) {
   const c = config[severity as Severity] ?? {
     dot: "bg-gray-400",
     bg: "bg-gray-100",
@@ -49,3 +46,5 @@ export default function SeverityBadge({
     </span>
   );
 }
+
+export default React.memo(SeverityBadge);

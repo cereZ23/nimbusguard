@@ -18,6 +18,12 @@ class Asset(Base, UUIDPrimaryKey, TimestampMixin):
         Index("ix_assets_cloud_account_type", "cloud_account_id", "resource_type"),
     )
 
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=True,  # nullable for backward compat, backfill later
+        index=True,
+    )
     cloud_account_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("cloud_accounts.id", ondelete="CASCADE"),

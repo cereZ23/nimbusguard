@@ -23,6 +23,11 @@ settings.credential_encryption_key = _TEST_FERNET_KEY
 # Disable rate limiting in tests by default
 limiter.enabled = False
 
+# Reset Redis singleton between tests to prevent stale connections
+import app.services.cache as _cache_module
+
+_cache_module._redis = None
+
 TEST_DATABASE_URL = "postgresql+asyncpg://cspm:cspm@localhost:5432/cspm_test"
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)

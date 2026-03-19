@@ -118,9 +118,7 @@ async def dashboard_summary(db: DB, user: CurrentUser) -> dict:
 
     # Count accounts
     total_accounts = (
-        await db.execute(
-            select(func.count(CloudAccount.id)).where(CloudAccount.tenant_id == tenant_id)
-        )
+        await db.execute(select(func.count(CloudAccount.id)).where(CloudAccount.tenant_id == tenant_id))
     ).scalar() or 0
 
     failing_findings = findings_agg[1] or 0

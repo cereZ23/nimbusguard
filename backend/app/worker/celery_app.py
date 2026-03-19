@@ -28,6 +28,10 @@ celery_app.conf.update(
             "task": "check_scheduled_reports",
             "schedule": 900.0,  # every 15 minutes
         },
+        "cleanup-old-evidence": {
+            "task": "cleanup_old_evidence",
+            "schedule": 86400.0,  # daily
+        },
     },
 )
 

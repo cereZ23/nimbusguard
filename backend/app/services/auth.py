@@ -295,6 +295,7 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> User
             locked = locked.replace(tzinfo=UTC)
         if locked > now:
             logger.warning("Login attempt on locked account: %s", email)
+            verify_password(password, _DUMMY_HASH)  # timing oracle prevention
             return None
 
     if not verify_password(password, user.hashed_password):

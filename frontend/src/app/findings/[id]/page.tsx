@@ -10,31 +10,24 @@ import {
   ShieldCheck,
   Server,
   ExternalLink,
-  Lightbulb,
   UserPlus,
   MessageSquare,
   Trash2,
   Send,
   History,
-  ArrowRightLeft,
-  UserCheck,
-  UserMinus,
-  ShieldAlert,
-  MessageCircle,
   Layers,
-  Copy,
-  Check,
-  Code,
-  Terminal,
 } from "lucide-react";
 import AppShell from "@/components/layout/app-shell";
 import SeverityBadge from "@/components/ui/severity-badge";
 import StatusBadge from "@/components/ui/status-badge";
 import ErrorState from "@/components/ui/error-state";
+import RemediationPanel from "@/components/findings/remediation-panel";
+import type { RemediationData } from "@/components/findings/remediation-panel";
+import TimelineItem from "@/components/findings/timeline-item";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { extractApiError } from "@/lib/errors";
-import { formatDate, formatDateTime, formatRelative } from "@/lib/dates";
+import { formatDate, formatDateTime } from "@/lib/dates";
 import type {
   FindingComment,
   FindingEvent,
@@ -77,255 +70,6 @@ interface FindingDetailData {
     snapshot: Record<string, unknown>;
     collected_at: string;
   }>;
-}
-
-// ── Remediation types & component ────────────────────────────────────
-
-interface RemediationData {
-  control_code: string;
-  control_name: string;
-  description: string | null;
-  remediation_hint: string | null;
-  snippets: {
-    terraform: string | null;
-    bicep: string | null;
-    azure_cli: string | null;
-  };
-}
-
-type SnippetTab = "terraform" | "bicep" | "azure_cli";
-
-const TAB_CONFIG: { key: SnippetTab; label: string; icon: React.ReactNode }[] =
-  [
-    {
-      key: "terraform",
-      label: "Terraform",
-      icon: <Code className="h-3.5 w-3.5" />,
-    },
-    { key: "bicep", label: "Bicep", icon: <Code className="h-3.5 w-3.5" /> },
-    {
-      key: "azure_cli",
-      label: "Azure CLI",
-      icon: <Terminal className="h-3.5 w-3.5" />,
-    },
-  ];
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-      title="Copy to clipboard"
-    >
-      {copied ? (
-        <>
-          <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
-          Copied
-        </>
-      ) : (
-        <>
-          <Copy className="h-3 w-3" />
-          Copy
-        </>
-      )}
-    </button>
-  );
-}
-
-function RemediationPanel({
-  remediation,
-  fallbackHint,
-}: {
-  remediation: RemediationData | null;
-  fallbackHint?: string;
-}) {
-  const [activeTab, setActiveTab] = useState<SnippetTab>("terraform");
-
-  const hasSnippets =
-    remediation &&
-    (remediation.snippets.terraform ||
-      remediation.snippets.bicep ||
-      remediation.snippets.azure_cli);
-
-  // Determine available tabs
-  const availableTabs = hasSnippets
-    ? TAB_CONFIG.filter((tab) => remediation.snippets[tab.key])
-    : [];
-
-  // Auto-select first available tab
-  const effectiveTab = availableTabs.some((t) => t.key === activeTab)
-    ? activeTab
-    : (availableTabs[0]?.key ?? "terraform");
-
-  const activeSnippet = remediation?.snippets[effectiveTab] ?? null;
-
-  // If no remediation data at all, fall back to hint
-  if (!remediation && !fallbackHint) return null;
-
-  return (
-    <div className="rounded-xl border border-emerald-200 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/20">
-      {/* Header */}
-      <div className="px-5 pt-5 pb-3">
-        <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-          <Lightbulb className="h-4 w-4 flex-shrink-0" />
-          Remediation Guidance
-        </h2>
-        {remediation?.description && (
-          <p className="text-sm text-emerald-700 dark:text-emerald-300">
-            {remediation.description}
-          </p>
-        )}
-        {/* Always show the text hint if available */}
-        {(remediation?.remediation_hint || fallbackHint) && (
-          <p className="mt-2 text-sm text-emerald-900 dark:text-emerald-200 leading-relaxed">
-            {remediation?.remediation_hint ?? fallbackHint}
-          </p>
-        )}
-      </div>
-
-      {/* Tabbed IaC snippets */}
-      {hasSnippets && availableTabs.length > 0 && (
-        <div className="px-5 pb-5">
-          {/* Tabs */}
-          <div className="mt-3 flex gap-1 rounded-lg bg-emerald-100/70 p-1 dark:bg-emerald-900/30">
-            {availableTabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  effectiveTab === tab.key
-                    ? "bg-white text-emerald-800 shadow-sm dark:bg-gray-800 dark:text-emerald-300"
-                    : "text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200"
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Code block */}
-          {activeSnippet && (
-            <div className="mt-3 rounded-lg border border-emerald-200 bg-gray-900 dark:border-emerald-700">
-              <div className="flex items-center justify-between border-b border-gray-700 px-3 py-2">
-                <span className="text-xs font-medium text-gray-400">
-                  {availableTabs.find((t) => t.key === effectiveTab)?.label}
-                </span>
-                <CopyButton text={activeSnippet} />
-              </div>
-              <pre className="max-h-80 overflow-auto p-4 text-xs leading-relaxed text-gray-100">
-                <code>{activeSnippet}</code>
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Timeline helpers ─────────────────────────────────────────────────
-
-function getEventIcon(eventType: string) {
-  switch (eventType) {
-    case "status_change":
-      return <ArrowRightLeft className="h-3.5 w-3.5" />;
-    case "severity_change":
-      return <ShieldAlert className="h-3.5 w-3.5" />;
-    case "assigned":
-      return <UserCheck className="h-3.5 w-3.5" />;
-    case "unassigned":
-      return <UserMinus className="h-3.5 w-3.5" />;
-    case "commented":
-      return <MessageCircle className="h-3.5 w-3.5" />;
-    case "waiver_requested":
-      return <ShieldCheck className="h-3.5 w-3.5" />;
-    case "waiver_approved":
-      return <ShieldCheck className="h-3.5 w-3.5" />;
-    default:
-      return <Clock className="h-3.5 w-3.5" />;
-  }
-}
-
-function getEventColor(eventType: string): string {
-  switch (eventType) {
-    case "status_change":
-      return "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400";
-    case "severity_change":
-      return "bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400";
-    case "assigned":
-      return "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400";
-    case "unassigned":
-      return "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400";
-    case "commented":
-      return "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400";
-    case "waiver_requested":
-      return "bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400";
-    case "waiver_approved":
-      return "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400";
-    default:
-      return "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400";
-  }
-}
-
-function formatEventDescription(event: FindingEvent): string {
-  const actor = event.user_email ?? "System";
-
-  switch (event.event_type) {
-    case "status_change":
-      return `Status changed from ${event.old_value ?? "unknown"} to ${event.new_value ?? "unknown"} by ${actor}`;
-    case "severity_change":
-      return `Severity changed from ${event.old_value ?? "unknown"} to ${event.new_value ?? "unknown"} by ${actor}`;
-    case "assigned":
-      return `Assigned by ${actor}`;
-    case "unassigned":
-      return `Unassigned by ${actor}`;
-    case "commented":
-      return `${actor} added a comment`;
-    case "waiver_requested":
-      return `Waiver requested by ${actor}`;
-    case "waiver_approved":
-      return `Waiver approved by ${actor}`;
-    default:
-      return `${event.event_type} by ${actor}`;
-  }
-}
-
-function TimelineItem({ event }: { event: FindingEvent }) {
-  return (
-    <div className="relative flex gap-3 pl-0">
-      {/* Dot / icon */}
-      <div
-        className={`relative z-10 flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-full ${getEventColor(event.event_type)}`}
-      >
-        {getEventIcon(event.event_type)}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 pt-1">
-        <p className="text-sm text-gray-800 dark:text-gray-200">
-          {formatEventDescription(event)}
-        </p>
-        {event.details && event.event_type !== "commented" && (
-          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 truncate max-w-md">
-            {event.details}
-          </p>
-        )}
-        <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-          {formatRelative(event.created_at)}
-        </p>
-      </div>
-    </div>
-  );
 }
 
 // ── Main page component ──────────────────────────────────────────────

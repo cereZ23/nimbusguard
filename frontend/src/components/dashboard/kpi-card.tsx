@@ -5,6 +5,7 @@
  * and glassmorphism styling. Used in the dashboard hero row.
  */
 
+import React from "react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 export interface KpiCardProps {
@@ -19,7 +20,7 @@ export interface KpiCardProps {
   iconBg: string;
 }
 
-export default function KpiCard({
+function KpiCard({
   title,
   value,
   subtitle,
@@ -92,3 +93,5 @@ export default function KpiCard({
     </div>
   );
 }
+
+export default React.memo(KpiCard);

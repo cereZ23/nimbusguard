@@ -1,3 +1,5 @@
+import React from "react";
+
 const config: Record<
   string,
   {
@@ -43,7 +45,7 @@ const config: Record<
   },
 };
 
-export default function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: { status: string }) {
   const c = config[status] ?? {
     dot: "bg-gray-400",
     bg: "bg-gray-100",
@@ -62,3 +64,5 @@ export default function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+export default React.memo(StatusBadge);

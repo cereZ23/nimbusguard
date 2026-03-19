@@ -337,3 +337,29 @@ async def _check_scheduled_reports_async() -> dict:
 
     async with _worker_session() as db:
         return await check_and_run_due_reports(db)
+
+
+# ── Evidence cleanup ────────────────────────────────────────────────
+
+
+@celery_app.task(name="cleanup_old_evidence")
+def cleanup_old_evidence() -> dict:
+    """Delete evidence older than 90 days."""
+    logger.info("Starting evidence cleanup")
+    return asyncio.run(_cleanup_evidence_async())
+
+
+async def _cleanup_evidence_async() -> dict:
+    from datetime import timedelta
+
+    from sqlalchemy import delete
+
+    from app.models.evidence import Evidence
+
+    async with _worker_session() as db:
+        cutoff = datetime.now(UTC) - timedelta(days=90)
+        result = await db.execute(delete(Evidence).where(Evidence.collected_at < cutoff))
+        await db.commit()
+        count = result.rowcount
+        logger.info("Evidence cleanup: deleted %d rows older than 90 days", count)
+        return {"deleted": count}

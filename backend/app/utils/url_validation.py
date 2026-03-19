@@ -75,9 +75,7 @@ def create_ssrf_safe_client(timeout: int = 10) -> httpx.AsyncClient:
                     msg = f"SSRF blocked: {hostname} is a blocked hostname"
                     raise httpx.ConnectError(msg)
                 try:
-                    addrs = socket.getaddrinfo(
-                        hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
-                    )
+                    addrs = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
                     for _family, _type, _proto, _canonname, sockaddr in addrs:
                         _check_ip_is_public(sockaddr[0])
                 except socket.gaierror as exc:

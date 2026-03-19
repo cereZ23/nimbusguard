@@ -44,7 +44,7 @@ async def test_dispatch_webhooks_sends_to_matching_event() -> None:
     mock_result.scalars.return_value.all.return_value = [wh]
     mock_db.execute.return_value = mock_result
 
-    with patch("app.services.webhook_dispatcher.httpx.AsyncClient") as mock_client_cls:
+    with patch("app.services.webhook_dispatcher.create_ssrf_safe_client") as mock_client_cls:
         mock_client = AsyncMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -71,7 +71,7 @@ async def test_dispatch_webhooks_skips_non_matching_event() -> None:
     mock_result.scalars.return_value.all.return_value = [wh]
     mock_db.execute.return_value = mock_result
 
-    with patch("app.services.webhook_dispatcher.httpx.AsyncClient") as mock_client_cls:
+    with patch("app.services.webhook_dispatcher.create_ssrf_safe_client") as mock_client_cls:
         mock_client = AsyncMock()
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
@@ -94,7 +94,7 @@ async def test_dispatch_webhooks_includes_hmac_signature() -> None:
     mock_result.scalars.return_value.all.return_value = [wh]
     mock_db.execute.return_value = mock_result
 
-    with patch("app.services.webhook_dispatcher.httpx.AsyncClient") as mock_client_cls:
+    with patch("app.services.webhook_dispatcher.create_ssrf_safe_client") as mock_client_cls:
         mock_client = AsyncMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -125,7 +125,7 @@ async def test_dispatch_webhooks_handles_delivery_failure() -> None:
     mock_result.scalars.return_value.all.return_value = [wh]
     mock_db.execute.return_value = mock_result
 
-    with patch("app.services.webhook_dispatcher.httpx.AsyncClient") as mock_client_cls:
+    with patch("app.services.webhook_dispatcher.create_ssrf_safe_client") as mock_client_cls:
         mock_client = AsyncMock()
         mock_client.post.side_effect = ConnectionError("Connection refused")
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -155,7 +155,7 @@ async def test_dispatch_webhooks_no_webhooks() -> None:
 async def test_send_test_webhook_success() -> None:
     wh = _make_webhook(uuid.uuid4())
 
-    with patch("app.services.webhook_dispatcher.httpx.AsyncClient") as mock_client_cls:
+    with patch("app.services.webhook_dispatcher.create_ssrf_safe_client") as mock_client_cls:
         mock_client = AsyncMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -175,7 +175,7 @@ async def test_send_test_webhook_success() -> None:
 async def test_send_test_webhook_with_secret() -> None:
     wh = _make_webhook(uuid.uuid4(), secret=encrypt_value("test-secret"))
 
-    with patch("app.services.webhook_dispatcher.httpx.AsyncClient") as mock_client_cls:
+    with patch("app.services.webhook_dispatcher.create_ssrf_safe_client") as mock_client_cls:
         mock_client = AsyncMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
