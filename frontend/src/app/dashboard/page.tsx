@@ -104,12 +104,9 @@ export default function DashboardPage() {
   const recentFindings = (findingsEnvelope?.data ?? []) as Finding[];
   const accounts = (accountsEnvelope?.data ?? []) as CloudAccount[];
 
-  // Redirect to onboarding if user has no cloud accounts
-  useEffect(() => {
-    if (!accountsLoading && accountsEnvelope && accounts.length === 0) {
-      router.push("/onboarding");
-    }
-  }, [accountsLoading, accountsEnvelope, accounts.length, router]);
+  // Show onboarding prompt (not forced redirect) if user has no cloud accounts
+  const showOnboardingPrompt =
+    !accountsLoading && accountsEnvelope && accounts.length === 0;
 
   // Combined loading / error state for initial page load
   const isLoading = summaryLoading || trendLoading || findingsLoading;
@@ -165,6 +162,48 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <div className="animate-page-in space-y-8">
+        {/* Empty state: no cloud accounts yet */}
+        {showOnboardingPrompt && (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center dark:border-gray-600 dark:bg-gray-800">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-900/30">
+              <svg
+                className="h-8 w-8 text-blue-600 dark:text-blue-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              Connect your first cloud account
+            </h2>
+            <p className="mt-2 max-w-md text-sm text-gray-500 dark:text-gray-400">
+              Add an Azure or AWS account to start scanning your cloud resources
+              and assessing your security posture.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <a
+                href="/onboarding"
+                className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              >
+                Start Setup Wizard
+              </a>
+              <a
+                href="/settings/accounts"
+                className="rounded-xl border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              >
+                Add Manually
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Page Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
