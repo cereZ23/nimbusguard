@@ -73,28 +73,18 @@ async def _test_azure_connection(body: TestConnectionRequest) -> dict:
             from azure.mgmt.authorization import AuthorizationManagementClient
 
             auth_client = AuthorizationManagementClient(credential, body.subscription_id)
-            # Get role assignments for this service principal
-            sp_object_id = None
             try:
-                # The SP's object ID can be inferred from a Graph call, but simpler:
-                # check if the SP can write anything by attempting a harmless write-check
                 assignments = list(auth_client.role_assignments.list_for_subscription())
-                # Check for dangerous built-in roles
                 dangerous_roles = {
                     "Owner",
                     "Contributor",
                     "User Access Administrator",
                 }
-                from azure.mgmt.authorization.models import RoleAssignment
-
                 for assignment in assignments:
                     if not assignment.role_definition_id:
                         continue
-                    # Get the role name from the definition
                     try:
-                        role_def = auth_client.role_definitions.get_by_id(
-                            assignment.role_definition_id
-                        )
+                        role_def = auth_client.role_definitions.get_by_id(assignment.role_definition_id)
                         if role_def.role_name in dangerous_roles:
                             warnings.append(
                                 f"Service principal has '{role_def.role_name}' role. "
@@ -102,7 +92,7 @@ async def _test_azure_connection(body: TestConnectionRequest) -> dict:
                                 f"Please reduce permissions to least privilege."
                             )
                             break
-                    except Exception:
+                    except Exception:  # noqa: S112
                         continue
             except Exception:
                 pass  # Can't check roles — not critical
