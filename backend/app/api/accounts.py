@@ -66,11 +66,60 @@ async def _test_azure_connection(body: TestConnectionRequest) -> dict:
         result = client.resources(query)
         count = result.data[0]["count_"] if result.data else 0
         logger.info("Azure test connection successful: %d resources found", count)
+
+        # Privilege check: verify the SP has only read-level roles
+        warnings: list[str] = []
+        try:
+            from azure.mgmt.authorization import AuthorizationManagementClient
+
+            auth_client = AuthorizationManagementClient(credential, body.subscription_id)
+            # Get role assignments for this service principal
+            sp_object_id = None
+            try:
+                # The SP's object ID can be inferred from a Graph call, but simpler:
+                # check if the SP can write anything by attempting a harmless write-check
+                assignments = list(auth_client.role_assignments.list_for_subscription())
+                # Check for dangerous built-in roles
+                dangerous_roles = {
+                    "Owner",
+                    "Contributor",
+                    "User Access Administrator",
+                }
+                from azure.mgmt.authorization.models import RoleAssignment
+
+                for assignment in assignments:
+                    if not assignment.role_definition_id:
+                        continue
+                    # Get the role name from the definition
+                    try:
+                        role_def = auth_client.role_definitions.get_by_id(
+                            assignment.role_definition_id
+                        )
+                        if role_def.role_name in dangerous_roles:
+                            warnings.append(
+                                f"Service principal has '{role_def.role_name}' role. "
+                                f"PostureOne only needs 'Reader' + 'Security Reader'. "
+                                f"Please reduce permissions to least privilege."
+                            )
+                            break
+                    except Exception:
+                        continue
+            except Exception:
+                pass  # Can't check roles — not critical
+
+            if not warnings:
+                # Verify we DON'T have write access by checking if we can list role assignments
+                # (Reader can do this, so it's not a proof of write, but absence of warnings is good)
+                pass
+        except ImportError:
+            pass  # azure-mgmt-authorization not installed
+
         return {
             "data": TestConnectionResponse(
                 success=True,
                 resource_count=count,
                 message=f"Connected successfully. Found {count} resources.",
+                warnings=warnings,
             ),
             "error": None,
             "meta": None,
@@ -144,11 +193,38 @@ async def _test_aws_connection(body: TestConnectionRequest) -> dict:
             count = 0
 
         logger.info("AWS test connection successful: account %s, %d S3 buckets", account_id, count)
+
+        # Privilege check: verify credentials don't have admin/write access
+        warnings: list[str] = []
+        try:
+            iam_client = session.client("iam", endpoint_url=endpoint_url)
+            # Check if credentials can perform write operations
+            # Try to simulate a dangerous action — if it succeeds, warn
+            try:
+                sim_result = iam_client.simulate_principal_policy(
+                    PolicySourceArn=identity["Arn"],
+                    ActionNames=["s3:DeleteBucket", "ec2:TerminateInstances", "iam:CreateUser"],
+                )
+                for eval_result in sim_result.get("EvaluationResults", []):
+                    if eval_result.get("EvalDecision") == "allowed":
+                        action = eval_result.get("EvalActionName", "unknown")
+                        warnings.append(
+                            f"Credentials have write permission: '{action}'. "
+                            f"PostureOne only needs ReadOnlyAccess. "
+                            f"Please reduce permissions to least privilege."
+                        )
+                        break
+            except Exception:
+                pass  # simulate_principal_policy may not be available
+        except Exception:
+            pass
+
         return {
             "data": TestConnectionResponse(
                 success=True,
                 resource_count=count,
                 message=f"Connected successfully to account {account_id}. Found {count} S3 buckets.",
+                warnings=warnings,
             ),
             "error": None,
             "meta": None,

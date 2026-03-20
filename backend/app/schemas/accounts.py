@@ -35,6 +35,7 @@ class TestConnectionResponse(BaseModel):
     success: bool
     resource_count: int
     message: str
+    warnings: list[str] = []
 
 
 class CloudAccountCreate(BaseModel):

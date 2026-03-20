@@ -19,6 +19,7 @@ dependencies = [
     "azure-identity>=1.19.0",
     "azure-mgmt-resourcegraph>=8.0.0",
     "azure-mgmt-security>=7.0.0",
+    "azure-mgmt-authorization>=4.0.0",
     "cryptography>=44.0.0",
     "reportlab>=4.2.0",
     "croniter>=2.0.0",

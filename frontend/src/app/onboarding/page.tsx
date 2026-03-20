@@ -80,6 +80,7 @@ const EMPTY_FORM: CredentialForm = {
 interface TestResult {
   success: boolean;
   resource_count: number;
+  warnings?: string[];
   message: string;
 }
 
@@ -719,6 +720,22 @@ export default function OnboardingPage() {
                         >
                           {testResult.message}
                         </p>
+                        {testResult.warnings &&
+                          testResult.warnings.length > 0 && (
+                            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-900/20">
+                              <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                                Privilege Warning
+                              </p>
+                              {testResult.warnings.map((w, i) => (
+                                <p
+                                  key={i}
+                                  className="mt-1 text-xs text-amber-700 dark:text-amber-400"
+                                >
+                                  {w}
+                                </p>
+                              ))}
+                            </div>
+                          )}
                       </div>
                     </div>
                   </div>
