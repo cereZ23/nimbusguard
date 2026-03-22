@@ -101,11 +101,16 @@ def _clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(key=_REFRESH_COOKIE, path=_REFRESH_PATH)
 
 
-@router.post("/register", response_model=ApiResponse[AuthCookieResponse], status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/hour")
-async def register(request: Request, body: RegisterRequest, db: DB, response: Response) -> dict:
+async def register(request: Request, body: RegisterRequest, db: DB, user: CurrentUser) -> dict:
+    """Create a new tenant + admin user. Requires authentication (invitation-only model).
+
+    This endpoint is used by the admin panel to provision new tenants.
+    It does NOT set auth cookies (the caller remains logged in as themselves).
+    """
     try:
-        user, tenant = await register_user(
+        new_user, tenant = await register_user(
             db,
             email=body.email,
             password=body.password,
@@ -114,17 +119,18 @@ async def register(request: Request, body: RegisterRequest, db: DB, response: Re
         )
     except ValueError as e:
         detail = str(e)
-        # Password policy violations -> 422; duplicate email -> 409
         code = status.HTTP_422_UNPROCESSABLE_ENTITY if "Password" in detail else status.HTTP_409_CONFLICT
         raise HTTPException(status_code=code, detail=detail) from e
 
-    access_token = create_access_token(str(user.id), str(tenant.id))
-    refresh_token = await create_refresh_token(db, str(user.id), str(tenant.id))
     await db.commit()
 
-    _set_auth_cookies(response, access_token, refresh_token)
     return {
-        "data": AuthCookieResponse(),
+        "data": {
+            "tenant_id": str(tenant.id),
+            "tenant_name": tenant.name,
+            "user_id": str(new_user.id),
+            "email": new_user.email,
+        },
         "error": None,
         "meta": None,
     }
