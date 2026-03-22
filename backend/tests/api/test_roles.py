@@ -18,7 +18,7 @@ async def _create_viewer(client: AsyncClient, admin_headers: dict) -> dict[str, 
         json={
             "email": "viewer-roles@test.com",
             "full_name": "Viewer Roles",
-            "password": "Test@pass123",
+            "password": "Tr0ub4dor&3",
             "role": "viewer",
         },
     )
@@ -26,7 +26,7 @@ async def _create_viewer(client: AsyncClient, admin_headers: dict) -> dict[str, 
 
     login_res = await client.post(
         "/api/v1/auth/login",
-        json={"email": "viewer-roles@test.com", "password": "Test@pass123"},
+        json={"email": "viewer-roles@test.com", "password": "Tr0ub4dor&3"},
     )
     assert login_res.status_code == 200
     token = login_res.cookies.get("access_token")

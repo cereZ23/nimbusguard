@@ -6,7 +6,7 @@ import pytest
 from httpx import AsyncClient
 
 
-async def _create_test_user(email: str = "test@example.com", password: str = "Secure@pass123") -> str:
+async def _create_test_user(email: str = "test@example.com", password: str = "Tr0ub4dor&3") -> str:
     """Create a user + tenant directly in DB and return access token."""
     from app.models.tenant import Tenant
     from app.models.user import User
@@ -38,7 +38,7 @@ async def test_register_requires_auth(client: AsyncClient) -> None:
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
-            "password": "Secure@pass123",
+            "password": "Tr0ub4dor&3",
             "full_name": "Test User",
             "tenant_name": "Test Tenant",
         },
@@ -54,7 +54,7 @@ async def test_register_with_auth(client: AsyncClient, auth_headers: dict) -> No
         headers=auth_headers,
         json={
             "email": "newtenant@example.com",
-            "password": "Secure@pass123",
+            "password": "Tr0ub4dor&3",
             "full_name": "New Tenant Admin",
             "tenant_name": "New Tenant",
         },
@@ -67,10 +67,10 @@ async def test_register_with_auth(client: AsyncClient, auth_headers: dict) -> No
 
 @pytest.mark.asyncio
 async def test_login(client: AsyncClient) -> None:
-    await _create_test_user("login@example.com", "Secure@pass123")
+    await _create_test_user("login@example.com", "Tr0ub4dor&3")
     response = await client.post(
         "/api/v1/auth/login",
-        json={"email": "login@example.com", "password": "Secure@pass123"},
+        json={"email": "login@example.com", "password": "Tr0ub4dor&3"},
     )
     assert response.status_code == 200
     assert response.json()["data"]["token_type"] == "bearer"
@@ -80,7 +80,7 @@ async def test_login(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_login_wrong_password(client: AsyncClient) -> None:
-    await _create_test_user("wrong@example.com", "Secure@pass123")
+    await _create_test_user("wrong@example.com", "Tr0ub4dor&3")
     response = await client.post(
         "/api/v1/auth/login",
         json={"email": "wrong@example.com", "password": "wrongpassword"},
@@ -90,10 +90,10 @@ async def test_login_wrong_password(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_refresh_token(client: AsyncClient) -> None:
-    await _create_test_user("refresh@example.com", "Secure@pass123")
+    await _create_test_user("refresh@example.com", "Tr0ub4dor&3")
     login = await client.post(
         "/api/v1/auth/login",
-        json={"email": "refresh@example.com", "password": "Secure@pass123"},
+        json={"email": "refresh@example.com", "password": "Tr0ub4dor&3"},
     )
     refresh_token = login.cookies.get("refresh_token")
     assert refresh_token
@@ -130,10 +130,10 @@ async def test_me_with_bearer_header(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_logout(client: AsyncClient) -> None:
-    await _create_test_user("logout@example.com", "Secure@pass123")
+    await _create_test_user("logout@example.com", "Tr0ub4dor&3")
     login = await client.post(
         "/api/v1/auth/login",
-        json={"email": "logout@example.com", "password": "Secure@pass123"},
+        json={"email": "logout@example.com", "password": "Tr0ub4dor&3"},
     )
     access_token = login.cookies.get("access_token")
     refresh_token = login.cookies.get("refresh_token")

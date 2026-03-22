@@ -25,28 +25,24 @@ from app.services.auth import (
 
 
 class TestValidatePassword:
-    def test_valid_password(self):
-        validate_password("Strong@1pass")  # should not raise
+    def test_strong_password(self):
+        validate_password("Tr0ub4dor&3")  # zxcvbn score 4
 
     def test_too_short(self):
         with pytest.raises(ValueError, match="at least 8"):
             validate_password("Ab1!")
 
-    def test_no_lowercase(self):
-        with pytest.raises(ValueError, match="lowercase"):
-            validate_password("ABCDEFG1!")
+    def test_weak_common_password(self):
+        with pytest.raises(ValueError, match="[Ww]eak|common"):
+            validate_password("Password1!")
 
-    def test_no_uppercase(self):
-        with pytest.raises(ValueError, match="uppercase"):
+    def test_weak_simple_pattern(self):
+        with pytest.raises(ValueError, match="[Ww]eak"):
             validate_password("abcdefg1!")
 
-    def test_no_digit(self):
-        with pytest.raises(ValueError, match="digit"):
-            validate_password("Abcdefgh!")
-
-    def test_no_special(self):
-        with pytest.raises(ValueError, match="special"):
-            validate_password("Abcdefgh1")
+    def test_weak_no_entropy(self):
+        with pytest.raises(ValueError, match="[Ww]eak"):
+            validate_password("aaaaaaaa1A!")
 
 
 # ── Password hashing ─────────────────────────────────────────────────
@@ -167,7 +163,7 @@ class TestRegisterUser:
         user, tenant = await register_user(
             db,
             email=f"reg-{uuid.uuid4().hex[:6]}@test.com",
-            password="Register@1",
+            password="Tr0ub4dor&3",
             full_name="Reg User",
             tenant_name="Reg Tenant",
         )

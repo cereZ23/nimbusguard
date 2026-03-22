@@ -154,7 +154,7 @@ async def test_list_invitations_viewer_forbidden(client: AsyncClient, auth_heade
         json={
             "email": "viewer-inv@test.com",
             "full_name": "Viewer Inv",
-            "password": "Test@pass123",
+            "password": "Tr0ub4dor&3",
             "role": "viewer",
         },
     )
@@ -162,7 +162,7 @@ async def test_list_invitations_viewer_forbidden(client: AsyncClient, auth_heade
 
     login_res = await client.post(
         "/api/v1/auth/login",
-        json={"email": "viewer-inv@test.com", "password": "Test@pass123"},
+        json={"email": "viewer-inv@test.com", "password": "Tr0ub4dor&3"},
     )
     viewer_token = login_res.cookies.get("access_token")
     assert viewer_token, "access_token cookie missing after login"
@@ -371,7 +371,7 @@ async def test_invitation_requires_admin(client: AsyncClient, auth_headers: dict
         json={
             "email": "viewer-inv2@test.com",
             "full_name": "Viewer Inv2",
-            "password": "Test@pass123",
+            "password": "Tr0ub4dor&3",
             "role": "viewer",
         },
     )
@@ -379,7 +379,7 @@ async def test_invitation_requires_admin(client: AsyncClient, auth_headers: dict
 
     login_res = await client.post(
         "/api/v1/auth/login",
-        json={"email": "viewer-inv2@test.com", "password": "Test@pass123"},
+        json={"email": "viewer-inv2@test.com", "password": "Tr0ub4dor&3"},
     )
     viewer_token = login_res.cookies.get("access_token")
     assert viewer_token, "access_token cookie missing after login"

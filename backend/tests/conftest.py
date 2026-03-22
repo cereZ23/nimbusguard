@@ -87,7 +87,7 @@ async def _register_user(client: AsyncClient, email: str) -> str:
         user = User(
             tenant_id=tenant.id,
             email=email,
-            hashed_password=hash_password("Test@pass123"),
+            hashed_password=hash_password("Tr0ub4dor&3"),
             full_name="Test User",
             role="admin",
         )

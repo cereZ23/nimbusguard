@@ -20,7 +20,7 @@ async def test_audit_log_created_on_login(client: AsyncClient) -> None:
         user = User(
             tenant_id=tenant.id,
             email="audit@test.com",
-            hashed_password=hash_password("Test@pass123"),
+            hashed_password=hash_password("Tr0ub4dor&3"),
             full_name="Audit User",
             role="admin",
         )
@@ -30,7 +30,7 @@ async def test_audit_log_created_on_login(client: AsyncClient) -> None:
     # Login
     login_res = await client.post(
         "/api/v1/auth/login",
-        json={"email": "audit@test.com", "password": "Test@pass123"},
+        json={"email": "audit@test.com", "password": "Tr0ub4dor&3"},
     )
     assert login_res.status_code == 200
     token = login_res.cookies.get("access_token")

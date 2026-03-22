@@ -15,7 +15,7 @@ _MFA_VERIFY_URL = "/api/v1/auth/mfa/verify"
 _MFA_DISABLE_URL = "/api/v1/auth/mfa/disable"
 _MFA_LOGIN_URL = "/api/v1/auth/mfa/login"
 
-_PASSWORD = "Test@pass123"
+_PASSWORD = "Tr0ub4dor&3"
 
 
 async def _register_and_get_token(client: AsyncClient, email: str) -> str:
