@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { extractApiError } from "@/lib/errors";
+import PasswordStrength from "@/components/ui/password-strength";
 
 type AcceptState = "form" | "submitting" | "success" | "error";
 
@@ -322,6 +323,8 @@ function AcceptInviteContent() {
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                  <PasswordStrength password={password} />
+
                   {validationErrors.length > 0 && (
                     <div className="mt-2 space-y-1">
                       <p className="text-xs text-slate-500">

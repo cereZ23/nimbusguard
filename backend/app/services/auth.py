@@ -24,17 +24,53 @@ _LOCKOUT_MINUTES = 15
 _DUMMY_HASH = bcrypt.hashpw(b"dummy-timing-safe", bcrypt.gensalt()).decode()
 
 
-def validate_password(password: str) -> None:
+def validate_password(password: str, user_inputs: list[str] | None = None) -> None:
+    """Validate password strength using zxcvbn (realistic entropy estimation).
+
+    Requires score >= 3 (out of 4). Falls back to basic rules if zxcvbn unavailable.
+    """
     if len(password) < 8:
         raise ValueError("Password must be at least 8 characters")
-    if not re.search(r"[a-z]", password):
-        raise ValueError("Password must have a lowercase letter")
-    if not re.search(r"[A-Z]", password):
-        raise ValueError("Password must have an uppercase letter")
-    if not re.search(r"\d", password):
-        raise ValueError("Password must have a digit")
-    if not re.search(r"[^a-zA-Z0-9]", password):
-        raise ValueError("Password must have a special character")
+
+    try:
+        from zxcvbn import zxcvbn as _zxcvbn
+
+        result = _zxcvbn(password, user_inputs=user_inputs or [])
+        if result["score"] < 3:
+            feedback = result.get("feedback", {})
+            warning = feedback.get("warning", "")
+            suggestions = feedback.get("suggestions", [])
+            msg = "Password is too weak"
+            if warning:
+                msg += f": {warning}"
+            elif suggestions:
+                msg += f". {suggestions[0]}"
+            raise ValueError(msg)
+    except ImportError:
+        # Fallback to basic rules if zxcvbn not installed
+        if not re.search(r"[a-z]", password):
+            raise ValueError("Password must have a lowercase letter")
+        if not re.search(r"[A-Z]", password):
+            raise ValueError("Password must have an uppercase letter")
+        if not re.search(r"\d", password):
+            raise ValueError("Password must have a digit")
+        if not re.search(r"[^a-zA-Z0-9]", password):
+            raise ValueError("Password must have a special character")
+
+
+def check_password_strength(password: str, user_inputs: list[str] | None = None) -> dict:
+    """Return password strength info for the UI strength meter."""
+    try:
+        from zxcvbn import zxcvbn as _zxcvbn
+
+        result = _zxcvbn(password, user_inputs=user_inputs or [])
+        return {
+            "score": result["score"],  # 0-4
+            "crack_time": result["crack_times_display"]["offline_slow_hashing_1e4_per_second"],
+            "feedback": result.get("feedback", {}),
+        }
+    except ImportError:
+        return {"score": 2, "crack_time": "unknown", "feedback": {}}
 
 
 def hash_password(password: str) -> str:

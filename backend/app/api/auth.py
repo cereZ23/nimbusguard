@@ -33,6 +33,7 @@ from app.schemas.sso import SsoPublicConfig
 from app.services.audit import record_audit
 from app.services.auth import (
     authenticate_user,
+    check_password_strength,
     create_access_token,
     create_mfa_token,
     create_refresh_token,
@@ -99,6 +100,16 @@ def _clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(key=_ACCESS_COOKIE, path=_ACCESS_PATH)
     response.delete_cookie(key=_ACCESS_COOKIE, path="/api")  # legacy path
     response.delete_cookie(key=_REFRESH_COOKIE, path=_REFRESH_PATH)
+
+
+@router.post("/password-strength")
+@limiter.limit("30/minute")
+async def password_strength(request: Request, body: dict) -> dict:
+    """Check password strength using zxcvbn. No auth required (used on forms)."""
+    password = body.get("password", "")
+    user_inputs = body.get("user_inputs", [])
+    result = check_password_strength(password, user_inputs)
+    return {"data": result, "error": None, "meta": None}
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)

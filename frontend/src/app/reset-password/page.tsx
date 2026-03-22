@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import type { AxiosError } from "axios";
+import PasswordStrength from "@/components/ui/password-strength";
 
 export default function ResetPasswordPage() {
   return (
@@ -258,6 +259,9 @@ function ResetPasswordContent() {
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+
+                  {/* Strength meter */}
+                  <PasswordStrength password={password} />
 
                   {/* Password requirements */}
                   {password.length > 0 && validationErrors.length > 0 && (
