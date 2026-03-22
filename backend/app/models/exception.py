@@ -21,6 +21,7 @@ class Exception_(Base, UUIDPrimaryKey, TimestampMixin):
         index=True,
     )
     reason: Mapped[str] = mapped_column(Text, nullable=False)
+    requested_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="requested")  # requested|approved|rejected|expired
     approved_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

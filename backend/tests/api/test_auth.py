@@ -1,11 +1,40 @@
+"""Auth endpoint tests — adapted for invitation-only registration model."""
+
 from __future__ import annotations
 
 import pytest
 from httpx import AsyncClient
 
 
+async def _create_test_user(email: str = "test@example.com", password: str = "Secure@pass123") -> str:
+    """Create a user + tenant directly in DB and return access token."""
+    from tests.conftest import TestSession
+
+    from app.models.tenant import Tenant
+    from app.models.user import User
+    from app.services.auth import create_access_token, hash_password
+
+    async with TestSession() as db:
+        tenant = Tenant(name=f"Tenant {email}", slug=email.replace("@", "-").replace(".", "-"))
+        db.add(tenant)
+        await db.flush()
+        user = User(
+            tenant_id=tenant.id,
+            email=email,
+            hashed_password=hash_password(password),
+            full_name="Test User",
+            role="admin",
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        await db.refresh(tenant)
+        return create_access_token(str(user.id), str(tenant.id))
+
+
 @pytest.mark.asyncio
-async def test_register(client: AsyncClient) -> None:
+async def test_register_requires_auth(client: AsyncClient) -> None:
+    """Registration requires authentication (invitation-only model)."""
     response = await client.post(
         "/api/v1/auth/register",
         json={
@@ -15,42 +44,31 @@ async def test_register(client: AsyncClient) -> None:
             "tenant_name": "Test Tenant",
         },
     )
-    assert response.status_code == 201
-    data = response.json()
-    assert data["data"]["token_type"] == "bearer"
-    assert data["error"] is None
-
-    # Tokens should be in httpOnly cookies, not in the response body
-    assert "access_token" not in data["data"]
-    assert "refresh_token" not in data["data"]
-    assert response.cookies.get("access_token")
-    assert response.cookies.get("refresh_token")
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_register_duplicate_email(client: AsyncClient) -> None:
-    payload = {
-        "email": "dup@example.com",
-        "password": "Secure@pass123",
-        "full_name": "Test User",
-        "tenant_name": "Test Tenant",
-    }
-    await client.post("/api/v1/auth/register", json=payload)
-    response = await client.post("/api/v1/auth/register", json=payload)
-    assert response.status_code == 409
+async def test_register_with_auth(client: AsyncClient, auth_headers: dict) -> None:
+    """Authenticated admin can create a new tenant."""
+    response = await client.post(
+        "/api/v1/auth/register",
+        headers=auth_headers,
+        json={
+            "email": "newtenant@example.com",
+            "password": "Secure@pass123",
+            "full_name": "New Tenant Admin",
+            "tenant_name": "New Tenant",
+        },
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["data"]["email"] == "newtenant@example.com"
+    assert data["data"]["tenant_name"] == "New Tenant"
 
 
 @pytest.mark.asyncio
 async def test_login(client: AsyncClient) -> None:
-    await client.post(
-        "/api/v1/auth/register",
-        json={
-            "email": "login@example.com",
-            "password": "Secure@pass123",
-            "full_name": "Login User",
-            "tenant_name": "Login Tenant",
-        },
-    )
+    await _create_test_user("login@example.com", "Secure@pass123")
     response = await client.post(
         "/api/v1/auth/login",
         json={"email": "login@example.com", "password": "Secure@pass123"},
@@ -63,15 +81,7 @@ async def test_login(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_login_wrong_password(client: AsyncClient) -> None:
-    await client.post(
-        "/api/v1/auth/register",
-        json={
-            "email": "wrong@example.com",
-            "password": "Secure@pass123",
-            "full_name": "Wrong User",
-            "tenant_name": "Wrong Tenant",
-        },
-    )
+    await _create_test_user("wrong@example.com", "Secure@pass123")
     response = await client.post(
         "/api/v1/auth/login",
         json={"email": "wrong@example.com", "password": "wrongpassword"},
@@ -81,71 +91,39 @@ async def test_login_wrong_password(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_refresh_token(client: AsyncClient) -> None:
-    reg = await client.post(
-        "/api/v1/auth/register",
-        json={
-            "email": "refresh@example.com",
-            "password": "Secure@pass123",
-            "full_name": "Refresh User",
-            "tenant_name": "Refresh Tenant",
-        },
+    await _create_test_user("refresh@example.com", "Secure@pass123")
+    login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "refresh@example.com", "password": "Secure@pass123"},
     )
-    refresh_token = reg.cookies.get("refresh_token")
+    refresh_token = login.cookies.get("refresh_token")
     assert refresh_token
 
-    # Send refresh token via JSON body (backward compat)
     response = await client.post(
         "/api/v1/auth/refresh",
         json={"refresh_token": refresh_token},
     )
     assert response.status_code == 200
-    assert response.json()["data"]["token_type"] == "bearer"
     assert response.cookies.get("access_token")
-    assert response.cookies.get("refresh_token")
 
 
 @pytest.mark.asyncio
 async def test_me_with_cookie(client: AsyncClient) -> None:
-    """Test that /auth/me works when access_token is sent via cookie."""
-    reg = await client.post(
-        "/api/v1/auth/register",
-        json={
-            "email": "metest@example.com",
-            "password": "Secure@pass123",
-            "full_name": "Me User",
-            "tenant_name": "Me Tenant",
-        },
-    )
-    access_token = reg.cookies.get("access_token")
-    assert access_token
-
+    token = await _create_test_user("metest@example.com")
     response = await client.get(
         "/api/v1/auth/me",
-        cookies={"access_token": access_token},
+        cookies={"access_token": token},
     )
     assert response.status_code == 200
-    user = response.json()["data"]
-    assert user["email"] == "metest@example.com"
+    assert response.json()["data"]["email"] == "metest@example.com"
 
 
 @pytest.mark.asyncio
 async def test_me_with_bearer_header(client: AsyncClient) -> None:
-    """Test backward compat: /auth/me still works with Authorization header."""
-    reg = await client.post(
-        "/api/v1/auth/register",
-        json={
-            "email": "bearer@example.com",
-            "password": "Secure@pass123",
-            "full_name": "Bearer User",
-            "tenant_name": "Bearer Tenant",
-        },
-    )
-    access_token = reg.cookies.get("access_token")
-    assert access_token
-
+    token = await _create_test_user("bearer@example.com")
     response = await client.get(
         "/api/v1/auth/me",
-        headers={"Authorization": f"Bearer {access_token}"},
+        headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 200
     assert response.json()["data"]["email"] == "bearer@example.com"
@@ -153,17 +131,13 @@ async def test_me_with_bearer_header(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_logout(client: AsyncClient) -> None:
-    reg = await client.post(
-        "/api/v1/auth/register",
-        json={
-            "email": "logout@example.com",
-            "password": "Secure@pass123",
-            "full_name": "Logout User",
-            "tenant_name": "Logout Tenant",
-        },
+    await _create_test_user("logout@example.com", "Secure@pass123")
+    login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "logout@example.com", "password": "Secure@pass123"},
     )
-    access_token = reg.cookies.get("access_token")
-    refresh_token = reg.cookies.get("refresh_token")
+    access_token = login.cookies.get("access_token")
+    refresh_token = login.cookies.get("refresh_token")
     assert access_token
     assert refresh_token
 

@@ -71,21 +71,33 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def _register_user(client: AsyncClient, email: str) -> str:
-    """Register a user and return the access_token from the Set-Cookie header."""
-    res = await client.post(
-        "/api/v1/auth/register",
-        json={
-            "email": email,
-            "password": "Test@pass123",
-            "full_name": "Test User",
-            "tenant_name": f"Tenant {email}",
-        },
-    )
-    assert res.status_code == 201
-    # Extract access_token from Set-Cookie header
-    access_token = res.cookies.get("access_token")
-    assert access_token, "access_token cookie not set in register response"
-    return access_token
+    """Create a user + tenant directly in DB and return a JWT access token.
+
+    Bypasses /auth/register API (which requires authentication in production).
+    """
+    from app.models.tenant import Tenant
+    from app.models.user import User
+    from app.services.auth import create_access_token, hash_password
+
+    async with TestSession() as db:
+        tenant = Tenant(name=f"Tenant {email}", slug=email.split("@")[0].replace(".", "-"))
+        db.add(tenant)
+        await db.flush()
+
+        user = User(
+            tenant_id=tenant.id,
+            email=email,
+            hashed_password=hash_password("Test@pass123"),
+            full_name="Test User",
+            role="admin",
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        await db.refresh(tenant)
+
+        token = create_access_token(str(user.id), str(tenant.id))
+        return token
 
 
 @pytest.fixture

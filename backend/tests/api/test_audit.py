@@ -7,16 +7,26 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_audit_log_created_on_login(client: AsyncClient) -> None:
     """Login should create an audit log entry."""
-    # Register
-    await client.post(
-        "/api/v1/auth/register",
-        json={
-            "email": "audit@test.com",
-            "password": "Test@pass123",
-            "full_name": "Audit User",
-            "tenant_name": "Audit Tenant",
-        },
-    )
+    # Create user directly in DB (register requires auth)
+    from tests.conftest import TestSession
+
+    from app.models.tenant import Tenant
+    from app.models.user import User
+    from app.services.auth import hash_password
+
+    async with TestSession() as db:
+        tenant = Tenant(name="Audit Tenant", slug="audit-tenant")
+        db.add(tenant)
+        await db.flush()
+        user = User(
+            tenant_id=tenant.id,
+            email="audit@test.com",
+            hashed_password=hash_password("Test@pass123"),
+            full_name="Audit User",
+            role="admin",
+        )
+        db.add(user)
+        await db.commit()
 
     # Login
     login_res = await client.post(

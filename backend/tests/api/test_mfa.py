@@ -19,20 +19,29 @@ _PASSWORD = "Test@pass123"
 
 
 async def _register_and_get_token(client: AsyncClient, email: str) -> str:
-    """Register a fresh user and return the access_token."""
-    res = await client.post(
-        _REGISTER_URL,
-        json={
-            "email": email,
-            "password": _PASSWORD,
-            "full_name": "MFA Test User",
-            "tenant_name": f"Tenant {email}",
-        },
-    )
-    assert res.status_code == 201, res.text
-    token = res.cookies.get("access_token")
-    assert token, "access_token cookie missing after registration"
-    return token
+    """Create a fresh user in DB and return an access_token."""
+    from tests.conftest import TestSession
+
+    from app.models.tenant import Tenant
+    from app.models.user import User
+    from app.services.auth import create_access_token, hash_password
+
+    async with TestSession() as db:
+        tenant = Tenant(name=f"Tenant {email}", slug=email.replace("@", "-").replace(".", "-"))
+        db.add(tenant)
+        await db.flush()
+        user = User(
+            tenant_id=tenant.id,
+            email=email,
+            hashed_password=hash_password(_PASSWORD),
+            full_name="MFA Test User",
+            role="admin",
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        await db.refresh(tenant)
+        return create_access_token(str(user.id), str(tenant.id))
 
 
 async def _enable_mfa(client: AsyncClient, token: str) -> tuple[str, list[str]]:

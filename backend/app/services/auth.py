@@ -129,10 +129,12 @@ async def decode_refresh_token(db: AsyncSession, token: str) -> dict | None:
         return None
     token_hash = _hash_token(token)
     result = await db.execute(
-        select(RefreshToken).where(
+        select(RefreshToken)
+        .where(
             RefreshToken.token_hash == token_hash,
             RefreshToken.revoked.is_(False),
         )
+        .with_for_update()  # Prevent race condition on concurrent refresh
     )
     record = result.scalar_one_or_none()
     if record is None:

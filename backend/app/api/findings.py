@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.config.remediation_snippets import get_remediation_for_control
-from app.deps import DB, CurrentUser
+from app.deps import DB, AdminUser, CurrentUser
 from app.models.cloud_account import CloudAccount
 from app.models.exception import Exception_
 from app.models.finding import Finding
@@ -421,9 +421,11 @@ async def assign_finding(finding_id: uuid.UUID, body: AssignRequest, db: DB, use
 
 
 @router.post("/bulk-waive", response_model=ApiResponse[BulkWaiveResult])
-async def bulk_waive_findings(body: BulkWaiveRequest, db: DB, user: CurrentUser) -> dict:
+async def bulk_waive_findings(body: BulkWaiveRequest, db: DB, user: AdminUser) -> dict:
     if not body.finding_ids:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No finding IDs provided")
+    if len(body.finding_ids) > 25:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Maximum 25 findings per batch")
 
     # Verify all findings belong to tenant
     result = await db.execute(

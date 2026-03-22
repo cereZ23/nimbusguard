@@ -51,5 +51,8 @@ async def authenticate_api_key(db: AsyncSession, api_key: str) -> User | None:
         logger.warning("API key owner inactive: prefix=%s", record.key_prefix)
         return None
 
-    logger.info("API key authenticated: prefix=%s user=%s", record.key_prefix, user.id)
+    logger.info("API key authenticated: prefix=%s user=%s scopes=%s", record.key_prefix, user.id, record.scopes)
+
+    # Attach API key scopes to user for downstream enforcement
+    user._api_key_scopes = record.scopes  # type: ignore[attr-defined]
     return user

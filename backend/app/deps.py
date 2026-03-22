@@ -114,7 +114,11 @@ TenantID = Annotated[str, Depends(effective_tenant_id)]
 
 
 def require_role(*allowed_roles: str):
-    """Dependency that checks the current user has one of the allowed roles."""
+    """Dependency that checks the current user has one of the allowed roles.
+
+    Also enforces API key scopes: keys with only "read" scope cannot access
+    admin/write endpoints.
+    """
 
     async def _check(user: CurrentUser) -> User:
         if user.role not in allowed_roles:
@@ -122,6 +126,15 @@ def require_role(*allowed_roles: str):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions",
             )
+        # API key scope enforcement: "read" scope blocks write operations
+        api_scopes = getattr(user, "_api_key_scopes", None)
+        if api_scopes is not None:
+            has_write = any(s in api_scopes for s in ("write", "admin", "scim"))
+            if not has_write:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="API key does not have write permission",
+                )
         return user
 
     return Depends(_check)

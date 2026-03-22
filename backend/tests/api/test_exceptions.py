@@ -64,19 +64,21 @@ async def test_list_exceptions(client: AsyncClient, auth_headers: dict, seed_dat
 
 
 @pytest.mark.asyncio
-async def test_approve_exception(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
+async def test_approve_exception_self_blocked(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
+    """Same user cannot approve their own waiver request (separation of duties)."""
     finding_id = seed_data["finding_id"]
+    client.cookies.clear()
     create_res = await client.post(
         f"/api/v1/findings/{finding_id}/exception",
         headers=auth_headers,
-        json={"reason": "Approved test"},
+        json={"reason": "Self-approval test"},
     )
     exc_id = create_res.json()["data"]["id"]
 
+    client.cookies.clear()
     res = await client.put(f"/api/v1/exceptions/{exc_id}/approve", headers=auth_headers)
-    assert res.status_code == 200
-    assert res.json()["data"]["status"] == "approved"
-    assert res.json()["data"]["approved_by"] is not None
+    assert res.status_code == 403
+    assert "Cannot approve your own" in res.json()["detail"]
 
 
 @pytest.mark.asyncio
