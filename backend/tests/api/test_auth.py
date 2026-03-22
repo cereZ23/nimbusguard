@@ -8,11 +8,10 @@ from httpx import AsyncClient
 
 async def _create_test_user(email: str = "test@example.com", password: str = "Secure@pass123") -> str:
     """Create a user + tenant directly in DB and return access token."""
-    from tests.conftest import TestSession
-
     from app.models.tenant import Tenant
     from app.models.user import User
     from app.services.auth import create_access_token, hash_password
+    from tests.conftest import TestSession
 
     async with TestSession() as db:
         tenant = Tenant(name=f"Tenant {email}", slug=email.replace("@", "-").replace(".", "-"))

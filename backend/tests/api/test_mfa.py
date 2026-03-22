@@ -20,11 +20,10 @@ _PASSWORD = "Test@pass123"
 
 async def _register_and_get_token(client: AsyncClient, email: str) -> str:
     """Create a fresh user in DB and return an access_token."""
-    from tests.conftest import TestSession
-
     from app.models.tenant import Tenant
     from app.models.user import User
     from app.services.auth import create_access_token, hash_password
+    from tests.conftest import TestSession
 
     async with TestSession() as db:
         tenant = Tenant(name=f"Tenant {email}", slug=email.replace("@", "-").replace(".", "-"))

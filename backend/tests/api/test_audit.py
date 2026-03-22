@@ -8,11 +8,10 @@ from httpx import AsyncClient
 async def test_audit_log_created_on_login(client: AsyncClient) -> None:
     """Login should create an audit log entry."""
     # Create user directly in DB (register requires auth)
-    from tests.conftest import TestSession
-
     from app.models.tenant import Tenant
     from app.models.user import User
     from app.services.auth import hash_password
+    from tests.conftest import TestSession
 
     async with TestSession() as db:
         tenant = Tenant(name="Audit Tenant", slug="audit-tenant")

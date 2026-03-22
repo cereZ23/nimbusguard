@@ -49,13 +49,13 @@ def validate_password(password: str, user_inputs: list[str] | None = None) -> No
     except ImportError:
         # Fallback to basic rules if zxcvbn not installed
         if not re.search(r"[a-z]", password):
-            raise ValueError("Password must have a lowercase letter")
+            raise ValueError("Password must have a lowercase letter") from None
         if not re.search(r"[A-Z]", password):
-            raise ValueError("Password must have an uppercase letter")
+            raise ValueError("Password must have an uppercase letter") from None
         if not re.search(r"\d", password):
-            raise ValueError("Password must have a digit")
+            raise ValueError("Password must have a digit") from None
         if not re.search(r"[^a-zA-Z0-9]", password):
-            raise ValueError("Password must have a special character")
+            raise ValueError("Password must have a special character") from None
 
 
 def check_password_strength(password: str, user_inputs: list[str] | None = None) -> dict:
