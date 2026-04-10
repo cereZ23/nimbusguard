@@ -142,9 +142,7 @@ async def test_list_scans_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_scans_returns_created_scan(
-    client: AsyncClient, auth_headers: dict, make_account
-) -> None:
+async def test_list_scans_returns_created_scan(client: AsyncClient, auth_headers: dict, make_account) -> None:
     account = await make_account("List Scans Account")
 
     with patch("app.worker.tasks.run_scan") as mock_task:
@@ -176,9 +174,7 @@ async def test_list_scans_returns_created_scan(
 
 
 @pytest.mark.asyncio
-async def test_list_scans_filter_by_account(
-    client: AsyncClient, auth_headers: dict, make_account
-) -> None:
+async def test_list_scans_filter_by_account(client: AsyncClient, auth_headers: dict, make_account) -> None:
     account_a = await make_account("Account A")
     account_b = await make_account("Account B")
 
@@ -208,9 +204,7 @@ async def test_list_scans_filter_by_account(
 
 
 @pytest.mark.asyncio
-async def test_list_scans_filter_by_status(
-    client: AsyncClient, auth_headers: dict, make_account
-) -> None:
+async def test_list_scans_filter_by_status(client: AsyncClient, auth_headers: dict, make_account) -> None:
     account = await make_account("Status Filter Account")
 
     with patch("app.worker.tasks.run_scan") as mock_task:
@@ -241,9 +235,7 @@ async def test_list_scans_filter_by_status(
 
 
 @pytest.mark.asyncio
-async def test_list_scans_pagination(
-    client: AsyncClient, auth_headers: dict, make_account
-) -> None:
+async def test_list_scans_pagination(client: AsyncClient, auth_headers: dict, make_account) -> None:
     account = await make_account("Pagination Account")
 
     with patch("app.worker.tasks.run_scan") as mock_task:

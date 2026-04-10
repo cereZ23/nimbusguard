@@ -157,12 +157,16 @@ async def list_scans(
 
     Tenant isolation enforced via JOIN on cloud_accounts.tenant_id.
     """
-    base = select(Scan).join(CloudAccount, Scan.cloud_account_id == CloudAccount.id).where(
-        CloudAccount.tenant_id == user.tenant_id
+    base = (
+        select(Scan)
+        .join(CloudAccount, Scan.cloud_account_id == CloudAccount.id)
+        .where(CloudAccount.tenant_id == user.tenant_id)
     )
-    count_base = select(func.count(Scan.id)).join(
-        CloudAccount, Scan.cloud_account_id == CloudAccount.id
-    ).where(CloudAccount.tenant_id == user.tenant_id)
+    count_base = (
+        select(func.count(Scan.id))
+        .join(CloudAccount, Scan.cloud_account_id == CloudAccount.id)
+        .where(CloudAccount.tenant_id == user.tenant_id)
+    )
 
     if cloud_account_id is not None:
         base = base.where(Scan.cloud_account_id == cloud_account_id)
@@ -174,18 +178,14 @@ async def list_scans(
 
     total = (await db.execute(count_base)).scalar() or 0
 
-    rows_result = await db.execute(
-        base.order_by(Scan.created_at.desc()).offset((page - 1) * size).limit(size)
-    )
+    rows_result = await db.execute(base.order_by(Scan.created_at.desc()).offset((page - 1) * size).limit(size))
     scans = list(rows_result.scalars().all())
 
     # Batch-load related cloud accounts in a single query.
     account_ids = list({scan.cloud_account_id for scan in scans})
     accounts_by_id: dict[uuid.UUID, CloudAccount] = {}
     if account_ids:
-        accounts_result = await db.execute(
-            select(CloudAccount).where(CloudAccount.id.in_(account_ids))
-        )
+        accounts_result = await db.execute(select(CloudAccount).where(CloudAccount.id.in_(account_ids)))
         for acc in accounts_result.scalars().all():
             accounts_by_id[acc.id] = acc
 
