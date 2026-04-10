@@ -237,15 +237,11 @@ class TestCheckMinTlsCipherSuite:
         assert check_min_tls_cipher_suite(asset).status == "pass"
 
     def test_pass_with_chacha(self):
-        asset = _make_asset(
-            raw_properties={"siteConfig": {"minTlsCipherSuite": "TLS_CHACHA20_POLY1305_SHA256"}}
-        )
+        asset = _make_asset(raw_properties={"siteConfig": {"minTlsCipherSuite": "TLS_CHACHA20_POLY1305_SHA256"}})
         assert check_min_tls_cipher_suite(asset).status == "pass"
 
     def test_fail_with_weak_cipher(self):
-        asset = _make_asset(
-            raw_properties={"siteConfig": {"minTlsCipherSuite": "TLS_RSA_WITH_AES_128_CBC_SHA"}}
-        )
+        asset = _make_asset(raw_properties={"siteConfig": {"minTlsCipherSuite": "TLS_RSA_WITH_AES_128_CBC_SHA"}})
         assert check_min_tls_cipher_suite(asset).status == "fail"
 
     def test_fail_when_not_set(self):
@@ -288,18 +284,14 @@ class TestCheckPublicNetworkAccessDisabled:
 
 class TestCheckIpRestrictions:
     def test_pass_with_default_deny(self):
-        asset = _make_asset(
-            raw_properties={"siteConfig": {"ipSecurityRestrictionsDefaultAction": "Deny"}}
-        )
+        asset = _make_asset(raw_properties={"siteConfig": {"ipSecurityRestrictionsDefaultAction": "Deny"}})
         assert check_ip_restrictions(asset).status == "pass"
 
     def test_pass_with_explicit_rule(self):
         asset = _make_asset(
             raw_properties={
                 "siteConfig": {
-                    "ipSecurityRestrictions": [
-                        {"name": "office", "ipAddress": "1.2.3.4/32", "action": "Allow"}
-                    ]
+                    "ipSecurityRestrictions": [{"name": "office", "ipAddress": "1.2.3.4/32", "action": "Allow"}]
                 }
             }
         )

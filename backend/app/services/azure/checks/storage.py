@@ -251,7 +251,7 @@ def check_standard_dns_endpoint(asset: Asset) -> EvalResult:
     return EvalResult(
         status="pass" if is_standard else "fail",
         evidence={"dnsEndpointType": dns_type},
-        description=f"Storage uses Standard DNS endpoint type"
+        description="Storage uses Standard DNS endpoint type"
         if is_standard
         else (
             f"Storage uses '{dns_type}' DNS endpoint type — AzureDnsZone endpoints are vulnerable to "

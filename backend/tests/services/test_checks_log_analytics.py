@@ -124,15 +124,11 @@ class TestCheckPublicAccessIngestionDisabled:
 
 class TestCheckResourcePermissionsOnly:
     def test_pass_when_enabled(self):
-        asset = _make_asset(
-            raw_properties={"features": {"enableLogAccessUsingOnlyResourcePermissions": True}}
-        )
+        asset = _make_asset(raw_properties={"features": {"enableLogAccessUsingOnlyResourcePermissions": True}})
         assert check_resource_permissions_only(asset).status == "pass"
 
     def test_fail_when_disabled(self):
-        asset = _make_asset(
-            raw_properties={"features": {"enableLogAccessUsingOnlyResourcePermissions": False}}
-        )
+        asset = _make_asset(raw_properties={"features": {"enableLogAccessUsingOnlyResourcePermissions": False}})
         assert check_resource_permissions_only(asset).status == "fail"
 
     def test_fail_when_features_missing(self):

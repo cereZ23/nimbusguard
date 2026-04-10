@@ -194,10 +194,7 @@ def check_cors_restrictive(asset: Asset) -> EvalResult:
     return EvalResult(
         status="fail" if has_wildcard else "pass",
         evidence={"cors.allowedOrigins": allowed_origins},
-        description=(
-            f"CORS allows wildcard origin '*' — any site can call the API. "
-            f"Allowed origins: {allowed_origins}"
-        )
+        description=(f"CORS allows wildcard origin '*' — any site can call the API. Allowed origins: {allowed_origins}")
         if has_wildcard
         else f"CORS origins are explicit (no wildcard): {allowed_origins or 'none'}",
     )
@@ -253,7 +250,9 @@ def check_min_tls_cipher_suite(asset: Asset) -> EvalResult:
         evidence={"siteConfig.minTlsCipherSuite": min_cipher},
         description=f"Minimum TLS cipher suite is strong: {min_cipher}"
         if is_strong
-        else f"Minimum TLS cipher suite '{min_cipher}' is weak — use a modern AEAD cipher (e.g. TLS_AES_128_GCM_SHA256)",
+        else (
+            f"Minimum TLS cipher suite '{min_cipher}' is weak — use a modern AEAD cipher (e.g. TLS_AES_128_GCM_SHA256)"
+        ),
     )
 
 
@@ -274,9 +273,7 @@ def check_public_network_access_disabled(asset: Asset) -> EvalResult:
                 "publicNetworkAccess": props.get("publicNetworkAccess"),
                 "privateEndpointConnections": len(private_endpoints),
             },
-            description=(
-                "No private endpoint configured — public network access is the only ingress path"
-            ),
+            description=("No private endpoint configured — public network access is the only ingress path"),
         )
     is_disabled = public_access in ("disabled", "")
     return EvalResult(
