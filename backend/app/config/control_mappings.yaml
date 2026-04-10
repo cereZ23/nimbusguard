@@ -2798,3 +2798,366 @@ controls:
     - A.8.20
     - A.8.16
     - A.8.7
+- code: CIS-AZ-128
+  name: AKS API server has authorized IP ranges
+  description: AKS public clusters should restrict API server access to an explicit list of authorized
+    IP ranges (not required for private clusters)
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set apiServerAccessProfile.authorizedIPRanges to the subnets of your CI/CD runners,
+    bastion hosts and admin workstations, or enable private cluster
+  provider_check_ref:
+    azure: azure-aks-api-authorized-ips
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AZ-129
+  name: AKS cluster uses managed identity
+  description: AKS clusters should use a managed identity (system or user assigned) instead of a service
+    principal so that credentials are rotated automatically by Azure
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Migrate the cluster from service principal to managed identity via az aks update --enable-managed-identity
+  provider_check_ref:
+    azure: azure-aks-managed-identity
+  framework_mappings:
+    soc2:
+    - CC6.1
+    nist:
+    - IA-2
+    - AC-3
+    iso27001:
+    - A.5.16
+    - A.8.2
+- code: CIS-AZ-130
+  name: AKS has Azure Policy add-on enabled
+  description: AKS clusters should have the Azure Policy add-on enabled so that Kubernetes workloads are
+    evaluated against built-in and custom Azure Policy initiatives
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable addonProfiles.azurepolicy or run az aks enable-addons --addons azure-policy
+  provider_check_ref:
+    azure: azure-aks-azure-policy-addon
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC7.1
+    nist:
+    - CM-2
+    - CM-7
+    iso27001:
+    - A.5.8
+    - A.8.9
+- code: CIS-AZ-131
+  name: AKS has Workload Identity and OIDC issuer enabled
+  description: AKS clusters should have Workload Identity and the OIDC issuer enabled so that pods can
+    authenticate to Azure using federated identity instead of static secrets
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable both securityProfile.workloadIdentity.enabled and oidcIssuerProfile.enabled
+    on the cluster (requires AKS >= 1.22)
+  provider_check_ref:
+    azure: azure-aks-workload-identity
+  framework_mappings:
+    soc2:
+    - CC6.1
+    nist:
+    - IA-2
+    - IA-5
+    iso27001:
+    - A.5.16
+    - A.8.2
+    - A.8.5
+- code: CIS-AZ-132
+  name: AKS local admin accounts disabled
+  description: AKS clusters should have local admin accounts disabled so that only Azure AD identities
+    can access the cluster via kubectl
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set disableLocalAccounts=true on the cluster after making sure at least one Azure
+    AD admin is configured
+  provider_check_ref:
+    azure: azure-aks-disable-local-accounts
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.2
+    nist:
+    - AC-2
+    - AC-3
+    - IA-2
+    iso27001:
+    - A.5.15
+    - A.5.16
+    - A.8.2
+- code: CIS-AZ-133
+  name: AKS uses Azure RBAC for Kubernetes authorisation
+  description: AKS clusters should use Azure RBAC for Kubernetes so that authorisation decisions go through
+    Azure roles instead of native Kubernetes ClusterRoleBindings
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set aadProfile.enableAzureRBAC=true on the cluster (requires Azure AD integration
+    first)
+  provider_check_ref:
+    azure: azure-aks-azure-rbac
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - AC-3
+    - AC-6
+    iso27001:
+    - A.5.15
+    - A.5.18
+    - A.8.2
+- code: CIS-AZ-134
+  name: AKS auto-upgrade channel configured
+  description: AKS clusters should be configured on an auto-upgrade channel (patch, stable, rapid or node-image)
+    so that security patches are applied automatically
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set autoUpgradeProfile.upgradeChannel to 'patch' or 'stable' for production workloads
+    (or 'node-image' for node OS patching only)
+  provider_check_ref:
+    azure: azure-aks-auto-upgrade
+  framework_mappings:
+    soc2:
+    - CC7.1
+    nist:
+    - SI-2
+    - CM-2
+    iso27001:
+    - A.8.8
+    - A.8.32
+- code: CIS-AZ-135
+  name: Container registry anonymous pull disabled
+  description: Azure Container Registry should not allow anonymous pull so that images require authenticated
+    access
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set anonymousPullEnabled=false on the registry via az acr update --anonymous-pull-enabled
+    false
+  provider_check_ref:
+    azure: azure-acr-anon-pull-disabled
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-3
+    - SC-7
+    iso27001:
+    - A.5.15
+    - A.8.20
+- code: CIS-AZ-136
+  name: Container registry network rule default deny
+  description: Azure Container Registry should have its network rule set default action set to Deny, unless
+    public network access is already disabled
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set networkRuleSet.defaultAction=Deny on the registry and explicitly allow-list trusted
+    IP ranges and VNets
+  provider_check_ref:
+    azure: azure-acr-network-default-deny
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AZ-137
+  name: Container registry quarantine policy enabled
+  description: Azure Container Registry should have the quarantine policy enabled so that new images must
+    pass vulnerability scanning before being pullable
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable the quarantine policy via az acr config quarantine update --status enabled
+    (requires Premium SKU)
+  provider_check_ref:
+    azure: azure-acr-quarantine-policy
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.1
+    nist:
+    - SI-3
+    - RA-5
+    iso27001:
+    - A.8.8
+    - A.8.7
+- code: CIS-AZ-138
+  name: Container registry content trust enabled
+  description: Azure Container Registry should have content trust (image signing) enabled so that image
+    signatures are verified before pull
+  severity: high
+  framework: cis-lite
+  remediation_hint: Enable the trust policy via az acr config content-trust update --status enabled (requires
+    Premium SKU)
+  provider_check_ref:
+    azure: azure-acr-content-trust
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.1
+    nist:
+    - SI-7
+    - CM-14
+    iso27001:
+    - A.8.25
+    - A.8.32
+- code: CIS-AZ-139
+  name: Container registry retention policy enabled
+  description: Azure Container Registry should have the retention policy enabled so that untagged manifests
+    are garbage collected automatically
+  severity: low
+  framework: cis-lite
+  remediation_hint: Enable the retention policy via az acr config retention update --status enabled --days
+    30
+  provider_check_ref:
+    azure: azure-acr-retention-policy
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - SI-12
+    iso27001:
+    - A.8.10
+- code: CIS-AZ-140
+  name: Container registry uses customer-managed key encryption
+  description: Azure Container Registry should use customer-managed key encryption so that key rotation
+    and revocation are under customer control
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable encryption with a key stored in Key Vault via az acr encryption
+  provider_check_ref:
+    azure: azure-acr-cmk-encryption
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+- code: CIS-AZ-141
+  name: PostgreSQL flexible server public network access disabled
+  description: PostgreSQL flexible servers should disable public network access and be reachable only
+    via VNet integration or private endpoint
+  severity: high
+  framework: cis-lite
+  remediation_hint: Recreate the server with VNet integration or set publicNetworkAccess to 'Disabled'
+    after configuring a private endpoint
+  provider_check_ref:
+    azure: azure-pg-public-access-off
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.20
+    - A.8.22
+    - A.8.12
+- code: CIS-AZ-142
+  name: PostgreSQL flexible server minimum TLS 1.2
+  description: PostgreSQL flexible servers should require TLS 1.2 or higher via the ssl_min_protocol_version
+    server parameter to prevent downgrade attacks
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set server parameter ssl_min_protocol_version to TLSv1.2 or TLSv1.3
+  provider_check_ref:
+    azure: azure-pg-min-tls
+  framework_mappings:
+    soc2:
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-13
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-143
+  name: PostgreSQL flexible server geo-redundant backup
+  description: PostgreSQL flexible servers should use geo-redundant backup so that point-in-time restore
+    survives a regional outage
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set backup.geoRedundantBackup=Enabled when creating the server (cannot be changed
+    after creation)
+  provider_check_ref:
+    azure: azure-pg-geo-redundant
+  framework_mappings:
+    soc2:
+    - A1.2
+    - A1.3
+    nist:
+    - CP-9
+    - CP-10
+    iso27001:
+    - A.8.13
+    - A.5.30
+- code: CIS-AZ-144
+  name: PostgreSQL flexible server backup retention >= 7 days
+  description: PostgreSQL flexible server backup retention should be at least 7 days for recovery flexibility
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Increase backup.backupRetentionDays to 7 or more
+  provider_check_ref:
+    azure: azure-pg-backup-retention
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - CP-9
+    iso27001:
+    - A.8.13
+- code: CIS-AZ-145
+  name: MySQL flexible server geo-redundant backup
+  description: MySQL flexible servers should use geo-redundant backup so that point-in-time restore survives
+    a regional outage
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set backup.geoRedundantBackup=Enabled when creating the server (cannot be changed
+    after creation)
+  provider_check_ref:
+    azure: azure-mysql-geo-redundant
+  framework_mappings:
+    soc2:
+    - A1.2
+    - A1.3
+    nist:
+    - CP-9
+    - CP-10
+    iso27001:
+    - A.8.13
+    - A.5.30
+- code: CIS-AZ-146
+  name: MySQL flexible server backup retention >= 7 days
+  description: MySQL flexible server backup retention should be at least 7 days for recovery flexibility
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Increase backup.backupRetentionDays to 7 or more
+  provider_check_ref:
+    azure: azure-mysql-backup-retention
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - CP-9
+    iso27001:
+    - A.8.13

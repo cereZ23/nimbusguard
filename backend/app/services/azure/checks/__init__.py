@@ -6,14 +6,17 @@ Importing this package registers all check functions in the global CheckRegistry
 from __future__ import annotations
 
 from app.services.azure.checks import (  # noqa: F401
+    acr_supply_chain,
     activity_alerts,
     aks,
+    aks_hardening,
     app_gateway,
     backup,
     batch,
     compute,
     container_registry,
     cosmosdb,
+    db_flex_hardening,
     eventhub,
     front_door,
     keyvault,
