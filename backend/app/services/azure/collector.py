@@ -66,6 +66,7 @@ class AzureCollector:
         await self._collect_flow_logs(client, subscription_id, account)
         await self._collect_activity_log_alerts(client, subscription_id, account)
         await self._collect_role_definitions(client, subscription_id, account)
+        await self._collect_subscription_state(credential, subscription_id, account)
 
         await self._collect_secure_score(credential, subscription_id, account)
         await self._collect_recommendations(client, subscription_id, account)
@@ -273,6 +274,56 @@ class AzureCollector:
 
         await self.db.flush()
         logger.info("Activity log alerts collection complete")
+
+    async def _collect_subscription_state(
+        self,
+        credential: ClientSecretCredential,
+        subscription_id: str,
+        account: CloudAccount,
+    ) -> None:
+        """Create/update a synthetic asset holding subscription-level security state.
+
+        The asset uses ``resource_type="microsoft.subscription/subscription"``
+        and ``provider_id=/subscriptions/{subscription_id}`` so the existing
+        evaluator framework picks it up via the check registry. Graceful
+        degradation: if the collector can't reach any of the underlying APIs,
+        the whole step is logged and skipped — never fails the scan.
+        """
+        from app.services.azure.subscription_collector import collect_subscription_state
+
+        try:
+            state = await collect_subscription_state(credential, subscription_id)
+        except Exception:
+            logger.exception("Subscription-level collection failed for %s", subscription_id)
+            return
+
+        provider_id = f"/subscriptions/{subscription_id}"
+        asset = self._asset_map.get(provider_id)
+
+        if asset:
+            asset.raw_properties = state
+            asset.last_seen_at = datetime.now(UTC)
+            self.stats["assets_updated"] += 1
+        else:
+            asset = Asset(
+                cloud_account_id=account.id,
+                provider_id=provider_id,
+                name=f"Subscription {subscription_id}",
+                resource_type="microsoft.subscription/subscription",
+                region="global",
+                tags={},
+                raw_properties=state,
+            )
+            self.db.add(asset)
+            self._asset_map[provider_id] = asset
+            self.stats["assets_created"] += 1
+
+        await self.db.flush()
+        logger.info(
+            "Subscription state collection complete for %s (errors: %d)",
+            subscription_id,
+            len(state.get("_errors", [])),
+        )
 
     async def _collect_role_definitions(
         self, client: ResourceGraphClient, subscription_id: str, account: CloudAccount

@@ -2319,3 +2319,204 @@ controls:
     iso27001:
     - A.5.15
     - A.8.3
+- code: CIS-AZ-104
+  name: Microsoft Defender for Servers enabled
+  description: Microsoft Defender for Servers should be enabled at the subscription level to get runtime
+    threat detection on virtual machines
+  severity: high
+  framework: cis-lite
+  remediation_hint: In Microsoft Defender for Cloud, set the pricing tier for 'Servers' to 'Standard'
+    for the subscription
+  provider_check_ref:
+    azure: azure-defender-servers-enabled
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.1
+    nist:
+    - SI-3
+    - SI-4
+    iso27001:
+    - A.8.7
+    - A.8.16
+- code: CIS-AZ-105
+  name: Microsoft Defender for Storage enabled
+  description: Microsoft Defender for Storage should be enabled to detect anomalous access patterns and
+    data exfiltration on storage accounts
+  severity: high
+  framework: cis-lite
+  remediation_hint: In Microsoft Defender for Cloud, set the pricing tier for 'Storage Accounts' to 'Standard'
+    for the subscription
+  provider_check_ref:
+    azure: azure-defender-storage-enabled
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.2
+    nist:
+    - SI-4
+    - AU-6
+    iso27001:
+    - A.8.16
+    - A.5.25
+- code: CIS-AZ-106
+  name: Microsoft Defender for SQL servers enabled
+  description: Microsoft Defender for SQL servers should be enabled to detect SQL injection, anomalous
+    queries and known attack patterns
+  severity: high
+  framework: cis-lite
+  remediation_hint: In Microsoft Defender for Cloud, set the pricing tier for 'SQL Servers' to 'Standard'
+    for the subscription
+  provider_check_ref:
+    azure: azure-defender-sql-enabled
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.2
+    nist:
+    - SI-3
+    - SI-4
+    iso27001:
+    - A.8.7
+    - A.8.16
+- code: CIS-AZ-107
+  name: Microsoft Defender for App Service enabled
+  description: Microsoft Defender for App Service should be enabled to detect web-application attacks
+    on Azure App Service workloads
+  severity: high
+  framework: cis-lite
+  remediation_hint: In Microsoft Defender for Cloud, set the pricing tier for 'App Services' to 'Standard'
+    for the subscription
+  provider_check_ref:
+    azure: azure-defender-appservice-enabled
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.1
+    nist:
+    - SI-4
+    - SC-7
+    iso27001:
+    - A.8.16
+    - A.8.23
+- code: CIS-AZ-108
+  name: Microsoft Defender for Containers enabled
+  description: Microsoft Defender for Containers should be enabled to protect AKS clusters and container
+    registries against runtime threats and vulnerable images
+  severity: high
+  framework: cis-lite
+  remediation_hint: In Microsoft Defender for Cloud, set the pricing tier for 'Containers' to 'Standard'
+    for the subscription
+  provider_check_ref:
+    azure: azure-defender-containers-enabled
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.1
+    nist:
+    - SI-3
+    - SI-4
+    - CM-7
+    iso27001:
+    - A.8.7
+    - A.8.25
+- code: CIS-AZ-109
+  name: Microsoft Defender for Key Vault enabled
+  description: Microsoft Defender for Key Vault should be enabled to detect anomalous secret/key access
+    and exfiltration attempts
+  severity: high
+  framework: cis-lite
+  remediation_hint: In Microsoft Defender for Cloud, set the pricing tier for 'Key Vaults' to 'Standard'
+    for the subscription
+  provider_check_ref:
+    azure: azure-defender-keyvault-enabled
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - SI-4
+    - SC-12
+    iso27001:
+    - A.8.24
+    - A.8.16
+- code: CIS-AZ-110
+  name: Security contact email configured
+  description: Subscription should have at least one security contact with an email address configured
+    in Microsoft Defender for Cloud
+  severity: medium
+  framework: cis-lite
+  remediation_hint: In Microsoft Defender for Cloud > Environment settings > subscription > Email notifications,
+    add a security contact email
+  provider_check_ref:
+    azure: azure-security-contact-email
+  framework_mappings:
+    soc2:
+    - CC2.1
+    - CC7.3
+    nist:
+    - IR-6
+    - IR-8
+    iso27001:
+    - A.5.24
+    - A.5.25
+- code: CIS-AZ-111
+  name: Security contact alert notifications enabled
+  description: At least one security contact should have email alert notifications enabled so that high-severity
+    findings trigger email alerts
+  severity: medium
+  framework: cis-lite
+  remediation_hint: In Microsoft Defender for Cloud > Environment settings > Email notifications, enable
+    'Notify about alerts' for the security contact
+  provider_check_ref:
+    azure: azure-security-contact-alerts
+  framework_mappings:
+    soc2:
+    - CC7.3
+    - CC7.4
+    nist:
+    - IR-6
+    - SI-5
+    iso27001:
+    - A.5.25
+    - A.8.16
+- code: CIS-AZ-112
+  name: Auto-provisioning of monitoring agent enabled
+  description: Auto-provisioning of the Log Analytics / Azure Monitor agent should be enabled so that
+    new VMs are automatically instrumented for Defender for Cloud
+  severity: medium
+  framework: cis-lite
+  remediation_hint: In Microsoft Defender for Cloud > Environment settings > subscription > Auto provisioning,
+    enable the monitoring agent auto-provisioning setting
+  provider_check_ref:
+    azure: azure-auto-provisioning-enabled
+  framework_mappings:
+    soc2:
+    - CC7.1
+    nist:
+    - CM-2
+    - SI-4
+    iso27001:
+    - A.8.16
+    - A.5.23
+- code: CIS-AZ-113
+  name: Subscription has at most 3 Owner role assignments
+  description: Subscription should have no more than 3 built-in Owner role assignments to minimise blast
+    radius and enforce least privilege
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Review Owner role assignments and downgrade extra assignments to Contributor or a
+    custom least-privilege role
+  provider_check_ref:
+    azure: azure-subscription-owner-count
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - AC-2
+    - AC-6
+    iso27001:
+    - A.5.15
+    - A.5.18
+    - A.8.2
