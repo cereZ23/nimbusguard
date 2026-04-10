@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
+  Activity,
   LayoutDashboard,
   Columns3,
   Cloud,
@@ -44,6 +45,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Assets", href: "/assets", icon: Server },
       { label: "Asset Graph", href: "/asset-graph", icon: Network },
       { label: "Findings", href: "/findings", icon: AlertTriangle },
+      { label: "Scans", href: "/scans", icon: Activity },
       { label: "Compliance", href: "/compliance", icon: CheckCircle },
     ],
   },

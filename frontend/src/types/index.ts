@@ -54,6 +54,25 @@ export interface CloudAccount {
   created_at: string;
 }
 
+export type ScanStatus = "pending" | "running" | "completed" | "failed";
+
+export interface Scan {
+  id: string;
+  cloud_account_id: string;
+  cloud_account_name: string | null;
+  cloud_account_provider: string | null;
+  scan_type: string;
+  status: ScanStatus;
+  started_at: string | null;
+  finished_at: string | null;
+  stats: Record<string, unknown> | null;
+  created_at: string;
+  duration_seconds: number | null;
+  findings_count: number | null;
+  findings_fail_count: number | null;
+  findings_pass_count: number | null;
+}
+
 export interface Control {
   id: string;
   code: string;

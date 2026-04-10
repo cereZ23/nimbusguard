@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Calendar, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Activity, Calendar, Plus, RefreshCw, Trash2 } from "lucide-react";
+import Link from "next/link";
 import Button from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import Modal from "@/components/ui/modal";
@@ -157,32 +158,7 @@ export default function AccountsPage() {
     }
   };
 
-  const [scanningId, setScanningId] = useState<string | null>(null);
-  const [scanMessage, setScanMessage] = useState<string | null>(null);
-
-  const handleTriggerScan = async (accountId: string) => {
-    setScanningId(accountId);
-    setScanMessage(null);
-    try {
-      await api.post("/scans", { cloud_account_id: accountId });
-      setScanMessage("Scan started successfully!");
-      setTimeout(() => setScanMessage(null), 5000);
-    } catch (err: unknown) {
-      const axiosErr = err as {
-        response?: { status?: number; data?: { detail?: string } };
-      };
-      if (axiosErr.response?.status === 429) {
-        setScanMessage("Rate limit reached — try again later.");
-      } else if (axiosErr.response?.status === 409) {
-        setScanMessage("A scan is already running.");
-      } else {
-        setScanMessage(axiosErr.response?.data?.detail ?? "Scan failed.");
-      }
-      setTimeout(() => setScanMessage(null), 5000);
-    } finally {
-      setScanningId(null);
-    }
-  };
+  // Scan trigger moved to /scans page. Keep only a deep-link from each account row.
 
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
@@ -292,27 +268,14 @@ export default function AccountsPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {scanMessage && scanningId === null && (
-                        <span className="text-xs text-gray-600 dark:text-gray-300">
-                          {scanMessage}
-                        </span>
-                      )}
-                      <button
-                        onClick={() => handleTriggerScan(account.id)}
-                        disabled={
-                          !isActive(account) || scanningId === account.id
-                        }
-                        className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                        title="Trigger scan"
+                      <Link
+                        href={`/scans?cloud_account_id=${account.id}`}
+                        className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                        title="View scan history and run new scan"
                       >
-                        <RefreshCw
-                          size={14}
-                          className={
-                            scanningId === account.id ? "animate-spin" : ""
-                          }
-                        />
-                        {scanningId === account.id ? "Scanning..." : "Scan"}
-                      </button>
+                        <Activity size={14} />
+                        Scans
+                      </Link>
                       <button
                         onClick={() =>
                           setDeleteTarget({
