@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL_16-4169e1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Redis_7-dc382d?logo=redis&logoColor=white" alt="Redis" />
   <img src="https://img.shields.io/badge/Celery-37814a?logo=celery&logoColor=white" alt="Celery" />
-  <img src="https://img.shields.io/badge/tests-803_passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-905_passing-brightgreen" alt="Tests" />
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
   <br/>
   <a href="https://github.com/cereZ23/nimbusguard/actions"><img src="https://github.com/cereZ23/nimbusguard/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
@@ -24,7 +24,7 @@
   <img src="https://img.shields.io/badge/type%20checked-mypy-blue?logo=python&logoColor=white" alt="Type Checked" />
   <img src="https://img.shields.io/badge/security-CIS%20Benchmarks-00b4d8" alt="CIS Benchmarks" />
   <img src="https://img.shields.io/badge/coverage-84%25-brightgreen" alt="Coverage" />
-  <img src="https://img.shields.io/badge/checks-100+-0ea5e9" alt="Security Checks" />
+  <img src="https://img.shields.io/badge/checks-123-0ea5e9" alt="Security Checks" />
   <img src="https://img.shields.io/badge/maintainability-A-brightgreen" alt="Maintainability" />
 </p>
 
@@ -32,12 +32,13 @@
 
 ## What is NimbusGuard?
 
-NimbusGuard is a **multi-tenant CSPM** (Cloud Security Posture Management) platform that continuously scans your cloud infrastructure, evaluates it against **100+ security checks** mapped to CIS Benchmarks, and gives you a clear picture of your security posture — all from a single dashboard.
+NimbusGuard is a **multi-tenant CSPM** (Cloud Security Posture Management) platform that continuously scans your cloud infrastructure, evaluates it against **123 security checks** mapped to CIS Benchmarks, and gives you a clear picture of your security posture — all from a single dashboard.
 
 ### Key Features
 
-- **100 built-in security checks** across Azure (84 controls) and AWS (20 controls), mapped to CIS v3.0
+- **123 built-in security checks** across Azure (103 controls) and AWS (20 controls), mapped to CIS v3.0
 - **Multi-cloud support** — Azure today, AWS in progress, GCP on the roadmap
+- **Dedicated Scans page** — first-class scan history with live updates, filters by account and status, per-scan findings breakdown (pass/fail/total)
 - **Real-time Secure Score** — aggregated per-account and cross-cloud
 - **Asset inventory** — full visibility into every cloud resource, searchable and filterable
 - **Findings management** — prioritized by severity, with remediation guidance and evidence
@@ -52,6 +53,51 @@ NimbusGuard is a **multi-tenant CSPM** (Cloud Security Posture Management) platf
 - **Jira & Slack integration** — push findings to your workflow tools
 - **API keys** — programmatic access for CI/CD pipelines
 - **Dark/light mode** — because your SOC analysts work at night too
+
+---
+
+## What's new
+
+### Recently shipped — April 2026
+
+**🆕 19 new Azure CIS-Lite controls (CIS-AZ-85..103)** — deployed on `main` (commit `55a9dc3`)
+
+Expanded Azure check coverage from 80 to 99 evaluators, fully validated against a real production tenant via Azure Resource Graph. No Defender for Cloud paid tier required.
+
+| Area                                                                             | Controls added | What they check                                                                                                                                                                 |
+| -------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **App Service Plans** (`microsoft.web/serverfarms`, NEW module)                  | 4              | Compute tier (Free/Shared forbidden), zone redundancy, worker count for HA, per-site scaling on multi-site plans                                                                |
+| **Web Apps** (`microsoft.web/sites`, 10 → 16)                                    | 6              | CORS without wildcard, health check path, auto-heal, minimum TLS cipher suite strength, public network access off when private endpoint is configured, IP security restrictions |
+| **Storage Accounts** (`microsoft.storage/storageaccounts`, 10 → 15)              | 5              | Cross-tenant replication disabled, default Entra ID OAuth auth, cross-tenant SAS delegation off, public network access off with private endpoint, standard DNS endpoint type    |
+| **Log Analytics Workspaces** (`microsoft.operationalinsights/workspaces`, 2 → 6) | 4              | Daily ingestion quota configured, public access for query/ingestion disabled, RBAC-only log access                                                                              |
+
+**🆕 Dedicated `/scans` page** — deployed on `main` (commit `37fad6b`)
+
+- Moved the scan trigger out of `Settings → Accounts` (buried, 4 clicks from home) into a first-class top-level page at `/scans` (1 click from sidebar).
+- Full scan history with filters by cloud account and status (pending / running / completed / failed).
+- Per-row breakdown: duration, controls evaluated, pass/fail/total findings, scan type.
+- **Auto-polls every 5 seconds** while any visible scan is running, so live progress updates without manual refresh.
+- New backend endpoint `GET /api/v1/scans` with pagination, tenant isolation, and batched findings aggregation (no N+1 queries).
+- Accounts page retains a per-account shortcut: `Scans` button deep-links to `/scans?cloud_account_id=<id>` pre-filtered by that account.
+
+**🔧 CI/CD hardening**
+
+- Backend Dockerfile now runs `apt-get update && apt-get upgrade` to pick up the latest Debian security patches at build time.
+- New `.trivyignore` at repo root documents accepted-risk HIGH CVEs (ncurses CVE-2025-69720, systemd CVE-2026-29111) with rationale for why they are not exploitable in the container (no interactive CLI, no systemd as PID 1).
+- `trivy-action` now reads `.trivyignore` so the image scan passes without blocking unrelated Debian base-layer findings.
+
+### In progress
+
+**🚧 Subscription-level state collector** — adds a second Azure data source (beyond Resource Graph) to surface posture settings that live at the subscription, not the resource, level:
+
+- **Defender for Cloud pricing tiers** per service (Servers, Storage, SQL, App Service, Containers, Key Vault) via `Microsoft.Security/pricings`
+- **Security contacts** (notification email + alert flags) via `Microsoft.Security/securityContacts`
+- **Auto-provisioning settings** for agent deployment via `Microsoft.Security/autoProvisioningSettings`
+- **Subscription owner count** via `Microsoft.Authorization/roleAssignments` (count of built-in `Owner` role assignments)
+
+The collector creates a synthetic Asset with `resource_type="microsoft.subscription/subscription"` so the existing evaluator framework picks it up with no special-case logic. Ten new checks (CIS-AZ-104..113) are planned on this resource type to answer the single most common CSPM buyer question: _"Do you tell me whether Defender for Cloud is turned on?"_
+
+No additional Azure permissions required — the existing `Reader` + `Security Reader` roles already grant read access to Security Center pricings, contacts, and role assignments.
 
 ---
 
@@ -175,26 +221,29 @@ alembic upgrade head
 
 ## Security Checks Coverage
 
-NimbusGuard evaluates **100 security checks** across two cloud providers:
+NimbusGuard evaluates **123 security checks** across two cloud providers:
 
-### Azure (84 controls)
+### Azure (103 controls)
 
-| Category                  | Checks | Examples                                                        |
-| ------------------------- | ------ | --------------------------------------------------------------- |
-| **Storage**               | 10     | HTTPS-only, encryption, public access, soft delete, versioning  |
-| **Networking**            | 3      | NSG SSH/RDP rules, flow logs                                    |
-| **Key Vault**             | 8      | Purge protection, soft delete, RBAC, key/secret/cert expiration |
-| **Web Apps**              | 10     | HTTPS, TLS 1.2, FTP disabled, managed identity, remote debug    |
-| **SQL & Databases**       | 5      | TDE, public access, TLS, AAD admin, auditing                    |
-| **Compute**               | 4      | Managed disks, encryption, secure boot, boot diagnostics        |
-| **Cosmos DB**             | 4      | Public access, VNet filter, CMK, automatic failover             |
-| **PostgreSQL**            | 2      | SSL enforcement, log checkpoints                                |
-| **MySQL**                 | 3      | SSL, audit logging, public access                               |
-| **Container (ACR/AKS)**   | 6      | Admin disabled, RBAC, network policy, quarantine                |
-| **Redis**                 | 3      | Non-SSL ports, TLS version, public access                       |
-| **Networking (advanced)** | 8      | App Gateway WAF, Front Door HTTPS, VPN, public IPs              |
-| **Monitoring**            | 3      | Activity log alerts, Log Analytics retention, Network Watcher   |
-| **Other**                 | 15     | Event Hub encryption, Service Bus, Batch pools, managed disks   |
+| Category                         | Checks | Examples                                                                                           |
+| -------------------------------- | ------ | -------------------------------------------------------------------------------------------------- |
+| **Storage**                      | 15     | HTTPS-only, encryption, public access, versioning, cross-tenant replication, standard DNS endpoint |
+| **Web Apps (App Service)**       | 16     | HTTPS, TLS 1.2+, FTP off, managed identity, CORS no wildcard, health check path, IP restrictions   |
+| **App Service Plans** (NEW)      | 4      | Not on Free/Shared tier, zone redundancy, multiple workers for HA, per-site scaling on multi-site  |
+| **Key Vault**                    | 8      | Purge protection, soft delete, RBAC, key/secret/cert expiration                                    |
+| **Log Analytics Workspaces**     | 6      | Retention ≥ 90d, CMK encryption, daily quota, public access off (query + ingestion), RBAC-only     |
+| **Networking (NSG, VNet, etc.)** | 3      | NSG SSH/RDP rules, flow logs                                                                       |
+| **SQL & Databases**              | 5      | TDE, public access, TLS, AAD admin, auditing                                                       |
+| **Compute**                      | 4      | Managed disks, encryption, secure boot, boot diagnostics                                           |
+| **Cosmos DB**                    | 4      | Public access, VNet filter, CMK, automatic failover                                                |
+| **PostgreSQL**                   | 2      | SSL enforcement, log checkpoints                                                                   |
+| **MySQL**                        | 3      | SSL, audit logging, public access                                                                  |
+| **Container (ACR/AKS)**          | 6      | Admin disabled, RBAC, network policy, quarantine                                                   |
+| **Redis**                        | 3      | Non-SSL ports, TLS version, public access                                                          |
+| **Networking (advanced)**        | 8      | App Gateway WAF, Front Door HTTPS, VPN, public IPs                                                 |
+| **Monitoring**                   | 3      | Activity log alerts, Network Watcher, diagnostic logs                                              |
+| **Other**                        | 13     | Event Hub encryption, Service Bus, Batch pools, managed disks                                      |
+| **Subscription-level** (🚧 WIP)  | 10     | Defender for Cloud plans, security contacts, auto-provisioning, owner count                        |
 
 ### AWS (20 controls)
 
@@ -220,24 +269,26 @@ Response envelope: `{ data, error, meta }`
 
 ### Core Endpoints
 
-| Method | Endpoint               | Description                                     |
-| ------ | ---------------------- | ----------------------------------------------- |
-| `POST` | `/auth/register`       | Register tenant + admin user                    |
-| `POST` | `/auth/login`          | Authenticate (returns JWT in httpOnly cookie)   |
-| `POST` | `/auth/mfa/setup`      | Initiate MFA setup (TOTP)                       |
-| `POST` | `/auth/mfa/login`      | Complete MFA challenge                          |
-| `CRUD` | `/accounts`            | Cloud account management                        |
-| `GET`  | `/assets`              | List assets (paginated, filterable)             |
-| `GET`  | `/findings`            | List findings (paginated, filterable, sortable) |
-| `POST` | `/findings/bulk-waive` | Bulk waive findings                             |
-| `GET`  | `/dashboard/summary`   | Aggregated security posture                     |
-| `POST` | `/scans`               | Trigger scan (idempotent)                       |
-| `GET`  | `/compliance`          | CIS compliance overview                         |
-| `GET`  | `/export/pdf`          | Download PDF evidence pack                      |
-| `CRUD` | `/roles`               | Custom RBAC roles                               |
-| `CRUD` | `/invitations`         | Team invitations                                |
-| `CRUD` | `/sso/config`          | SSO/OIDC configuration                          |
-| `GET`  | `/audit-logs`          | Audit trail (admin only)                        |
+| Method | Endpoint               | Description                                       |
+| ------ | ---------------------- | ------------------------------------------------- |
+| `POST` | `/auth/register`       | Register tenant + admin user                      |
+| `POST` | `/auth/login`          | Authenticate (returns JWT in httpOnly cookie)     |
+| `POST` | `/auth/mfa/setup`      | Initiate MFA setup (TOTP)                         |
+| `POST` | `/auth/mfa/login`      | Complete MFA challenge                            |
+| `CRUD` | `/accounts`            | Cloud account management                          |
+| `GET`  | `/assets`              | List assets (paginated, filterable)               |
+| `GET`  | `/findings`            | List findings (paginated, filterable, sortable)   |
+| `POST` | `/findings/bulk-waive` | Bulk waive findings                               |
+| `GET`  | `/dashboard/summary`   | Aggregated security posture                       |
+| `POST` | `/scans`               | Trigger scan (idempotent, 409 if already running) |
+| `GET`  | `/scans`               | List scans (filter by account/status, paginated)  |
+| `GET`  | `/scans/{id}`          | Get single scan with findings breakdown           |
+| `GET`  | `/compliance`          | CIS compliance overview                           |
+| `GET`  | `/export/pdf`          | Download PDF evidence pack                        |
+| `CRUD` | `/roles`               | Custom RBAC roles                                 |
+| `CRUD` | `/invitations`         | Team invitations                                  |
+| `CRUD` | `/sso/config`          | SSO/OIDC configuration                            |
+| `GET`  | `/audit-logs`          | Audit trail (admin only)                          |
 
 Full API documentation available at `/docs` (Swagger UI) when running the backend.
 
@@ -254,8 +305,10 @@ nimbusguard/
 │   │   ├── models/           # SQLAlchemy models (10 core tables)
 │   │   ├── schemas/          # Pydantic v2 request/response schemas
 │   │   ├── services/         # Business logic
-│   │   │   ├── azure/        # Azure collector + 23 check modules
-│   │   │   │   └── checks/   # 84 Azure security checks
+│   │   │   ├── azure/        # Azure collectors (resource graph + subscription) + 24 check modules
+│   │   │   │   ├── collector.py              # Resource Graph collector
+│   │   │   │   ├── subscription_collector.py # 🚧 Subscription-level state (WIP)
+│   │   │   │   └── checks/                   # 103 Azure security checks
 │   │   │   ├── aws/          # AWS collector + check modules
 │   │   │   │   └── checks/   # 20 AWS security checks
 │   │   │   ├── auth.py       # Authentication service
@@ -265,7 +318,7 @@ nimbusguard/
 │   │   ├── worker/           # Celery tasks (scan pipeline)
 │   │   └── deps.py           # DI: auth, tenancy, DB session
 │   ├── alembic/              # Database migrations
-│   ├── tests/                # 803 tests (pytest)
+│   ├── tests/                # 905 tests (pytest)
 │   │   ├── api/              # Integration tests
 │   │   └── services/         # Unit tests (checks, auth, etc.)
 │   └── pyproject.toml
@@ -284,10 +337,10 @@ nimbusguard/
 ## Testing
 
 ```bash
-# Backend — 803 tests
+# Backend — 905 tests
 cd backend && pytest -v --cov=app
 
-# Frontend
+# Frontend — 81 unit tests
 cd frontend && pnpm test
 
 # E2E (Playwright)
@@ -296,8 +349,8 @@ cd frontend && pnpm exec playwright test
 
 Test categories:
 
-- **API integration tests** — auth, accounts, assets, findings, SSO, MFA, roles, invitations, dashboard, scans, export, RBAC, audit, branding, API keys
-- **Security check unit tests** — 100 checks × pass/fail/missing-property/null scenarios
+- **API integration tests** — auth, accounts, assets, findings, SSO, MFA, roles, invitations, dashboard, scans (14 tests covering trigger + list + filters + tenant isolation), export, RBAC, audit, branding, API keys
+- **Security check unit tests** — 123 checks × pass/fail/missing-property/null scenarios (4+ tests per check)
 - **E2E tests** — 50 Playwright tests across login, dashboard, findings, assets, export, compliance, settings
 
 ---
@@ -578,8 +631,11 @@ Add a new boto3 API call to fetch the resource type and create `Asset` records w
 
 ## Roadmap
 
+### Done
+
 - [x] Azure Resource Graph collector
-- [x] 84 Azure CIS controls
+- [x] 84 Azure CIS controls (foundational set)
+- [x] **+19 Azure CIS controls** — App Service Plans, extended Web Apps / Storage / Log Analytics (Apr 2026)
 - [x] 20 AWS CIS controls
 - [x] Multi-tenant architecture
 - [x] SSO/OIDC + MFA
@@ -587,11 +643,30 @@ Add a new boto3 API call to fetch the resource type and create `Asset` records w
 - [x] PDF evidence export
 - [x] Scheduled scans
 - [x] Jira & Slack integrations
-- [ ] GCP support
+- [x] **Dedicated `/scans` page** with history, filters, and live auto-refresh (Apr 2026)
+- [x] **Hardened CI/CD** — Dockerfile base image auto-upgrade + Trivy allow-list for unpatchable Debian CVEs
+
+### In progress
+
+- [ ] **Subscription-level collector** — Defender for Cloud plans, security contacts, auto-provisioning, owner count (Azure)
+- [ ] 10 new subscription-level CIS-AZ controls (CIS-AZ-104..113)
+
+### Planned
+
+- [ ] Scan drill-down page `/scans/{id}` with delta findings vs previous scan
+- [ ] Onboarding UX polish (copy-paste CLI for service principal, inline validation, better confirm step)
+- [ ] Microsoft Graph collector — tenant-level MFA controls (CIS-AZ-01, 02), Conditional Access policies
+- [ ] GCP support (Cloud Asset Inventory + CIS GCP benchmark)
+- [ ] Kubernetes support (CIS Kubernetes Benchmark + Pod Security Standards)
 - [ ] Auto-remediation playbooks
 - [ ] SCIM user provisioning
 - [ ] Terraform/IaC scanning
 - [ ] Custom policy engine (OPA/Rego)
+- [ ] Observability stack (Loki + Grafana) for operational logs
+
+### Known issues / deferred
+
+- `.trivyignore` contains 2 accepted-risk HIGH CVEs (ncurses CVE-2025-69720, systemd CVE-2026-29111) waiting for Debian patches. Periodically re-check and remove entries as they are fixed upstream.
 
 ---
 
