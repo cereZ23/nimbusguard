@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL_16-4169e1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Redis_7-dc382d?logo=redis&logoColor=white" alt="Redis" />
   <img src="https://img.shields.io/badge/Celery-37814a?logo=celery&logoColor=white" alt="Celery" />
-  <img src="https://img.shields.io/badge/tests-905_passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-1066_passing-brightgreen" alt="Tests" />
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
   <br/>
   <a href="https://github.com/cereZ23/nimbusguard/actions"><img src="https://github.com/cereZ23/nimbusguard/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
@@ -24,7 +24,7 @@
   <img src="https://img.shields.io/badge/type%20checked-mypy-blue?logo=python&logoColor=white" alt="Type Checked" />
   <img src="https://img.shields.io/badge/security-CIS%20Benchmarks-00b4d8" alt="CIS Benchmarks" />
   <img src="https://img.shields.io/badge/coverage-84%25-brightgreen" alt="Coverage" />
-  <img src="https://img.shields.io/badge/checks-123-0ea5e9" alt="Security Checks" />
+  <img src="https://img.shields.io/badge/checks-162-0ea5e9" alt="Security Checks" />
   <img src="https://img.shields.io/badge/maintainability-A-brightgreen" alt="Maintainability" />
 </p>
 
@@ -32,11 +32,11 @@
 
 ## What is NimbusGuard?
 
-NimbusGuard is a **multi-tenant CSPM** (Cloud Security Posture Management) platform that continuously scans your cloud infrastructure, evaluates it against **123 security checks** mapped to CIS Benchmarks, and gives you a clear picture of your security posture — all from a single dashboard.
+NimbusGuard is a **multi-tenant CSPM** (Cloud Security Posture Management) platform that continuously scans your cloud infrastructure, evaluates it against **162 security checks** mapped to CIS Benchmarks, and gives you a clear picture of your security posture — all from a single dashboard.
 
 ### Key Features
 
-- **123 built-in security checks** across Azure (103 controls) and AWS (20 controls), mapped to CIS v3.0
+- **162 built-in security checks** across Azure (142 controls) and AWS (20 controls), mapped to CIS v3.0
 - **Multi-cloud support** — Azure today, AWS in progress, GCP on the roadmap
 - **Dedicated Scans page** — first-class scan history with live updates, filters by account and status, per-scan findings breakdown (pass/fail/total)
 - **Real-time Secure Score** — aggregated per-account and cross-cloud
@@ -60,18 +60,50 @@ NimbusGuard is a **multi-tenant CSPM** (Cloud Security Posture Management) platf
 
 ### Recently shipped — April 2026
 
-**🆕 19 new Azure CIS-Lite controls (CIS-AZ-85..103)** — deployed on `main` (commit `55a9dc3`)
+Azure coverage nearly **doubled** in one day: **62 new CIS-Lite controls** (CIS-AZ-85..146), grouped in 7 self-contained sprints, all deployed via the CD pipeline. Every sprint is validated locally against 1000+ unit tests before being pushed to main.
 
-Expanded Azure check coverage from 80 to 99 evaluators, fully validated against a real production tenant via Azure Resource Graph. No Defender for Cloud paid tier required.
+**Numbers at a glance**
 
-| Area                                                                             | Controls added | What they check                                                                                                                                                                 |
-| -------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **App Service Plans** (`microsoft.web/serverfarms`, NEW module)                  | 4              | Compute tier (Free/Shared forbidden), zone redundancy, worker count for HA, per-site scaling on multi-site plans                                                                |
-| **Web Apps** (`microsoft.web/sites`, 10 → 16)                                    | 6              | CORS without wildcard, health check path, auto-heal, minimum TLS cipher suite strength, public network access off when private endpoint is configured, IP security restrictions |
-| **Storage Accounts** (`microsoft.storage/storageaccounts`, 10 → 15)              | 5              | Cross-tenant replication disabled, default Entra ID OAuth auth, cross-tenant SAS delegation off, public network access off with private endpoint, standard DNS endpoint type    |
-| **Log Analytics Workspaces** (`microsoft.operationalinsights/workspaces`, 2 → 6) | 4              | Daily ingestion quota configured, public access for query/ingestion disabled, RBAC-only log access                                                                              |
+|                                | Before | After    |
+| ------------------------------ | ------ | -------- |
+| Azure CIS-Lite controls (yaml) | 84     | **146**  |
+| Azure evaluators registered    | 80     | **142**  |
+| Total registry (Azure + AWS)   | 100    | **162**  |
+| Backend tests                  | 815    | **1066** |
+| Azure resource types covered   | 30     | **35**   |
 
-**🆕 Dedicated `/scans` page** — deployed on `main` (commit `37fad6b`)
+**Sprint 1 — Depth expansion on existing resource types** (CIS-AZ-85..103, commit `55a9dc3`)
+
+19 new checks across four Azure service categories: App Service Plans (NEW module, `microsoft.web/serverfarms`, 4 checks), Web Apps (`microsoft.web/sites`, 10 → 16), Storage Accounts (`microsoft.storage/storageaccounts`, 10 → 15), Log Analytics Workspaces (`microsoft.operationalinsights/workspaces`, 2 → 6).
+
+**Sprint 2 — Subscription-level state collector** (CIS-AZ-104..113, commit `d9f673d`)
+
+New `azure/subscription_collector.py` adds a second Azure data source beyond Resource Graph, calling Security Center pricings, security contacts, auto-provisioning settings, and RBAC role assignments APIs. The collector creates a synthetic Asset with `resource_type="microsoft.subscription/subscription"` so the existing evaluator framework picks it up with no special-case logic. Ten new checks answer the single most common CSPM buyer question — _"Do you tell me whether Defender for Cloud is turned on?"_:
+
+- Defender for Cloud plans per service (Servers, Storage, SQL, App Service, Containers, Key Vault)
+- Security contact email + alert notifications configured
+- Auto-provisioning of the monitoring agent enabled
+- Subscription Owner role assignment count <= 3
+
+No additional Azure permissions required — the existing `Reader` + `Security Reader` roles grant read access to all these APIs.
+
+**Sprint 3 — Backup & disaster-recovery posture** (CIS-AZ-114..121, commit `b49b012`)
+
+8 new checks across three resource types: Recovery Services Vaults (5 checks — geo-redundant storage, soft delete, cross-region restore, public access off, immutability), SQL databases (1 check — geo-redundant backup storage), Cosmos DB (2 checks — continuous backup, periodic retention ≥ 7 days).
+
+**Sprint 4 — Network exposure hardening** (CIS-AZ-122..127, commit `81d40fb`)
+
+6 new checks that complement the existing SSH/RDP-only NSG controls: NSG no SMB/NetBIOS/WinRM from the internet, NSG no database ports (SQL/MySQL/Postgres/Mongo/Redis/Elasticsearch) from the internet, NSG no wildcard any-port rule from the internet, Public IP on Standard SKU (not the deprecated Basic), Public IP not orphaned, Azure Firewall threat-intelligence in Deny mode. Adds `microsoft.network/azurefirewalls` as a NEW covered resource type.
+
+**Sprint 5, 6, 7 — AKS / ACR / PG&MySQL deep hardening** (CIS-AZ-128..146, commit `f485c5f`)
+
+19 new checks across three hardening areas, all reading properties already collected by the generic Resource Graph query:
+
+- **AKS hardening** (7 checks): API server authorized IP ranges, managed identity vs service principal, Azure Policy add-on, Workload Identity + OIDC issuer, local admin accounts disabled, Azure RBAC for Kubernetes, auto-upgrade channel configured.
+- **ACR supply chain** (6 checks): anonymous pull disabled, network rule default Deny, quarantine policy enabled, content trust / image signing enabled, retention policy enabled, customer-managed key encryption.
+- **PG/MySQL flexible server hardening** (6 checks): Postgres public access off, Postgres min TLS 1.2, Postgres geo-redundant backup, Postgres backup retention ≥ 7d, MySQL geo-redundant backup, MySQL backup retention ≥ 7d.
+
+**Sprint UX — Dedicated `/scans` page** (commit `37fad6b`)
 
 - Moved the scan trigger out of `Settings → Accounts` (buried, 4 clicks from home) into a first-class top-level page at `/scans` (1 click from sidebar).
 - Full scan history with filters by cloud account and status (pending / running / completed / failed).
@@ -86,18 +118,12 @@ Expanded Azure check coverage from 80 to 99 evaluators, fully validated against 
 - New `.trivyignore` at repo root documents accepted-risk HIGH CVEs (ncurses CVE-2025-69720, systemd CVE-2026-29111) with rationale for why they are not exploitable in the container (no interactive CLI, no systemd as PID 1).
 - `trivy-action` now reads `.trivyignore` so the image scan passes without blocking unrelated Debian base-layer findings.
 
-### In progress
+### Next on the roadmap
 
-**🚧 Subscription-level state collector** — adds a second Azure data source (beyond Resource Graph) to surface posture settings that live at the subscription, not the resource, level:
-
-- **Defender for Cloud pricing tiers** per service (Servers, Storage, SQL, App Service, Containers, Key Vault) via `Microsoft.Security/pricings`
-- **Security contacts** (notification email + alert flags) via `Microsoft.Security/securityContacts`
-- **Auto-provisioning settings** for agent deployment via `Microsoft.Security/autoProvisioningSettings`
-- **Subscription owner count** via `Microsoft.Authorization/roleAssignments` (count of built-in `Owner` role assignments)
-
-The collector creates a synthetic Asset with `resource_type="microsoft.subscription/subscription"` so the existing evaluator framework picks it up with no special-case logic. Ten new checks (CIS-AZ-104..113) are planned on this resource type to answer the single most common CSPM buyer question: _"Do you tell me whether Defender for Cloud is turned on?"_
-
-No additional Azure permissions required — the existing `Reader` + `Security Reader` roles already grant read access to Security Center pricings, contacts, and role assignments.
+- **Defender assessment enricher** — read `Microsoft.Security/assessments` for subscriptions where the collector detected Defender is ON, unblocking the remaining `CIS-AZ-19` (VM endpoint protection) and `CIS-AZ-20` (system updates) orphan controls plus ~10 new sub-assessments.
+- **Entra ID / Microsoft Graph collector** — unlocks the MFA controls (CIS-AZ-01, 02), Conditional Access policies, PIM status. Blocked on granting `Directory.Read.All` + `Policy.Read.All` to the service principal.
+- **Scan drill-down page `/scans/{id}`** — delta findings vs previous scan, pass/fail donut, deep-link into Findings filtered by scan.
+- **Diagnostic settings enforcement coverage** — extend the single storage-only check into a per-resource-type sweep.
 
 ---
 
@@ -221,29 +247,33 @@ alembic upgrade head
 
 ## Security Checks Coverage
 
-NimbusGuard evaluates **123 security checks** across two cloud providers:
+NimbusGuard evaluates **162 security checks** across two cloud providers:
 
-### Azure (103 controls)
+### Azure (142 controls)
 
-| Category                         | Checks | Examples                                                                                           |
-| -------------------------------- | ------ | -------------------------------------------------------------------------------------------------- |
-| **Storage**                      | 15     | HTTPS-only, encryption, public access, versioning, cross-tenant replication, standard DNS endpoint |
-| **Web Apps (App Service)**       | 16     | HTTPS, TLS 1.2+, FTP off, managed identity, CORS no wildcard, health check path, IP restrictions   |
-| **App Service Plans** (NEW)      | 4      | Not on Free/Shared tier, zone redundancy, multiple workers for HA, per-site scaling on multi-site  |
-| **Key Vault**                    | 8      | Purge protection, soft delete, RBAC, key/secret/cert expiration                                    |
-| **Log Analytics Workspaces**     | 6      | Retention ≥ 90d, CMK encryption, daily quota, public access off (query + ingestion), RBAC-only     |
-| **Networking (NSG, VNet, etc.)** | 3      | NSG SSH/RDP rules, flow logs                                                                       |
-| **SQL & Databases**              | 5      | TDE, public access, TLS, AAD admin, auditing                                                       |
-| **Compute**                      | 4      | Managed disks, encryption, secure boot, boot diagnostics                                           |
-| **Cosmos DB**                    | 4      | Public access, VNet filter, CMK, automatic failover                                                |
-| **PostgreSQL**                   | 2      | SSL enforcement, log checkpoints                                                                   |
-| **MySQL**                        | 3      | SSL, audit logging, public access                                                                  |
-| **Container (ACR/AKS)**          | 6      | Admin disabled, RBAC, network policy, quarantine                                                   |
-| **Redis**                        | 3      | Non-SSL ports, TLS version, public access                                                          |
-| **Networking (advanced)**        | 8      | App Gateway WAF, Front Door HTTPS, VPN, public IPs                                                 |
-| **Monitoring**                   | 3      | Activity log alerts, Network Watcher, diagnostic logs                                              |
-| **Other**                        | 13     | Event Hub encryption, Service Bus, Batch pools, managed disks                                      |
-| **Subscription-level** (🚧 WIP)  | 10     | Defender for Cloud plans, security contacts, auto-provisioning, owner count                        |
+| Category                                        | Checks | Examples                                                                                                                                                                                   |
+| ----------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Subscription-level** (NEW data source)        | 10     | Defender for Cloud plans (Servers, Storage, SQL, App Service, Containers, Key Vault), security contacts, auto-provisioning, owner count                                                    |
+| **Storage**                                     | 15     | HTTPS-only, encryption, public access, versioning, cross-tenant replication, standard DNS endpoint                                                                                         |
+| **Web Apps (App Service)**                      | 16     | HTTPS, TLS 1.2+, FTP off, managed identity, CORS no wildcard, health check path, IP restrictions                                                                                           |
+| **App Service Plans** (NEW)                     | 4      | Not on Free/Shared tier, zone redundancy, multiple workers for HA, per-site scaling on multi-site                                                                                          |
+| **AKS (Managed Kubernetes)**                    | 11     | RBAC, network policy, private cluster, AAD integration, API authorized IPs, managed identity, Azure Policy add-on, Workload Identity, local accounts off, Azure RBAC, auto-upgrade channel |
+| **Container Registry (ACR)**                    | 8      | Admin disabled, public access, anonymous pull, network default deny, quarantine, content trust, retention, CMK encryption                                                                  |
+| **Key Vault**                                   | 8      | Purge protection, soft delete, RBAC, key/secret/cert expiration                                                                                                                            |
+| **SQL & Databases**                             | 6      | TDE, public access, TLS, AAD admin, auditing, geo-redundant backup                                                                                                                         |
+| **PostgreSQL flex**                             | 6      | SSL enforcement, log checkpoints, public access off, min TLS 1.2, geo-redundant backup, retention ≥ 7d                                                                                     |
+| **MySQL flex**                                  | 5      | SSL, public access, min TLS 1.2, geo-redundant backup, retention ≥ 7d                                                                                                                      |
+| **Cosmos DB**                                   | 6      | Public access, VNet filter, CMK, automatic failover, continuous backup, periodic retention                                                                                                 |
+| **Recovery Services Vaults** (NEW)              | 5      | Geo-redundant storage, soft delete, cross-region restore, public access off, immutability                                                                                                  |
+| **Log Analytics Workspaces**                    | 6      | Retention ≥ 90d, CMK encryption, daily quota, public access off (query + ingestion), RBAC-only                                                                                             |
+| **Network Security Groups**                     | 6      | SSH/RDP restricted, flow logs, management ports (SMB/NetBIOS/WinRM), database ports, no wildcard any-port rule                                                                             |
+| **Public IPs**                                  | 3      | DDoS protection, Standard SKU (not deprecated Basic), not orphaned                                                                                                                         |
+| **Azure Firewall** (NEW)                        | 1      | Threat intelligence in Deny mode                                                                                                                                                           |
+| **Networking (advanced)**                       | 7      | App Gateway WAF, Front Door HTTPS, VPN gateway SKU, VNet DDoS, Network Watcher                                                                                                             |
+| **Compute**                                     | 4      | Managed disks, encryption, secure boot, boot diagnostics                                                                                                                                   |
+| **Redis**                                       | 3      | Non-SSL ports, TLS version, public access                                                                                                                                                  |
+| **Monitoring**                                  | 2      | Activity log alerts, diagnostic logs                                                                                                                                                       |
+| **Other** (Batch, Service Bus, Event Hub, RBAC) | 10     | Event Hub encryption, Service Bus, Batch pools, custom roles, managed disks, NIC IP forwarding                                                                                             |
 
 ### AWS (20 controls)
 
@@ -305,10 +335,10 @@ nimbusguard/
 │   │   ├── models/           # SQLAlchemy models (10 core tables)
 │   │   ├── schemas/          # Pydantic v2 request/response schemas
 │   │   ├── services/         # Business logic
-│   │   │   ├── azure/        # Azure collectors (resource graph + subscription) + 24 check modules
+│   │   │   ├── azure/        # Azure collectors + 28 check modules
 │   │   │   │   ├── collector.py              # Resource Graph collector
-│   │   │   │   ├── subscription_collector.py # 🚧 Subscription-level state (WIP)
-│   │   │   │   └── checks/                   # 103 Azure security checks
+│   │   │   │   ├── subscription_collector.py # Subscription-level state (Defender, contacts, RBAC)
+│   │   │   │   └── checks/                   # 142 Azure security checks
 │   │   │   ├── aws/          # AWS collector + check modules
 │   │   │   │   └── checks/   # 20 AWS security checks
 │   │   │   ├── auth.py       # Authentication service
@@ -318,7 +348,7 @@ nimbusguard/
 │   │   ├── worker/           # Celery tasks (scan pipeline)
 │   │   └── deps.py           # DI: auth, tenancy, DB session
 │   ├── alembic/              # Database migrations
-│   ├── tests/                # 905 tests (pytest)
+│   ├── tests/                # 1066 tests (pytest)
 │   │   ├── api/              # Integration tests
 │   │   └── services/         # Unit tests (checks, auth, etc.)
 │   └── pyproject.toml
@@ -337,7 +367,7 @@ nimbusguard/
 ## Testing
 
 ```bash
-# Backend — 905 tests
+# Backend — 1066 tests
 cd backend && pytest -v --cov=app
 
 # Frontend — 81 unit tests
@@ -350,7 +380,7 @@ cd frontend && pnpm exec playwright test
 Test categories:
 
 - **API integration tests** — auth, accounts, assets, findings, SSO, MFA, roles, invitations, dashboard, scans (14 tests covering trigger + list + filters + tenant isolation), export, RBAC, audit, branding, API keys
-- **Security check unit tests** — 123 checks × pass/fail/missing-property/null scenarios (4+ tests per check)
+- **Security check unit tests** — 162 checks × pass/fail/missing-property/null scenarios (4+ tests per check)
 - **E2E tests** — 50 Playwright tests across login, dashboard, findings, assets, export, compliance, settings
 
 ---
@@ -634,8 +664,13 @@ Add a new boto3 API call to fetch the resource type and create `Asset` records w
 ### Done
 
 - [x] Azure Resource Graph collector
-- [x] 84 Azure CIS controls (foundational set)
-- [x] **+19 Azure CIS controls** — App Service Plans, extended Web Apps / Storage / Log Analytics (Apr 2026)
+- [x] **142 Azure CIS-Lite controls** (84 foundational + 62 added April 2026)
+- [x] **Subscription-level collector** — Defender plans, security contacts, auto-provisioning, owner count (CIS-AZ-104..113)
+- [x] **Backup & DR posture checks** (CIS-AZ-114..121) — Recovery Services Vaults, SQL, Cosmos DB
+- [x] **Network exposure hardening** (CIS-AZ-122..127) — management/DB ports, wildcard rules, Public IP, Azure Firewall
+- [x] **AKS deep hardening** (CIS-AZ-128..134) — private cluster, Workload Identity, Azure RBAC, auto-upgrade
+- [x] **ACR supply-chain controls** (CIS-AZ-135..140) — anonymous pull, quarantine, content trust, CMK
+- [x] **PG/MySQL flex hardening** (CIS-AZ-141..146) — TLS, public access, geo-redundant backup, retention
 - [x] 20 AWS CIS controls
 - [x] Multi-tenant architecture
 - [x] SSO/OIDC + MFA
@@ -643,19 +678,16 @@ Add a new boto3 API call to fetch the resource type and create `Asset` records w
 - [x] PDF evidence export
 - [x] Scheduled scans
 - [x] Jira & Slack integrations
-- [x] **Dedicated `/scans` page** with history, filters, and live auto-refresh (Apr 2026)
+- [x] **Dedicated `/scans` page** with history, filters, and live auto-refresh
 - [x] **Hardened CI/CD** — Dockerfile base image auto-upgrade + Trivy allow-list for unpatchable Debian CVEs
-
-### In progress
-
-- [ ] **Subscription-level collector** — Defender for Cloud plans, security contacts, auto-provisioning, owner count (Azure)
-- [ ] 10 new subscription-level CIS-AZ controls (CIS-AZ-104..113)
 
 ### Planned
 
+- [ ] **Defender assessment enricher** — unlock CIS-AZ-19 (VM endpoint protection) and CIS-AZ-20 (system updates) by reading `Microsoft.Security/assessments` on subscriptions where the collector detected Defender is ON
+- [ ] **Entra ID / Microsoft Graph collector** — tenant-level MFA controls (CIS-AZ-01, 02), Conditional Access policies, PIM status. Blocked on granting `Directory.Read.All` + `Policy.Read.All` to the service principal
 - [ ] Scan drill-down page `/scans/{id}` with delta findings vs previous scan
 - [ ] Onboarding UX polish (copy-paste CLI for service principal, inline validation, better confirm step)
-- [ ] Microsoft Graph collector — tenant-level MFA controls (CIS-AZ-01, 02), Conditional Access policies
+- [ ] Diagnostic settings enforcement per resource type (beyond storage)
 - [ ] GCP support (Cloud Asset Inventory + CIS GCP benchmark)
 - [ ] Kubernetes support (CIS Kubernetes Benchmark + Pod Security Standards)
 - [ ] Auto-remediation playbooks
@@ -667,6 +699,7 @@ Add a new boto3 API call to fetch the resource type and create `Asset` records w
 ### Known issues / deferred
 
 - `.trivyignore` contains 2 accepted-risk HIGH CVEs (ncurses CVE-2025-69720, systemd CVE-2026-29111) waiting for Debian patches. Periodically re-check and remove entries as they are fixed upstream.
+- CI backend test job takes ~10 minutes to run 1066 tests. The main bottlenecks are tenant-isolation test setup (~1s per test × 19 tests) and coverage instrumentation (~25% overhead). `pytest-xdist` parallelization was attempted but blocked on per-worker DB isolation — tracked as a future refactor.
 
 ---
 
