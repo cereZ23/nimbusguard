@@ -575,9 +575,9 @@ class TestCheckRegistry:
 
     def test_registry_total_check_count(self):
         all_checks = registry.all_checks
-        # 109 Azure (including 10 subscription-level) + 20 AWS = 129 registered evaluators.
-        # Update this number whenever a new @check decorator is added.
-        assert len(all_checks) == 129
+        # 117 Azure (including 10 subscription-level and 8 backup posture) + 20 AWS
+        # = 137 registered evaluators. Update whenever a new @check is added.
+        assert len(all_checks) == 137
 
     def test_registry_case_insensitive(self):
         checks_lower = registry.get_checks_for("microsoft.storage/storageaccounts")

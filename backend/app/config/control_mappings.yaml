@@ -2520,3 +2520,159 @@ controls:
     - A.5.15
     - A.5.18
     - A.8.2
+- code: CIS-AZ-114
+  name: Recovery Services Vault uses geo-redundant storage
+  description: Recovery Services Vaults should use Geo-Redundant (GRS) or GeoZone-Redundant (GZRS) storage
+    so backups survive a single-region outage
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set the vault redundancySettings.standardTierStorageRedundancy to 'GeoRedundant' or
+    'GeoZoneRedundant' (must be changed before any backup item is added)
+  provider_check_ref:
+    azure: azure-rsv-geo-redundant
+  framework_mappings:
+    soc2:
+    - A1.2
+    - A1.3
+    nist:
+    - CP-9
+    - CP-10
+    iso27001:
+    - A.8.13
+    - A.5.30
+- code: CIS-AZ-115
+  name: Recovery Services Vault soft delete enabled
+  description: Recovery Services Vaults should have soft delete enabled so that deleted backups can be
+    recovered within the retention window
+  severity: high
+  framework: cis-lite
+  remediation_hint: In the vault security settings, set softDeleteSettings.softDeleteState to 'Enabled'
+    (default retention 14 days, can be extended up to 180)
+  provider_check_ref:
+    azure: azure-rsv-soft-delete
+  framework_mappings:
+    soc2:
+    - A1.2
+    - CC6.1
+    nist:
+    - CP-9
+    - CP-10
+    - SI-12
+    iso27001:
+    - A.8.13
+    - A.5.30
+- code: CIS-AZ-116
+  name: Recovery Services Vault cross-region restore enabled
+  description: Recovery Services Vaults should allow backups to be restored to the paired region so that
+    workloads can recover during a regional outage
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable crossRegionRestore on the vault redundancy settings (requires GeoRedundant
+    storage and cannot be reverted once enabled)
+  provider_check_ref:
+    azure: azure-rsv-cross-region-restore
+  framework_mappings:
+    soc2:
+    - A1.2
+    - A1.3
+    nist:
+    - CP-7
+    - CP-10
+    iso27001:
+    - A.5.29
+    - A.5.30
+- code: CIS-AZ-117
+  name: Recovery Services Vault public network access disabled
+  description: Recovery Services Vaults should disable public network access and be reachable only via
+    private endpoint
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set publicNetworkAccess to 'Disabled' on the vault and add a private endpoint for
+    backup clients
+  provider_check_ref:
+    azure: azure-rsv-public-access-off
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AZ-118
+  name: Recovery Services Vault immutability enabled
+  description: Recovery Services Vaults should have immutability enabled so that backups cannot be tampered
+    with or deleted before retention ends
+  severity: high
+  framework: cis-lite
+  remediation_hint: In the vault security settings, set immutabilitySettings.state to 'Unlocked' (reversible)
+    or 'Locked' (enforced), which protects against ransomware and insider threats
+  provider_check_ref:
+    azure: azure-rsv-immutability
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - A1.2
+    nist:
+    - CP-9
+    - MP-6
+    iso27001:
+    - A.8.13
+    - A.5.30
+- code: CIS-AZ-119
+  name: SQL database uses geo-redundant backup storage
+  description: Azure SQL databases should use Geo or GeoZone backup storage redundancy so that point-in-time
+    restore survives a regional outage
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set requestedBackupStorageRedundancy to 'Geo' or 'GeoZone' on the database (requires
+    a short planned window)
+  provider_check_ref:
+    azure: azure-sql-backup-geo-redundant
+  framework_mappings:
+    soc2:
+    - A1.2
+    - A1.3
+    nist:
+    - CP-9
+    - CP-10
+    iso27001:
+    - A.8.13
+    - A.5.30
+- code: CIS-AZ-120
+  name: Cosmos DB continuous backup enabled
+  description: Cosmos DB accounts should use continuous backup so that point-in-time restore is available
+    up to 30 days in the past
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set backupPolicy.type to 'Continuous' via ARM template or Azure Portal (the account
+    keeps continuous backup after migration, but the operation is one-way)
+  provider_check_ref:
+    azure: azure-cosmos-continuous-backup
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - CP-9
+    - CP-10
+    iso27001:
+    - A.8.13
+- code: CIS-AZ-121
+  name: Cosmos DB periodic backup retention >= 7 days
+  description: Cosmos DB accounts using periodic backups should retain backups for at least 168 hours
+    (7 days)
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Increase backupPolicy.periodicModeProperties.backupRetentionIntervalInHours to at
+    least 168 (7 days), or migrate to continuous backup
+  provider_check_ref:
+    azure: azure-cosmos-periodic-retention
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - CP-9
+    iso27001:
+    - A.8.13

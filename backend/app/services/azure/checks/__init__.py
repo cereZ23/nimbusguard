@@ -9,6 +9,7 @@ from app.services.azure.checks import (  # noqa: F401
     activity_alerts,
     aks,
     app_gateway,
+    backup,
     batch,
     compute,
     container_registry,
