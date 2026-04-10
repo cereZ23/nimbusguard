@@ -25,6 +25,7 @@ from app.services.azure.checks import (  # noqa: F401
     postgresql,
     rbac,
     redis,
+    serverfarms,
     servicebus,
     sql,
     storage,

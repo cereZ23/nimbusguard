@@ -1,12 +1,10 @@
 controls:
 - code: CIS-AZ-01
   name: MFA enabled for all privileged users
-  description: Multi-factor authentication should be enabled for accounts with owner/contributor
-    permissions
+  description: Multi-factor authentication should be enabled for accounts with owner/contributor permissions
   severity: high
   framework: cis-lite
-  remediation_hint: Enable MFA for all privileged accounts via Azure AD Conditional
-    Access
+  remediation_hint: Enable MFA for all privileged accounts via Azure AD Conditional Access
   provider_check_ref:
     azure: 151e82c5-5341-a74b-1eb0-bc38d2c84bb5
     aws: iam-user-mfa-enabled
@@ -47,12 +45,10 @@ controls:
     - A.5.15
 - code: CIS-AZ-03
   name: No custom owner roles
-  description: Custom subscription owner roles should not exist to prevent privilege
-    escalation
+  description: Custom subscription owner roles should not exist to prevent privilege escalation
   severity: medium
   framework: cis-lite
-  remediation_hint: Remove custom roles with owner-level permissions; use built-in
-    roles
+  remediation_hint: Remove custom roles with owner-level permissions; use built-in roles
   provider_check_ref:
     azure: a451c1ef-c1f8-df24-8d1b-0a5b2527fe93
     aws: iam-policy-no-statements-with-admin-access
@@ -74,8 +70,7 @@ controls:
   description: Diagnostic logs in resources should be enabled for activity tracking
   severity: medium
   framework: cis-lite
-  remediation_hint: Enable diagnostic settings on all critical resources, send to
-    Log Analytics
+  remediation_hint: Enable diagnostic settings on all critical resources, send to Log Analytics
   provider_check_ref:
     azure: b6a28450-dd5f-11e6-bf01-fe55135034f3
     aws: cloud-trail-cloud-watch-logs-enabled
@@ -136,8 +131,7 @@ controls:
   description: Storage accounts should use customer-managed keys for encryption
   severity: medium
   framework: cis-lite
-  remediation_hint: Configure storage account encryption with customer-managed keys
-    from Key Vault
+  remediation_hint: Configure storage account encryption with customer-managed keys from Key Vault
   provider_check_ref:
     azure: 2b23c215-9507-4590-88fd-de5dbb3806be
     aws: s3-bucket-server-side-encryption-enabled
@@ -294,12 +288,10 @@ controls:
     - A.8.22
 - code: CIS-AZ-15
   name: No unrestricted network access to storage
-  description: Storage accounts should restrict network access using virtual network
-    rules
+  description: Storage accounts should restrict network access using virtual network rules
   severity: medium
   framework: cis-lite
-  remediation_hint: Configure storage firewall rules to allow access only from specific
-    VNets/IPs
+  remediation_hint: Configure storage firewall rules to allow access only from specific VNets/IPs
   provider_check_ref:
     azure: 8c122334-9d20-9b6f-ec10-45632662e04a
     aws: s3-account-level-public-access-blocks
@@ -377,8 +369,7 @@ controls:
   description: Endpoint protection solution should be installed on virtual machines
   severity: high
   framework: cis-lite
-  remediation_hint: Install Microsoft Antimalware or compatible endpoint protection
-    on all VMs
+  remediation_hint: Install Microsoft Antimalware or compatible endpoint protection on all VMs
   provider_check_ref:
     azure: 83f577bd-a1b6-b7e1-0891-12ca19d1e6df
     aws: ec2-instance-managed-by-systems-manager
@@ -416,8 +407,7 @@ controls:
   description: Key vaults should restrict network access using firewall rules
   severity: medium
   framework: cis-lite
-  remediation_hint: Set Key Vault firewall default action to Deny and add allowed
-    networks
+  remediation_hint: Set Key Vault firewall default action to Deny and add allowed networks
   provider_check_ref:
     azure: 2c8bfb3a-3e21-4c5d-9b1a-7e8f4a2b1c3d
   framework_mappings:
@@ -438,8 +428,7 @@ controls:
   description: Key vaults should use RBAC for data plane authorization
   severity: medium
   framework: cis-lite
-  remediation_hint: Enable RBAC authorization on Key Vault and migrate from access
-    policies
+  remediation_hint: Enable RBAC authorization on Key Vault and migrate from access policies
   provider_check_ref:
     azure: d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a
   framework_mappings:
@@ -477,8 +466,7 @@ controls:
   description: Remote debugging should be turned off for web applications
   severity: high
   framework: cis-lite
-  remediation_hint: Disable remote debugging in App Service Configuration > General
-    Settings
+  remediation_hint: Disable remote debugging in App Service Configuration > General Settings
   provider_check_ref:
     azure: f2a3b4c5-d6e7-8f9a-0b1c-2d3e4f5a6b7c
   framework_mappings:
@@ -514,8 +502,7 @@ controls:
   description: Web apps should use managed identity for authentication
   severity: medium
   framework: cis-lite
-  remediation_hint: Enable system-assigned or user-assigned managed identity on the
-    App Service
+  remediation_hint: Enable system-assigned or user-assigned managed identity on the App Service
   provider_check_ref:
     azure: b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9e
   framework_mappings:
@@ -567,8 +554,7 @@ controls:
     - A.8.26
 - code: CIS-AZ-29
   name: SQL Server Azure AD admin configured
-  description: An Azure Active Directory administrator should be provisioned for SQL
-    servers
+  description: An Azure Active Directory administrator should be provisioned for SQL servers
   severity: high
   framework: cis-lite
   remediation_hint: Configure an Azure AD administrator for the SQL Server
@@ -590,8 +576,7 @@ controls:
   description: Auditing should be enabled on SQL servers
   severity: medium
   framework: cis-lite
-  remediation_hint: Enable auditing on the SQL Server and send logs to Log Analytics
-    or storage
+  remediation_hint: Enable auditing on the SQL Server and send logs to Log Analytics or storage
   provider_check_ref:
     azure: f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3c
   framework_mappings:
@@ -716,8 +701,7 @@ controls:
   description: SSL enforcement should be enabled for PostgreSQL flexible servers
   severity: high
   framework: cis-lite
-  remediation_hint: Enable SSL enforcement or require secure transport on PostgreSQL
-    server
+  remediation_hint: Enable SSL enforcement or require secure transport on PostgreSQL server
   provider_check_ref:
     azure: a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0d
   framework_mappings:
@@ -1168,8 +1152,7 @@ controls:
   description: Log Analytics workspace should use customer-managed key encryption
   severity: medium
   framework: cis-lite
-  remediation_hint: Configure CMK encryption via dedicated cluster or direct key vault
-    reference
+  remediation_hint: Configure CMK encryption via dedicated cluster or direct key vault reference
   provider_check_ref:
     azure: 20a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
   framework_mappings:
@@ -1223,8 +1206,7 @@ controls:
   description: Network interfaces should not have public IPs directly attached
   severity: medium
   framework: cis-lite
-  remediation_hint: Remove direct public IP associations and use load balancer or
-    NAT gateway
+  remediation_hint: Remove direct public IP associations and use load balancer or NAT gateway
   provider_check_ref:
     azure: 23a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
   framework_mappings:
@@ -1241,8 +1223,7 @@ controls:
   description: IP forwarding should be disabled on NICs unless used for NVA
   severity: medium
   framework: cis-lite
-  remediation_hint: Disable IP forwarding unless the NIC is attached to a network
-    virtual appliance
+  remediation_hint: Disable IP forwarding unless the NIC is attached to a network virtual appliance
   provider_check_ref:
     azure: 24a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
   framework_mappings:
@@ -1327,8 +1308,7 @@ controls:
   description: Web apps should have authentication configured
   severity: medium
   framework: cis-lite
-  remediation_hint: Enable App Service Authentication (EasyAuth) or configure identity
-    provider
+  remediation_hint: Enable App Service Authentication (EasyAuth) or configure identity provider
   provider_check_ref:
     azure: 29a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c
   framework_mappings:
@@ -1579,8 +1559,6 @@ controls:
     - A.8.5
     - A.5.16
     - A.5.15
-
-# ── AWS CIS-lite controls ────────────────────────────────────────────
 - code: CIS-AWS-01
   name: S3 Block Public Access
   description: Ensure S3 buckets have block public access enabled at the bucket level
@@ -1628,8 +1606,7 @@ controls:
   description: Ensure S3 bucket versioning is enabled for data protection
   severity: medium
   framework: cis-lite
-  remediation_hint: Enable versioning on the S3 bucket to protect against accidental
-    deletion
+  remediation_hint: Enable versioning on the S3 bucket to protect against accidental deletion
   provider_check_ref:
     aws: s3-bucket-versioning-enabled
   resource_types:
@@ -1648,8 +1625,7 @@ controls:
   description: Ensure S3 bucket server access logging is enabled
   severity: medium
   framework: cis-lite
-  remediation_hint: Enable server access logging and direct logs to a dedicated logging
-    bucket
+  remediation_hint: Enable server access logging and direct logs to a dedicated logging bucket
   provider_check_ref:
     aws: s3-bucket-logging-enabled
   resource_types:
@@ -1670,8 +1646,7 @@ controls:
   description: Ensure EC2 instances use Instance Metadata Service Version 2 (IMDSv2)
   severity: high
   framework: cis-lite
-  remediation_hint: Set HttpTokens to required in the instance metadata options to
-    enforce IMDSv2
+  remediation_hint: Set HttpTokens to required in the instance metadata options to enforce IMDSv2
   provider_check_ref:
     aws: ec2-imdsv2-check
   resource_types:
@@ -1691,8 +1666,8 @@ controls:
   description: Ensure EC2 instances do not have public IP addresses
   severity: high
   framework: cis-lite
-  remediation_hint: Launch instances in private subnets and use NAT gateways or load
-    balancers for internet access
+  remediation_hint: Launch instances in private subnets and use NAT gateways or load balancers for internet
+    access
   provider_check_ref:
     aws: ec2-instance-no-public-ip
   resource_types:
@@ -1777,8 +1752,7 @@ controls:
   description: Ensure MFA is enabled for all IAM users with console access
   severity: high
   framework: cis-lite
-  remediation_hint: Enable virtual or hardware MFA for all IAM users with console
-    password
+  remediation_hint: Enable virtual or hardware MFA for all IAM users with console password
   provider_check_ref:
     aws: iam-user-mfa-enabled
   resource_types:
@@ -1799,8 +1773,8 @@ controls:
   description: Ensure IAM password policy meets minimum complexity and rotation requirements
   severity: medium
   framework: cis-lite
-  remediation_hint: Configure password policy with minimum 14 characters, require
-    uppercase, lowercase, numbers, symbols, max age 90 days, and 24 password memory
+  remediation_hint: Configure password policy with minimum 14 characters, require uppercase, lowercase,
+    numbers, symbols, max age 90 days, and 24 password memory
   provider_check_ref:
     aws: iam-password-policy
   resource_types:
@@ -1820,8 +1794,7 @@ controls:
   description: Ensure IAM access keys are rotated within 90 days
   severity: medium
   framework: cis-lite
-  remediation_hint: Rotate access keys older than 90 days and consider using IAM roles
-    instead
+  remediation_hint: Rotate access keys older than 90 days and consider using IAM roles instead
   provider_check_ref:
     aws: access-keys-rotated
   resource_types:
@@ -1841,8 +1814,8 @@ controls:
   description: Ensure RDS DB instances have encryption at rest enabled
   severity: high
   framework: cis-lite
-  remediation_hint: Enable encryption at rest when creating the RDS instance (cannot
-    be changed after creation)
+  remediation_hint: Enable encryption at rest when creating the RDS instance (cannot be changed after
+    creation)
   provider_check_ref:
     aws: rds-storage-encrypted
   resource_types:
@@ -1862,8 +1835,7 @@ controls:
   description: Ensure RDS DB instances are not publicly accessible
   severity: high
   framework: cis-lite
-  remediation_hint: Set PubliclyAccessible to false and use VPC security groups to
-    control access
+  remediation_hint: Set PubliclyAccessible to false and use VPC security groups to control access
   provider_check_ref:
     aws: rds-instance-public-access-check
   resource_types:
@@ -1880,8 +1852,7 @@ controls:
     - A.8.21
 - code: CIS-AWS-15
   name: RDS Backup Retention
-  description: Ensure RDS DB instances have backup retention period of at least 7
-    days
+  description: Ensure RDS DB instances have backup retention period of at least 7 days
   severity: medium
   framework: cis-lite
   remediation_hint: Set BackupRetentionPeriod to at least 7 days in RDS instance configuration
@@ -1900,12 +1871,10 @@ controls:
     - A.5.29
 - code: CIS-AWS-16
   name: Lambda Public Access
-  description: Ensure Lambda function resource-based policies do not grant public
-    access
+  description: Ensure Lambda function resource-based policies do not grant public access
   severity: high
   framework: cis-lite
-  remediation_hint: Remove resource-based policy statements with Principal set to
-    * without conditions
+  remediation_hint: Remove resource-based policy statements with Principal set to * without conditions
   provider_check_ref:
     aws: lambda-function-public-access-prohibited
   resource_types:
@@ -1927,8 +1896,7 @@ controls:
   description: Ensure EBS volumes are encrypted at rest
   severity: high
   framework: cis-lite
-  remediation_hint: Enable EBS encryption by default in account settings or encrypt
-    individual volumes
+  remediation_hint: Enable EBS encryption by default in account settings or encrypt individual volumes
   provider_check_ref:
     aws: encrypted-volumes
   resource_types:
@@ -1970,8 +1938,7 @@ controls:
   description: Ensure CloudTrail is enabled in all regions with multi-region trail
   severity: high
   framework: cis-lite
-  remediation_hint: Create a multi-region CloudTrail trail with log file validation
-    enabled
+  remediation_hint: Create a multi-region CloudTrail trail with log file validation enabled
   provider_check_ref:
     aws: multi-region-cloudtrail-enabled
   resource_types:
@@ -1992,8 +1959,7 @@ controls:
   description: Ensure GuardDuty is enabled for threat detection
   severity: high
   framework: cis-lite
-  remediation_hint: Enable GuardDuty in all regions and configure findings export
-    to S3
+  remediation_hint: Enable GuardDuty in all regions and configure findings export to S3
   provider_check_ref:
     aws: guardduty-enabled-centralized
   resource_types:
@@ -2008,3 +1974,348 @@ controls:
     iso27001:
     - A.8.7
     - A.8.16
+- code: CIS-AZ-85
+  name: App Service Plan not on Free/Shared tier
+  description: App Service Plans should not use Free or Shared compute tiers in production
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Upgrade the App Service Plan to Basic or higher (Standard/Premium recommended for
+    production)
+  provider_check_ref:
+    azure: azure-appserviceplan-tier-check
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - A1.1
+    nist:
+    - SC-7
+    - CP-2
+    iso27001:
+    - A.5.30
+    - A.8.14
+- code: CIS-AZ-86
+  name: App Service Plan zone redundancy enabled
+  description: App Service Plans should have zone redundancy enabled for high availability
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable zone redundancy on the App Service Plan via Azure portal or ARM template (requires
+    Premium v2/v3 SKU)
+  provider_check_ref:
+    azure: azure-appserviceplan-zone-redundancy
+  framework_mappings:
+    soc2:
+    - A1.2
+    - A1.3
+    nist:
+    - CP-6
+    - CP-7
+    iso27001:
+    - A.5.30
+    - A.8.14
+- code: CIS-AZ-87
+  name: App Service Plan uses multiple workers
+  description: App Service Plans should run with at least 2 workers for high availability
+  severity: low
+  framework: cis-lite
+  remediation_hint: Scale the App Service Plan to at least 2 instances via Scale out (App Service Plan)
+    settings
+  provider_check_ref:
+    azure: azure-appserviceplan-worker-count
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - CP-2
+    iso27001:
+    - A.8.14
+- code: CIS-AZ-88
+  name: App Service Plan per-site scaling enabled for multi-site plans
+  description: App Service Plans hosting multiple sites should enable per-site scaling
+  severity: low
+  framework: cis-lite
+  remediation_hint: Enable per-site scaling on the App Service Plan when multiple sites share it, so that
+    workers can be allocated independently per site
+  provider_check_ref:
+    azure: azure-appserviceplan-per-site-scaling
+  framework_mappings:
+    soc2:
+    - A1.1
+    nist:
+    - SC-5
+    iso27001:
+    - A.8.14
+- code: CIS-AZ-89
+  name: Web app CORS does not allow wildcard origins
+  description: Web app CORS configuration should not include '*' as allowed origin
+  severity: high
+  framework: cis-lite
+  remediation_hint: Edit App Service CORS settings and replace '*' with explicit origin URLs
+  provider_check_ref:
+    azure: azure-webapp-cors-no-wildcard
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.23
+    - A.5.15
+- code: CIS-AZ-90
+  name: Web app health check path configured
+  description: Web app should have a health check path set so that unhealthy instances can be auto-removed
+  severity: low
+  framework: cis-lite
+  remediation_hint: Configure App Service Health check with a path that returns 200 when the app is healthy
+  provider_check_ref:
+    azure: azure-webapp-healthcheck-configured
+  framework_mappings:
+    soc2:
+    - A1.1
+    - A1.2
+    nist:
+    - CP-2
+    - SI-4
+    iso27001:
+    - A.8.16
+- code: CIS-AZ-91
+  name: Web app auto-heal enabled
+  description: Web app should have auto-heal rules enabled to recover automatically from hangs or high
+    memory usage
+  severity: low
+  framework: cis-lite
+  remediation_hint: Enable Auto Heal in the App Service Diagnostics and configure recovery rules (e.g.
+    memory > 1GB, request count slow)
+  provider_check_ref:
+    azure: azure-webapp-autoheal-enabled
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - SI-4
+    iso27001:
+    - A.8.16
+- code: CIS-AZ-92
+  name: Web app minimum TLS cipher suite is strong
+  description: Web app should enforce a strong minimum TLS cipher suite (AEAD ciphers such as TLS_AES_128_GCM_SHA256)
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set siteConfig.minTlsCipherSuite to TLS_AES_128_GCM_SHA256 or stronger via ARM template
+    / az cli
+  provider_check_ref:
+    azure: azure-webapp-min-tls-cipher
+  framework_mappings:
+    soc2:
+    - CC6.7
+    nist:
+    - SC-8
+    - SC-13
+    iso27001:
+    - A.8.24
+    - A.8.26
+- code: CIS-AZ-93
+  name: Web app public network access disabled when private endpoint is configured
+  description: When a web app has a private endpoint, public network access should be disabled to prevent
+    dual-path exposure
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set publicNetworkAccess to 'Disabled' on the web app when a private endpoint is in
+    use
+  provider_check_ref:
+    azure: azure-webapp-public-access-off
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.22
+    - A.8.20
+- code: CIS-AZ-94
+  name: Web app has IP security restrictions
+  description: Web app should have IP restrictions configured with a default-deny policy or explicit rules
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Configure siteConfig.ipSecurityRestrictions with explicit allowed IP ranges, or set
+    default action to 'Deny'
+  provider_check_ref:
+    azure: azure-webapp-ip-restrictions
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-3
+    - SC-7
+    iso27001:
+    - A.8.20
+    - A.5.15
+- code: CIS-AZ-95
+  name: Storage cross-tenant replication disabled
+  description: Storage accounts should not allow cross-tenant replication to prevent data exfiltration
+    to another Entra ID tenant
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set allowCrossTenantReplication to false on the storage account
+  provider_check_ref:
+    azure: azure-storage-cross-tenant-replication-off
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.6
+    nist:
+    - AC-4
+    - SC-7
+    iso27001:
+    - A.8.12
+    - A.5.14
+- code: CIS-AZ-96
+  name: Storage default authentication is Entra ID (OAuth)
+  description: Storage accounts should default to Microsoft Entra ID (OAuth) authentication instead of
+    shared key
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set defaultToOAuthAuthentication to true on the storage account
+  provider_check_ref:
+    azure: azure-storage-default-oauth
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.2
+    nist:
+    - IA-2
+    - AC-3
+    iso27001:
+    - A.5.16
+    - A.8.2
+- code: CIS-AZ-97
+  name: Storage cross-tenant SAS delegation disabled
+  description: Storage accounts should disable cross-tenant user delegation SAS to prevent external principals
+    from issuing SAS tokens
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set allowCrossTenantDelegationSas to false on the storage account
+  provider_check_ref:
+    azure: azure-storage-cross-tenant-sas-off
+  framework_mappings:
+    soc2:
+    - CC6.1
+    nist:
+    - AC-3
+    iso27001:
+    - A.8.2
+    - A.5.15
+- code: CIS-AZ-98
+  name: Storage public network access disabled when private endpoint is configured
+  description: Storage accounts with a private endpoint should disable public network access to avoid
+    dual-path exposure
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set publicNetworkAccess to 'Disabled' on the storage account when a private endpoint
+    is in use
+  provider_check_ref:
+    azure: azure-storage-public-access-off
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.22
+    - A.8.20
+- code: CIS-AZ-99
+  name: Storage DNS endpoint type is Standard
+  description: Storage accounts should use Standard DNS endpoint type. AzureDnsZone endpoints are vulnerable
+    to subdomain takeover
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Recreate the storage account with dnsEndpointType set to 'Standard' (cannot be changed
+    after creation)
+  provider_check_ref:
+    azure: azure-storage-standard-dns-endpoint
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - SC-20
+    - SC-22
+    iso27001:
+    - A.8.21
+- code: CIS-AZ-100
+  name: Log Analytics workspace daily quota configured
+  description: Log Analytics workspace should have a daily ingestion quota to prevent unexpected cost
+    spikes
+  severity: low
+  framework: cis-lite
+  remediation_hint: Set workspaceCapping.dailyQuotaGb to a positive value based on your expected ingestion
+    volume
+  provider_check_ref:
+    azure: azure-loganalytics-daily-quota
+  framework_mappings:
+    soc2:
+    - A1.2
+    nist:
+    - AU-4
+    iso27001:
+    - A.8.15
+- code: CIS-AZ-101
+  name: Log Analytics public network access for query disabled
+  description: Log Analytics workspace should disable public network access for log queries
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set publicNetworkAccessForQuery to 'Disabled' and access logs via Private Link
+  provider_check_ref:
+    azure: azure-loganalytics-query-private
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AZ-102
+  name: Log Analytics public network access for ingestion disabled
+  description: Log Analytics workspace should disable public network access for log ingestion
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set publicNetworkAccessForIngestion to 'Disabled' and ingest logs via Private Link
+    or AMPLS
+  provider_check_ref:
+    azure: azure-loganalytics-ingestion-private
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AZ-103
+  name: Log Analytics uses resource-level permissions (RBAC)
+  description: Log Analytics workspace should enable resource-level permissions so that users only see
+    logs from resources they have RBAC on
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable 'Use resource or workspace permissions' on the workspace Access control settings
+  provider_check_ref:
+    azure: azure-loganalytics-rbac-only
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.3
+    nist:
+    - AC-3
+    - AC-6
+    iso27001:
+    - A.5.15
+    - A.8.3

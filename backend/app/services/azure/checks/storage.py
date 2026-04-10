@@ -1,4 +1,4 @@
-"""Storage account checks (CIS-AZ-04, 07, 09, 11, 12, 15, 72, 73, 74, 75)."""
+"""Storage account checks (CIS-AZ-04, 07, 09, 11, 12, 15, 72, 73, 74, 75, 95..99)."""
 
 from __future__ import annotations
 
@@ -164,4 +164,97 @@ def check_blob_versioning(asset: Asset) -> EvalResult:
         description="Blob versioning is enabled"
         if versioning
         else "Blob versioning is NOT enabled — enable for data protection and recovery",
+    )
+
+
+@check("microsoft.storage/storageaccounts", "CIS-AZ-95")
+def check_cross_tenant_replication_disabled(asset: Asset) -> EvalResult:
+    """CIS-AZ-95: Storage should disable cross-tenant replication."""
+    props = asset.raw_properties or {}
+    allowed = props.get("allowCrossTenantReplication", True)
+    return EvalResult(
+        status="pass" if not allowed else "fail",
+        evidence={"allowCrossTenantReplication": allowed},
+        description="Cross-tenant replication is disabled"
+        if not allowed
+        else "Cross-tenant replication is ENABLED — data can be replicated to another Entra ID tenant",
+    )
+
+
+@check("microsoft.storage/storageaccounts", "CIS-AZ-96")
+def check_default_oauth_auth(asset: Asset) -> EvalResult:
+    """CIS-AZ-96: Storage should default to Microsoft Entra ID (OAuth) authentication."""
+    props = asset.raw_properties or {}
+    oauth_default = bool(props.get("defaultToOAuthAuthentication", False))
+    return EvalResult(
+        status="pass" if oauth_default else "fail",
+        evidence={"defaultToOAuthAuthentication": oauth_default},
+        description="Default authorization is Microsoft Entra ID (OAuth)"
+        if oauth_default
+        else "Default authorization falls back to shared key — prefer Entra ID identities",
+    )
+
+
+@check("microsoft.storage/storageaccounts", "CIS-AZ-97")
+def check_cross_tenant_delegation_sas_disabled(asset: Asset) -> EvalResult:
+    """CIS-AZ-97: Storage should disable cross-tenant SAS delegation."""
+    props = asset.raw_properties or {}
+    allowed = props.get("allowCrossTenantDelegationSas", True)
+    return EvalResult(
+        status="pass" if not allowed else "fail",
+        evidence={"allowCrossTenantDelegationSas": allowed},
+        description="Cross-tenant SAS delegation is disabled"
+        if not allowed
+        else "Cross-tenant SAS delegation is ENABLED — users outside the tenant can create SAS tokens",
+    )
+
+
+@check("microsoft.storage/storageaccounts", "CIS-AZ-98")
+def check_public_network_access_disabled(asset: Asset) -> EvalResult:
+    """CIS-AZ-98: Storage should disable public network access when private endpoint is used."""
+    props = asset.raw_properties or {}
+    public_access = (props.get("publicNetworkAccess") or "").lower()
+    private_endpoints = props.get("privateEndpointConnections") or []
+    has_private = bool(private_endpoints)
+    if not has_private:
+        # No private endpoint — public access is the only path, skip as pass (covered by other controls).
+        return EvalResult(
+            status="pass",
+            evidence={
+                "publicNetworkAccess": props.get("publicNetworkAccess"),
+                "privateEndpointConnections": len(private_endpoints),
+            },
+            description="No private endpoint configured — public network access is the only ingress path",
+        )
+    is_disabled = public_access in ("disabled", "")
+    return EvalResult(
+        status="pass" if is_disabled else "fail",
+        evidence={
+            "publicNetworkAccess": props.get("publicNetworkAccess"),
+            "privateEndpointConnections": len(private_endpoints),
+        },
+        description=(
+            f"Public network access is '{props.get('publicNetworkAccess')}' despite "
+            f"{len(private_endpoints)} private endpoint(s) — storage is reachable from the public internet"
+        )
+        if not is_disabled
+        else "Public network access is disabled; storage is accessible via private endpoint only",
+    )
+
+
+@check("microsoft.storage/storageaccounts", "CIS-AZ-99")
+def check_standard_dns_endpoint(asset: Asset) -> EvalResult:
+    """CIS-AZ-99: Storage should use Standard DNS endpoint type (not AzureDnsZone)."""
+    props = asset.raw_properties or {}
+    dns_type = (props.get("dnsEndpointType") or "Standard").strip()
+    is_standard = dns_type.lower() == "standard"
+    return EvalResult(
+        status="pass" if is_standard else "fail",
+        evidence={"dnsEndpointType": dns_type},
+        description=f"Storage uses Standard DNS endpoint type"
+        if is_standard
+        else (
+            f"Storage uses '{dns_type}' DNS endpoint type — AzureDnsZone endpoints are vulnerable to "
+            "subdomain takeover if the account is deleted"
+        ),
     )

@@ -1,9 +1,21 @@
-"""Web App / App Service checks (CIS-AZ-10, 23, 24, 25, 26, 67, 68, 69, 70, 71)."""
+"""Web App / App Service checks (CIS-AZ-10, 23, 24, 25, 26, 67, 68, 69, 70, 71, 89..94)."""
 
 from __future__ import annotations
 
 from app.models.asset import Asset
 from app.services.evaluator import EvalResult, check
+
+# TLS cipher suites considered strong (modern AEAD ciphers).
+# Accepted values that pass the minTlsCipherSuite control.
+_STRONG_TLS_CIPHERS = {
+    "TLS_AES_128_GCM_SHA256",
+    "TLS_AES_256_GCM_SHA384",
+    "TLS_CHACHA20_POLY1305_SHA256",
+    "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+    "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+    "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+    "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+}
 
 
 @check("microsoft.web/sites", "CIS-AZ-10")
@@ -159,4 +171,159 @@ def check_auth_settings(asset: Asset) -> EvalResult:
         description="Authentication is configured on the web app"
         if auth_enabled
         else "Authentication is NOT configured — consider enabling App Service Authentication",
+    )
+
+
+@check("microsoft.web/sites", "CIS-AZ-89")
+def check_cors_restrictive(asset: Asset) -> EvalResult:
+    """CIS-AZ-89: Web app CORS should not allow wildcard origins."""
+    props = asset.raw_properties or {}
+    site_config = props.get("siteConfig") or {}
+    cors = site_config.get("cors") if isinstance(site_config, dict) else None
+    # cors is None or empty → no CORS configured, not a fail (CORS not in use)
+    if not isinstance(cors, dict):
+        return EvalResult(
+            status="pass",
+            evidence={"cors": None},
+            description="CORS is not configured — no cross-origin access allowed",
+        )
+    allowed_origins = cors.get("allowedOrigins") or []
+    if not isinstance(allowed_origins, list):
+        allowed_origins = []
+    has_wildcard = "*" in allowed_origins
+    return EvalResult(
+        status="fail" if has_wildcard else "pass",
+        evidence={"cors.allowedOrigins": allowed_origins},
+        description=(
+            f"CORS allows wildcard origin '*' — any site can call the API. "
+            f"Allowed origins: {allowed_origins}"
+        )
+        if has_wildcard
+        else f"CORS origins are explicit (no wildcard): {allowed_origins or 'none'}",
+    )
+
+
+@check("microsoft.web/sites", "CIS-AZ-90")
+def check_health_check_path(asset: Asset) -> EvalResult:
+    """CIS-AZ-90: Web app should have a health check path configured."""
+    props = asset.raw_properties or {}
+    site_config = props.get("siteConfig") or {}
+    health_path = site_config.get("healthCheckPath") if isinstance(site_config, dict) else None
+    has_path = bool(health_path)
+    return EvalResult(
+        status="pass" if has_path else "fail",
+        evidence={"siteConfig.healthCheckPath": health_path},
+        description=f"Health check path is configured: {health_path}"
+        if has_path
+        else "Health check path is NOT configured — unhealthy instances cannot be auto-removed",
+    )
+
+
+@check("microsoft.web/sites", "CIS-AZ-91")
+def check_auto_heal_enabled(asset: Asset) -> EvalResult:
+    """CIS-AZ-91: Web app should have auto-heal enabled for automatic recovery."""
+    props = asset.raw_properties or {}
+    site_config = props.get("siteConfig") or {}
+    auto_heal = site_config.get("autoHealEnabled") if isinstance(site_config, dict) else None
+    is_enabled = bool(auto_heal)
+    return EvalResult(
+        status="pass" if is_enabled else "fail",
+        evidence={"siteConfig.autoHealEnabled": auto_heal},
+        description="Auto-heal is enabled"
+        if is_enabled
+        else "Auto-heal is NOT enabled — stuck instances will not recover automatically",
+    )
+
+
+@check("microsoft.web/sites", "CIS-AZ-92")
+def check_min_tls_cipher_suite(asset: Asset) -> EvalResult:
+    """CIS-AZ-92: Web app should enforce a strong minimum TLS cipher suite."""
+    props = asset.raw_properties or {}
+    site_config = props.get("siteConfig") or {}
+    min_cipher = site_config.get("minTlsCipherSuite") if isinstance(site_config, dict) else None
+    if not min_cipher:
+        return EvalResult(
+            status="fail",
+            evidence={"siteConfig.minTlsCipherSuite": None},
+            description="Minimum TLS cipher suite is NOT configured — weak ciphers may be accepted",
+        )
+    is_strong = min_cipher in _STRONG_TLS_CIPHERS
+    return EvalResult(
+        status="pass" if is_strong else "fail",
+        evidence={"siteConfig.minTlsCipherSuite": min_cipher},
+        description=f"Minimum TLS cipher suite is strong: {min_cipher}"
+        if is_strong
+        else f"Minimum TLS cipher suite '{min_cipher}' is weak — use a modern AEAD cipher (e.g. TLS_AES_128_GCM_SHA256)",
+    )
+
+
+@check("microsoft.web/sites", "CIS-AZ-93")
+def check_public_network_access_disabled(asset: Asset) -> EvalResult:
+    """CIS-AZ-93: Web app should disable public network access when private endpoint is in use."""
+    props = asset.raw_properties or {}
+    public_access = (props.get("publicNetworkAccess") or "").lower()
+    private_endpoints = props.get("privateEndpointConnections") or []
+    # If there are private endpoints, public access SHOULD be disabled.
+    # If there are no private endpoints, public access is expected (pass).
+    has_private = bool(private_endpoints)
+    if not has_private:
+        # No private endpoint → public exposure is by design, skip as pass.
+        return EvalResult(
+            status="pass",
+            evidence={
+                "publicNetworkAccess": props.get("publicNetworkAccess"),
+                "privateEndpointConnections": len(private_endpoints),
+            },
+            description=(
+                "No private endpoint configured — public network access is the only ingress path"
+            ),
+        )
+    is_disabled = public_access in ("disabled", "")
+    return EvalResult(
+        status="pass" if is_disabled else "fail",
+        evidence={
+            "publicNetworkAccess": props.get("publicNetworkAccess"),
+            "privateEndpointConnections": len(private_endpoints),
+        },
+        description=(
+            f"Public network access is '{props.get('publicNetworkAccess')}' despite "
+            f"{len(private_endpoints)} private endpoint(s) — traffic can still reach the app from the internet"
+        )
+        if not is_disabled
+        else "Public network access is disabled; traffic is routed via private endpoint only",
+    )
+
+
+@check("microsoft.web/sites", "CIS-AZ-94")
+def check_ip_restrictions(asset: Asset) -> EvalResult:
+    """CIS-AZ-94: Web app should have IP security restrictions with a default-deny policy."""
+    props = asset.raw_properties or {}
+    site_config = props.get("siteConfig") or {}
+    if not isinstance(site_config, dict):
+        site_config = {}
+    restrictions = site_config.get("ipSecurityRestrictions") or []
+    default_action = (site_config.get("ipSecurityRestrictionsDefaultAction") or "").lower()
+    # Pass conditions:
+    # 1. Default action is explicitly "deny", OR
+    # 2. There is at least one explicit restriction (non-default).
+    has_default_deny = default_action == "deny"
+    # Filter out the implicit "allow all" rule present on every web app.
+    non_default_rules = [
+        r
+        for r in restrictions
+        if isinstance(r, dict) and (r.get("name") or "").lower() not in ("allow all", "deny all")
+    ]
+    is_restricted = has_default_deny or len(non_default_rules) > 0
+    return EvalResult(
+        status="pass" if is_restricted else "fail",
+        evidence={
+            "ipSecurityRestrictionsDefaultAction": site_config.get("ipSecurityRestrictionsDefaultAction"),
+            "ipSecurityRestrictions_count": len(non_default_rules),
+        },
+        description=(
+            f"IP restrictions configured (default action: {default_action or 'none'}, "
+            f"{len(non_default_rules)} explicit rule(s))"
+        )
+        if is_restricted
+        else "No IP restrictions configured — web app is reachable from any source IP",
     )
