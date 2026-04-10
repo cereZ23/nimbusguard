@@ -1,0 +1,24 @@
+# Trivy ignore list — accepted CVEs in Debian 13 (bookworm) base image.
+#
+# These CVEs are flagged HIGH but are accepted as known issues until Debian
+# ships a fix. Each entry must include rationale.
+#
+# Last reviewed: 2026-04-10
+# Re-check periodically: `trivy image --severity HIGH ghcr.io/cerez23/nimbusguard/backend:latest`
+# When a fix is available in Debian, remove the entry and rebuild the image.
+#
+
+# CVE-2025-69720 — ncurses buffer overflow.
+# Affected: libncursesw6, libtinfo6, ncurses-base, ncurses-bin (no Debian fix yet).
+# Rationale: exploit requires attacker-controlled input fed to an ncurses-based
+# CLI tool. The backend container does not run any interactive terminal program
+# and does not expose ncurses to network input. Risk in our deployment: minimal.
+CVE-2025-69720
+
+# CVE-2026-29111 — systemd arbitrary code execution / DoS via spurious IPC.
+# Affected: libsystemd0, libudev1 (no Debian fix yet).
+# Rationale: requires local IPC access to a running systemd instance. The
+# container does NOT run systemd as PID 1 (uvicorn is the entrypoint), so the
+# attack surface does not exist in our deployment. The libs are pulled in only
+# as transitive dependencies and never invoked.
+CVE-2026-29111

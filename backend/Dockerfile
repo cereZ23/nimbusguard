@@ -15,6 +15,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Apply latest Debian security updates (picks up openssl/libssl3t64 fixes
+# and any other security patches available at build time).
+RUN apt-get update \
+    && apt-get -y --no-install-recommends upgrade \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user
 RUN adduser --system --no-create-home --group appuser
 
