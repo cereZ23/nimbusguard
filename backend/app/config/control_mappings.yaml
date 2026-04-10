@@ -2676,3 +2676,125 @@ controls:
     - CP-9
     iso27001:
     - A.8.13
+- code: CIS-AZ-122
+  name: NSG does not expose management ports to the internet
+  description: Network Security Groups should not allow inbound traffic on SMB/NetBIOS/WinRM ports from
+    the public internet
+  severity: high
+  framework: cis-lite
+  remediation_hint: Remove or tighten NSG inbound rules that allow ports 139, 445, 5985, 5986 from '*'
+    / 'Internet'; use Azure Bastion or VPN instead
+  provider_check_ref:
+    azure: azure-nsg-mgmt-ports-closed
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    - AC-17
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AZ-123
+  name: NSG does not expose database ports to the internet
+  description: Network Security Groups should not allow inbound traffic on database ports (SQL Server,
+    MySQL, PostgreSQL, MongoDB, Redis, Elasticsearch) from the public internet
+  severity: high
+  framework: cis-lite
+  remediation_hint: Remove or tighten NSG inbound rules that allow database ports from '*' / 'Internet';
+    use private endpoints or VNet service endpoints instead
+  provider_check_ref:
+    azure: azure-nsg-db-ports-closed
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.20
+    - A.8.22
+    - A.8.12
+- code: CIS-AZ-124
+  name: NSG does not have a wildcard any-port rule from the internet
+  description: Network Security Groups should not have inbound allow rules with destination port '*' from
+    the public internet, which effectively disables the firewall
+  severity: high
+  framework: cis-lite
+  remediation_hint: Replace wildcard-port inbound rules with explicit per-port rules scoped to specific
+    trusted source ranges
+  provider_check_ref:
+    azure: azure-nsg-no-wildcard-port
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SC-7
+    - AC-4
+    iso27001:
+    - A.8.20
+    - A.8.22
+- code: CIS-AZ-125
+  name: Public IP uses Standard SKU
+  description: Public IP addresses should use the Standard SKU; the Basic SKU is deprecated (retirement
+    Sept 2025) and lacks modern security features like availability zones, Private Link support and DDoS
+    Standard integration
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Recreate the public IP with Standard SKU (cannot be upgraded in place). Plan the migration
+    to avoid downtime on the attached resource
+  provider_check_ref:
+    azure: azure-public-ip-standard-sku
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - A1.2
+    nist:
+    - SC-5
+    - CP-2
+    iso27001:
+    - A.8.20
+    - A.5.30
+- code: CIS-AZ-126
+  name: Public IP is attached to a resource (no orphans)
+  description: Public IP addresses should be attached to a resource. Orphan public IPs waste budget and
+    can be hijacked by attackers to impersonate legitimate endpoints
+  severity: low
+  framework: cis-lite
+  remediation_hint: Delete the public IP if it is no longer needed, or attach it to the intended resource
+    (NIC, Load Balancer frontend, Application Gateway, NAT Gateway)
+  provider_check_ref:
+    azure: azure-public-ip-not-orphan
+  framework_mappings:
+    soc2:
+    - CC6.1
+    nist:
+    - CM-8
+    iso27001:
+    - A.5.9
+    - A.8.8
+- code: CIS-AZ-127
+  name: Azure Firewall threat intelligence in Deny mode
+  description: Azure Firewall should have threat intelligence set to Deny so that known-malicious traffic
+    is actively blocked, not merely logged
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set the firewall threatIntelMode to 'Deny' on the firewall resource or firewall policy
+  provider_check_ref:
+    azure: azure-firewall-threat-intel-deny
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC7.1
+    nist:
+    - SC-7
+    - SI-3
+    - SI-4
+    iso27001:
+    - A.8.20
+    - A.8.16
+    - A.8.7

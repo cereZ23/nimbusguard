@@ -21,6 +21,7 @@ from app.services.azure.checks import (  # noqa: F401
     managed_disk,
     mysql,
     network,
+    network_exposure,
     nic,
     nsg,
     postgresql,
