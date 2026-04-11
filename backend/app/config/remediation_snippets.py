@@ -37,10 +37,10 @@ logger = logging.getLogger(__name__)
 REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     # ── Storage ──────────────────────────────────────────────────────────
     "CIS-AZ-07": {
-        "terraform": """resource "azurerm_storage_account" "example" {
+        "terraform": """resource "azurerm_storage_account" "@@tf_name@@" {
   name                     = "@@name@@"
-  resource_group_name      = azurerm_resource_group.example.name
-  location                 = azurerm_resource_group.example.location
+  resource_group_name      = "@@resource_group@@"
+  location                 = "@@location@@"
   account_tier             = "Standard"
   account_replication_type = "LRS"
 
@@ -86,10 +86,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
         "description": ("Enable customer-managed key (CMK) encryption for the storage account using a Key Vault key."),
     },
     "CIS-AZ-09": {
-        "terraform": """resource "azurerm_storage_account" "example" {
+        "terraform": """resource "azurerm_storage_account" "@@tf_name@@" {
   name                      = "@@name@@"
-  resource_group_name       = azurerm_resource_group.example.name
-  location                  = azurerm_resource_group.example.location
+  resource_group_name       = "@@resource_group@@"
+  location                  = "@@location@@"
   account_tier              = "Standard"
   account_replication_type  = "LRS"
 
@@ -109,10 +109,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
         "description": "Enforce HTTPS-only access (secure transfer) on the storage account.",
     },
     "CIS-AZ-11": {
-        "terraform": """resource "azurerm_storage_account" "example" {
+        "terraform": """resource "azurerm_storage_account" "@@tf_name@@" {
   name                      = "@@name@@"
-  resource_group_name       = azurerm_resource_group.example.name
-  location                  = azurerm_resource_group.example.location
+  resource_group_name       = "@@resource_group@@"
+  location                  = "@@location@@"
   account_tier              = "Standard"
   account_replication_type  = "LRS"
 
@@ -137,10 +137,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
         "description": "Disable blob public access on the storage account to prevent anonymous reads.",
     },
     "CIS-AZ-72": {
-        "terraform": """resource "azurerm_storage_account" "example" {
+        "terraform": """resource "azurerm_storage_account" "@@tf_name@@" {
   name                      = "@@name@@"
-  resource_group_name       = azurerm_resource_group.example.name
-  location                  = azurerm_resource_group.example.location
+  resource_group_name       = "@@resource_group@@"
+  location                  = "@@location@@"
   account_tier              = "Standard"
   account_replication_type  = "LRS"
 
@@ -162,10 +162,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
         "description": "Set the minimum TLS version to 1.2 on the storage account.",
     },
     "CIS-AZ-73": {
-        "terraform": """resource "azurerm_storage_account" "example" {
+        "terraform": """resource "azurerm_storage_account" "@@tf_name@@" {
   name                      = "@@name@@"
-  resource_group_name       = azurerm_resource_group.example.name
-  location                  = azurerm_resource_group.example.location
+  resource_group_name       = "@@resource_group@@"
+  location                  = "@@location@@"
   account_tier              = "Standard"
   account_replication_type  = "LRS"
 
@@ -205,10 +205,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     },
     # ── NSG / Network ───────────────────────────────────────────────────
     "CIS-AZ-06": {
-        "terraform": """resource "azurerm_network_watcher_flow_log" "example" {
+        "terraform": """resource "azurerm_network_watcher_flow_log" "@@tf_name@@" {
   name                 = "nsg-flow-log"
   network_watcher_name = azurerm_network_watcher.example.name
-  resource_group_name  = azurerm_resource_group.example.name
+  resource_group_name  = "@@resource_group@@"
 
   network_security_group_id = azurerm_network_security_group.example.id
   storage_account_id        = azurerm_storage_account.logs.id
@@ -271,7 +271,7 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
   destination_port_range      = "22"
   source_address_prefix       = "Internet"
   destination_address_prefix  = "*"
-  resource_group_name         = azurerm_resource_group.example.name
+  resource_group_name         = "@@resource_group@@"
   network_security_group_name = azurerm_network_security_group.example.name
 }""",
         "bicep": """resource nsgRule 'Microsoft.Network/networkSecurityGroups/securityRules@2023-04-01' = {
@@ -307,7 +307,7 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
   destination_port_range      = "3389"
   source_address_prefix       = "Internet"
   destination_address_prefix  = "*"
-  resource_group_name         = azurerm_resource_group.example.name
+  resource_group_name         = "@@resource_group@@"
   network_security_group_name = azurerm_network_security_group.example.name
 }""",
         "bicep": """resource nsgRule 'Microsoft.Network/networkSecurityGroups/securityRules@2023-04-01' = {
@@ -334,10 +334,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     },
     # ── Web App / App Service ───────────────────────────────────────────
     "CIS-AZ-10": {
-        "terraform": """resource "azurerm_linux_web_app" "example" {
+        "terraform": """resource "azurerm_linux_web_app" "@@tf_name@@" {
   name                = "@@name@@"
-  resource_group_name = azurerm_resource_group.example.name
-  location            = azurerm_resource_group.example.location
+  resource_group_name = "@@resource_group@@"
+  location            = "@@location@@"
   service_plan_id     = azurerm_service_plan.example.id
 
   # Enforce HTTPS only
@@ -358,10 +358,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
         "description": "Enforce HTTPS-only access on the web app to redirect all HTTP traffic to HTTPS.",
     },
     "CIS-AZ-23": {
-        "terraform": """resource "azurerm_linux_web_app" "example" {
+        "terraform": """resource "azurerm_linux_web_app" "@@tf_name@@" {
   name                = "@@name@@"
-  resource_group_name = azurerm_resource_group.example.name
-  location            = azurerm_resource_group.example.location
+  resource_group_name = "@@resource_group@@"
+  location            = "@@location@@"
   service_plan_id     = azurerm_service_plan.example.id
 
   site_config {
@@ -383,10 +383,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
         "description": "Set the minimum TLS version to 1.2 for the web app.",
     },
     "CIS-AZ-25": {
-        "terraform": """resource "azurerm_linux_web_app" "example" {
+        "terraform": """resource "azurerm_linux_web_app" "@@tf_name@@" {
   name                = "@@name@@"
-  resource_group_name = azurerm_resource_group.example.name
-  location            = azurerm_resource_group.example.location
+  resource_group_name = "@@resource_group@@"
+  location            = "@@location@@"
   service_plan_id     = azurerm_service_plan.example.id
 
   site_config {
@@ -409,10 +409,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     },
     # ── Key Vault ───────────────────────────────────────────────────────
     "CIS-AZ-16": {
-        "terraform": """resource "azurerm_key_vault" "example" {
+        "terraform": """resource "azurerm_key_vault" "@@tf_name@@" {
   name                = "@@name@@"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+  location            = "@@location@@"
+  resource_group_name = "@@resource_group@@"
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
@@ -443,10 +443,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
         ),
     },
     "CIS-AZ-17": {
-        "terraform": """resource "azurerm_key_vault" "example" {
+        "terraform": """resource "azurerm_key_vault" "@@tf_name@@" {
   name                = "@@name@@"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+  location            = "@@location@@"
+  resource_group_name = "@@resource_group@@"
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
@@ -479,10 +479,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
         ),
     },
     "CIS-AZ-21": {
-        "terraform": """resource "azurerm_key_vault" "example" {
+        "terraform": """resource "azurerm_key_vault" "@@tf_name@@" {
   name                = "@@name@@"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+  location            = "@@location@@"
+  resource_group_name = "@@resource_group@@"
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
@@ -534,10 +534,10 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
     },
     # ── SQL Server ──────────────────────────────────────────────────────
     "CIS-AZ-27": {
-        "terraform": """resource "azurerm_mssql_server" "example" {
+        "terraform": """resource "azurerm_mssql_server" "@@tf_name@@" {
   name                         = "@@name@@"
-  resource_group_name          = azurerm_resource_group.example.name
-  location                     = azurerm_resource_group.example.location
+  resource_group_name          = "@@resource_group@@"
+  location                     = "@@location@@"
   version                      = "12.0"
   administrator_login          = "sqladmin"
   administrator_login_password = var.sql_admin_password
@@ -549,8 +549,8 @@ REMEDIATION_SNIPPETS: dict[str, dict[str, str]] = {
 # Use private endpoint instead
 resource "azurerm_private_endpoint" "sql" {
   name                = "pe-sql"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+  location            = "@@location@@"
+  resource_group_name = "@@resource_group@@"
   subnet_id           = azurerm_subnet.private.id
 
   private_service_connection {
@@ -593,10 +593,10 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
         "description": ("Disable public network access on the SQL Server and use private endpoints for connectivity."),
     },
     "CIS-AZ-28": {
-        "terraform": """resource "azurerm_mssql_server" "example" {
+        "terraform": """resource "azurerm_mssql_server" "@@tf_name@@" {
   name                         = "@@name@@"
-  resource_group_name          = azurerm_resource_group.example.name
-  location                     = azurerm_resource_group.example.location
+  resource_group_name          = "@@resource_group@@"
+  location                     = "@@location@@"
   version                      = "12.0"
   administrator_login          = "sqladmin"
   administrator_login_password = var.sql_admin_password
@@ -621,10 +621,10 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
     },
     # ── Cosmos DB ───────────────────────────────────────────────────────
     "CIS-AZ-35": {
-        "terraform": """resource "azurerm_cosmosdb_account" "example" {
+        "terraform": """resource "azurerm_cosmosdb_account" "@@tf_name@@" {
   name                = "@@name@@"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+  location            = "@@location@@"
+  resource_group_name = "@@resource_group@@"
   offer_type          = "Standard"
   kind                = "GlobalDocumentDB"
 
@@ -636,7 +636,7 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
   }
 
   geo_location {
-    location          = azurerm_resource_group.example.location
+    location          = "@@location@@"
     failover_priority = 0
   }
 }""",
@@ -665,10 +665,10 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
     },
     # ── ACR ─────────────────────────────────────────────────────────────
     "CIS-AZ-39": {
-        "terraform": """resource "azurerm_container_registry" "example" {
+        "terraform": """resource "azurerm_container_registry" "@@tf_name@@" {
   name                = "@@name@@"
-  resource_group_name = azurerm_resource_group.example.name
-  location            = azurerm_resource_group.example.location
+  resource_group_name = "@@resource_group@@"
+  location            = "@@location@@"
   sku                 = "Standard"
 
   # Disable admin user -- use Azure AD service principal instead
@@ -691,10 +691,10 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
     },
     # ── AKS ─────────────────────────────────────────────────────────────
     "CIS-AZ-41": {
-        "terraform": """resource "azurerm_kubernetes_cluster" "example" {
+        "terraform": """resource "azurerm_kubernetes_cluster" "@@tf_name@@" {
   name                = "@@name@@"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+  location            = "@@location@@"
+  resource_group_name = "@@resource_group@@"
   dns_prefix          = "example"
 
   # Enable Kubernetes RBAC
@@ -750,10 +750,10 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
         ),
     },
     "CIS-AZ-42": {
-        "terraform": """resource "azurerm_kubernetes_cluster" "example" {
+        "terraform": """resource "azurerm_kubernetes_cluster" "@@tf_name@@" {
   name                = "@@name@@"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+  location            = "@@location@@"
+  resource_group_name = "@@resource_group@@"
   dns_prefix          = "example"
 
   # Configure network policy
@@ -805,10 +805,10 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
     },
     # ── Storage soft delete (blob) ──────────────────────────────────────
     "CIS-AZ-75": {
-        "terraform": """resource "azurerm_storage_account" "example" {
+        "terraform": """resource "azurerm_storage_account" "@@tf_name@@" {
   name                     = "@@name@@"
-  resource_group_name      = azurerm_resource_group.example.name
-  location                 = azurerm_resource_group.example.location
+  resource_group_name      = "@@resource_group@@"
+  location                 = "@@location@@"
   account_tier             = "Standard"
   account_replication_type = "LRS"
 
@@ -862,7 +862,7 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01'
     },
     # ── Additional high-value controls ──────────────────────────────────
     "CIS-AZ-15": {
-        "terraform": """resource "azurerm_storage_account_network_rules" "example" {
+        "terraform": """resource "azurerm_storage_account_network_rules" "@@tf_name@@" {
   storage_account_id = azurerm_storage_account.example.id
 
   default_action = "Deny"
@@ -900,10 +900,10 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01'
         "description": "Restrict storage account network access to specific VNets and IP ranges.",
     },
     "CIS-AZ-37": {
-        "terraform": """resource "azurerm_postgresql_flexible_server" "example" {
+        "terraform": """resource "azurerm_postgresql_flexible_server" "@@tf_name@@" {
   name                = "@@name@@"
-  resource_group_name = azurerm_resource_group.example.name
-  location            = azurerm_resource_group.example.location
+  resource_group_name = "@@resource_group@@"
+  location            = "@@location@@"
   version             = "14"
   sku_name            = "GP_Standard_D2s_v3"
 
@@ -946,10 +946,10 @@ resource sslConfig 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@202
         "description": "Enforce SSL/TLS connections on the PostgreSQL flexible server.",
     },
     "CIS-AZ-40": {
-        "terraform": """resource "azurerm_container_registry" "example" {
+        "terraform": """resource "azurerm_container_registry" "@@tf_name@@" {
   name                          = "@@name@@"
-  resource_group_name           = azurerm_resource_group.example.name
-  location                      = azurerm_resource_group.example.location
+  resource_group_name           = "@@resource_group@@"
+  location                      = "@@location@@"
   sku                           = "Premium"
 
   # Disable public network access
@@ -958,8 +958,8 @@ resource sslConfig 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@202
 
 resource "azurerm_private_endpoint" "acr" {
   name                = "pe-acr"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+  location            = "@@location@@"
+  resource_group_name = "@@resource_group@@"
   subnet_id           = azurerm_subnet.private.id
 
   private_service_connection {
@@ -1000,7 +1000,7 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
         ),
     },
     "CIS-AZ-12": {
-        "terraform": """resource "azurerm_storage_container" "example" {
+        "terraform": """resource "azurerm_storage_container" "@@tf_name@@" {
   name                  = "content"
   storage_account_name  = azurerm_storage_account.example.name
   container_access_type = "private"  # No anonymous access
@@ -1020,7 +1020,7 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
     # Selected from IFO production data: 100% of failing P0 + top 4 P1
     # by fail count. See CHANGELOG.md entry for this sprint.
     "CIS-AZ-04": {
-        "terraform": """resource "azurerm_monitor_diagnostic_setting" "example" {
+        "terraform": """resource "azurerm_monitor_diagnostic_setting" "@@tf_name@@" {
   name                       = "diag-activity"
   target_resource_id         = "/subscriptions/@@subscription_id@@"
   log_analytics_workspace_id = azurerm_log_analytics_workspace.example.id
@@ -1074,10 +1074,10 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
         ),
     },
     "CIS-AZ-71": {
-        "terraform": """resource "azurerm_linux_web_app" "example" {
+        "terraform": """resource "azurerm_linux_web_app" "@@tf_name@@" {
   name                = "@@name@@"
   resource_group_name = "@@resource_group@@"
-  location            = azurerm_resource_group.example.location
+  location            = "@@location@@"
   service_plan_id     = azurerm_service_plan.example.id
 
   auth_settings_v2 {
@@ -1141,10 +1141,10 @@ resource auth 'Microsoft.Web/sites/config@2022-09-01' = {
         ),
     },
     "CIS-AZ-74": {
-        "terraform": """resource "azurerm_storage_account" "example" {
+        "terraform": """resource "azurerm_storage_account" "@@tf_name@@" {
   name                = "@@name@@"
   resource_group_name = "@@resource_group@@"
-  location            = azurerm_resource_group.example.location
+  location            = "@@location@@"
 
   account_tier              = "Standard"
   account_replication_type  = "LRS"
@@ -1177,10 +1177,10 @@ resource auth 'Microsoft.Web/sites/config@2022-09-01' = {
         ),
     },
     "CIS-AZ-92": {
-        "terraform": """resource "azurerm_linux_web_app" "example" {
+        "terraform": """resource "azurerm_linux_web_app" "@@tf_name@@" {
   name                = "@@name@@"
   resource_group_name = "@@resource_group@@"
-  location            = azurerm_resource_group.example.location
+  location            = "@@location@@"
   service_plan_id     = azurerm_service_plan.example.id
 
   site_config {
@@ -1212,10 +1212,10 @@ resource auth 'Microsoft.Web/sites/config@2022-09-01' = {
         ),
     },
     "CIS-AZ-94": {
-        "terraform": """resource "azurerm_linux_web_app" "example" {
+        "terraform": """resource "azurerm_linux_web_app" "@@tf_name@@" {
   name                = "@@name@@"
   resource_group_name = "@@resource_group@@"
-  location            = azurerm_resource_group.example.location
+  location            = "@@location@@"
   service_plan_id     = azurerm_service_plan.example.id
 
   site_config {
@@ -1409,10 +1409,10 @@ resource defenderSqlVm 'Microsoft.Security/pricings@2024-01-01' = {
         ),
     },
     "CIS-AZ-26": {
-        "terraform": """resource "azurerm_linux_web_app" "example" {
+        "terraform": """resource "azurerm_linux_web_app" "@@tf_name@@" {
   name                = "@@name@@"
   resource_group_name = "@@resource_group@@"
-  location            = azurerm_resource_group.example.location
+  location            = "@@location@@"
   service_plan_id     = azurerm_service_plan.example.id
 
   identity {
@@ -1437,10 +1437,10 @@ resource defenderSqlVm 'Microsoft.Security/pricings@2024-01-01' = {
         ),
     },
     "CIS-AZ-90": {
-        "terraform": """resource "azurerm_linux_web_app" "example" {
+        "terraform": """resource "azurerm_linux_web_app" "@@tf_name@@" {
   name                = "@@name@@"
   resource_group_name = "@@resource_group@@"
-  location            = azurerm_resource_group.example.location
+  location            = "@@location@@"
   service_plan_id     = azurerm_service_plan.example.id
 
   site_config {
@@ -1470,10 +1470,10 @@ resource defenderSqlVm 'Microsoft.Security/pricings@2024-01-01' = {
         ),
     },
     "CIS-AZ-91": {
-        "terraform": """resource "azurerm_linux_web_app" "example" {
+        "terraform": """resource "azurerm_linux_web_app" "@@tf_name@@" {
   name                = "@@name@@"
   resource_group_name = "@@resource_group@@"
-  location            = azurerm_resource_group.example.location
+  location            = "@@location@@"
   service_plan_id     = azurerm_service_plan.example.id
 
   site_config {
@@ -1603,6 +1603,24 @@ def _apply_markers(template: str, vars_: dict[str, str]) -> str:
     return out
 
 
+def _sanitize_tf_name(name: str) -> str:
+    """Convert an Azure resource name to a valid Terraform/Bicep identifier.
+
+    Terraform resource labels must match `[A-Za-z_][A-Za-z0-9_-]*` and by
+    convention use lowercase snake_case. Azure resource names commonly
+    contain hyphens (`ifo-eva-pdta-webapp-test`) which are valid in TF
+    labels but look odd mixed with snake_case references. We convert
+    hyphens and dots to underscores and lowercase the result so the
+    label reads like a natural local identifier.
+    """
+    if not name:
+        return "target"
+    sanitized = name.lower().replace("-", "_").replace(".", "_")
+    if sanitized[0].isdigit():
+        sanitized = f"r_{sanitized}"
+    return sanitized
+
+
 def render_for_asset(control_code: str, asset: Asset | None) -> tuple[dict[str, str] | None, bool]:
     """Render the snippet bundle for `control_code` using `asset` values.
 
@@ -1618,6 +1636,11 @@ def render_for_asset(control_code: str, asset: Asset | None) -> tuple[dict[str, 
 
     The caller uses `filled` to decide whether to show the
     "Filled for <asset.name>" badge in the UI.
+
+    Template vars beyond those from `ArmId.as_template_vars()`:
+        @@tf_name@@    sanitized asset name usable as a Terraform /
+                       Bicep local identifier (hyphens -> underscores)
+        @@location@@   Azure region from `asset.region`, e.g. "westeurope"
     """
     from app.utils.arm_id import parse_provider_id  # local import avoids cycle
 
@@ -1630,6 +1653,11 @@ def render_for_asset(control_code: str, asset: Asset | None) -> tuple[dict[str, 
         return dict(raw), False
 
     vars_ = arm.as_template_vars()
+    # Extra vars sourced from the Asset object itself, not the ARM ID.
+    if asset is not None:
+        vars_["tf_name"] = _sanitize_tf_name(arm.name or asset.name or "")
+        vars_["location"] = asset.region or ""
+
     rendered: dict[str, str] = {}
     for key, value in raw.items():
         if isinstance(value, str):
