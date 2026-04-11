@@ -3161,3 +3161,283 @@ controls:
     - CP-9
     iso27001:
     - A.8.13
+- code: CIS-AZ-147
+  name: VM uses Trusted Launch or Confidential VM security type
+  description: Virtual machines should use the Trusted Launch or Confidential VM security type to get
+    hardware-rooted boot integrity (Secure Boot + vTPM + boot integrity monitoring)
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set securityProfile.securityType to 'TrustedLaunch' or 'ConfidentialVM'. Requires
+    Gen2 VMs
+  provider_check_ref:
+    azure: azure-vm-trusted-launch
+  framework_mappings:
+    soc2:
+    - CC6.6
+    - CC6.7
+    nist:
+    - SI-7
+    - CM-14
+    iso27001:
+    - A.8.32
+    - A.8.25
+- code: CIS-AZ-148
+  name: VM has vTPM enabled
+  description: Virtual machines should have vTPM enabled so that guest attestation, BitLocker TPM-sealed
+    keys and Credential Guard are available
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Set securityProfile.uefiSettings.vTpmEnabled=true on the VM (requires Gen2 VM with
+    Trusted Launch)
+  provider_check_ref:
+    azure: azure-vm-vtpm
+  framework_mappings:
+    soc2:
+    - CC6.6
+    nist:
+    - SI-7
+    iso27001:
+    - A.8.32
+- code: CIS-AZ-149
+  name: VM has managed identity assigned
+  description: Virtual machines should have a managed identity (system or user assigned) so that they
+    can authenticate to Azure resources without embedding secrets
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Enable system-assigned identity on the VM via az vm identity assign, or attach a user-assigned
+    identity
+  provider_check_ref:
+    azure: azure-vm-managed-identity
+  framework_mappings:
+    soc2:
+    - CC6.1
+    nist:
+    - IA-2
+    - IA-5
+    - AC-3
+    iso27001:
+    - A.5.16
+    - A.8.2
+    - A.8.5
+- code: CIS-AZ-150
+  name: VM boot diagnostics uses managed storage
+  description: Virtual machine boot diagnostics should be enabled on managed (platform) storage instead
+    of a custom storage account, to avoid a second storage surface to harden
+  severity: low
+  framework: cis-lite
+  remediation_hint: "Enable bootDiagnostics without setting storageUri \u2014 the Azure platform will\
+    \ host screenshots on managed storage"
+  provider_check_ref:
+    azure: azure-vm-boot-diag-managed
+  framework_mappings:
+    soc2:
+    - CC7.1
+    nist:
+    - AU-12
+    iso27001:
+    - A.8.16
+- code: CIS-AZ-151
+  name: VM OS disk uses customer-managed key encryption
+  description: Virtual machine OS disks should be encrypted with a customer-managed key via a Disk Encryption
+    Set so that key rotation and revocation are under customer control
+  severity: high
+  framework: cis-lite
+  remediation_hint: Create a Disk Encryption Set backed by a Key Vault CMK and attach it to the OS disk
+    via az disk update --encryption-type EncryptionAtRestWithCustomerKey
+  provider_check_ref:
+    azure: azure-vm-os-disk-cmk
+  framework_mappings:
+    soc2:
+    - CC6.1
+    - CC6.7
+    nist:
+    - SC-12
+    - SC-28
+    iso27001:
+    - A.8.24
+- code: CIS-AZ-152
+  name: VM has automatic OS patching enabled
+  description: Virtual machines should have the OS patch mode set to AutomaticByPlatform so that security
+    updates are applied without manual intervention
+  severity: high
+  framework: cis-lite
+  remediation_hint: Set osProfile.linuxConfiguration.patchSettings.patchMode or osProfile.windowsConfiguration.patchSettings.patchMode
+    to 'AutomaticByPlatform' (requires Azure Update Manager)
+  provider_check_ref:
+    azure: azure-vm-auto-patch
+  framework_mappings:
+    soc2:
+    - CC7.1
+    nist:
+    - SI-2
+    - CM-2
+    iso27001:
+    - A.8.8
+    - A.8.32
+- code: CIS-AZ-153
+  name: VM deployed for high availability
+  description: Production virtual machines should be deployed in an availability zone or availability
+    set so that a single hardware failure does not take the workload offline
+  severity: medium
+  framework: cis-lite
+  remediation_hint: 'Either deploy the VM into one or more availability zones (zones: [''1'', ''2'', ''3''])
+    or attach it to an availability set at creation time'
+  provider_check_ref:
+    azure: azure-vm-availability
+  framework_mappings:
+    soc2:
+    - A1.2
+    - A1.3
+    nist:
+    - CP-2
+    - CP-6
+    iso27001:
+    - A.5.30
+    - A.8.14
+- code: CIS-AZ-154
+  name: SQL database has diagnostic settings configured
+  description: SQL database resources should have diagnostic settings attached so that logs and metrics
+    are exported to Log Analytics, a storage account or an Event Hub for audit trail and alerting
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create a diagnostic setting on the SQL database targeting a Log Analytics workspace
+    (recommended), an archive storage account, or an Event Hub for SIEM forwarding
+  provider_check_ref:
+    azure: azure-diagsettings-cis-az-154
+  framework_mappings:
+    soc2: &id001
+    - CC7.1
+    - CC7.2
+    nist: &id002
+    - AU-2
+    - AU-12
+    - SI-4
+    iso27001: &id003
+    - A.8.15
+    - A.8.16
+- code: CIS-AZ-155
+  name: Key Vault has diagnostic settings configured
+  description: Key Vault resources should have diagnostic settings attached so that logs and metrics are
+    exported to Log Analytics, a storage account or an Event Hub for audit trail and alerting
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create a diagnostic setting on the Key Vault targeting a Log Analytics workspace (recommended),
+    an archive storage account, or an Event Hub for SIEM forwarding
+  provider_check_ref:
+    azure: azure-diagsettings-cis-az-155
+  framework_mappings:
+    soc2: *id001
+    nist: *id002
+    iso27001: *id003
+- code: CIS-AZ-156
+  name: Web App has diagnostic settings configured
+  description: Web App resources should have diagnostic settings attached so that logs and metrics are
+    exported to Log Analytics, a storage account or an Event Hub for audit trail and alerting
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create a diagnostic setting on the Web App targeting a Log Analytics workspace (recommended),
+    an archive storage account, or an Event Hub for SIEM forwarding
+  provider_check_ref:
+    azure: azure-diagsettings-cis-az-156
+  framework_mappings:
+    soc2: *id001
+    nist: *id002
+    iso27001: *id003
+- code: CIS-AZ-157
+  name: Virtual machine has diagnostic settings configured
+  description: Virtual machine resources should have diagnostic settings attached so that logs and metrics
+    are exported to Log Analytics, a storage account or an Event Hub for audit trail and alerting
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create a diagnostic setting on the Virtual machine targeting a Log Analytics workspace
+    (recommended), an archive storage account, or an Event Hub for SIEM forwarding
+  provider_check_ref:
+    azure: azure-diagsettings-cis-az-157
+  framework_mappings:
+    soc2: *id001
+    nist: *id002
+    iso27001: *id003
+- code: CIS-AZ-158
+  name: Cosmos DB account has diagnostic settings configured
+  description: Cosmos DB account resources should have diagnostic settings attached so that logs and metrics
+    are exported to Log Analytics, a storage account or an Event Hub for audit trail and alerting
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create a diagnostic setting on the Cosmos DB account targeting a Log Analytics workspace
+    (recommended), an archive storage account, or an Event Hub for SIEM forwarding
+  provider_check_ref:
+    azure: azure-diagsettings-cis-az-158
+  framework_mappings:
+    soc2: *id001
+    nist: *id002
+    iso27001: *id003
+- code: CIS-AZ-159
+  name: AKS cluster has diagnostic settings configured
+  description: AKS cluster resources should have diagnostic settings attached so that logs and metrics
+    are exported to Log Analytics, a storage account or an Event Hub for audit trail and alerting
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create a diagnostic setting on the AKS cluster targeting a Log Analytics workspace
+    (recommended), an archive storage account, or an Event Hub for SIEM forwarding
+  provider_check_ref:
+    azure: azure-diagsettings-cis-az-159
+  framework_mappings:
+    soc2: *id001
+    nist: *id002
+    iso27001: *id003
+- code: CIS-AZ-160
+  name: Application Gateway has diagnostic settings configured
+  description: Application Gateway resources should have diagnostic settings attached so that logs and
+    metrics are exported to Log Analytics, a storage account or an Event Hub for audit trail and alerting
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create a diagnostic setting on the Application Gateway targeting a Log Analytics workspace
+    (recommended), an archive storage account, or an Event Hub for SIEM forwarding
+  provider_check_ref:
+    azure: azure-diagsettings-cis-az-160
+  framework_mappings:
+    soc2: *id001
+    nist: *id002
+    iso27001: *id003
+- code: CIS-AZ-161
+  name: Front Door has diagnostic settings configured
+  description: Front Door resources should have diagnostic settings attached so that logs and metrics
+    are exported to Log Analytics, a storage account or an Event Hub for audit trail and alerting
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create a diagnostic setting on the Front Door targeting a Log Analytics workspace
+    (recommended), an archive storage account, or an Event Hub for SIEM forwarding
+  provider_check_ref:
+    azure: azure-diagsettings-cis-az-161
+  framework_mappings:
+    soc2: *id001
+    nist: *id002
+    iso27001: *id003
+- code: CIS-AZ-162
+  name: Service Bus namespace has diagnostic settings configured
+  description: Service Bus namespace resources should have diagnostic settings attached so that logs and
+    metrics are exported to Log Analytics, a storage account or an Event Hub for audit trail and alerting
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create a diagnostic setting on the Service Bus namespace targeting a Log Analytics
+    workspace (recommended), an archive storage account, or an Event Hub for SIEM forwarding
+  provider_check_ref:
+    azure: azure-diagsettings-cis-az-162
+  framework_mappings:
+    soc2: *id001
+    nist: *id002
+    iso27001: *id003
+- code: CIS-AZ-163
+  name: NSG has diagnostic settings configured
+  description: NSG resources should have diagnostic settings attached so that logs and metrics are exported
+    to Log Analytics, a storage account or an Event Hub for audit trail and alerting
+  severity: medium
+  framework: cis-lite
+  remediation_hint: Create a diagnostic setting on the NSG targeting a Log Analytics workspace (recommended),
+    an archive storage account, or an Event Hub for SIEM forwarding
+  provider_check_ref:
+    azure: azure-diagsettings-cis-az-163
+  framework_mappings:
+    soc2: *id001
+    nist: *id002
+    iso27001: *id003

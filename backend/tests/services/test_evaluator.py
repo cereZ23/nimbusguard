@@ -575,11 +575,12 @@ class TestCheckRegistry:
 
     def test_registry_total_check_count(self):
         all_checks = registry.all_checks
-        # 142 Azure (10 subscription + 8 backup + 6 network exposure +
-        #            7 AKS hardening + 6 ACR supply chain + 6 PG/MySQL hardening)
-        # + 20 AWS = 162 registered evaluators.
+        # 159 Azure (10 subscription + 8 backup + 6 network exposure +
+        #            7 AKS hardening + 6 ACR supply chain + 6 PG/MySQL +
+        #            7 VM hardening + 10 diagnostic settings sweep)
+        # + 20 AWS = 179 registered evaluators.
         # Update whenever a new @check is added.
-        assert len(all_checks) == 162
+        assert len(all_checks) == 179
 
     def test_registry_case_insensitive(self):
         checks_lower = registry.get_checks_for("microsoft.storage/storageaccounts")

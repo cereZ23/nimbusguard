@@ -17,6 +17,7 @@ from app.services.azure.checks import (  # noqa: F401
     container_registry,
     cosmosdb,
     db_flex_hardening,
+    diagnostic_settings,
     eventhub,
     front_door,
     keyvault,
@@ -35,5 +36,6 @@ from app.services.azure.checks import (  # noqa: F401
     sql,
     storage,
     subscription,
+    vm_hardening,
     webapp,
 )

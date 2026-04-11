@@ -64,6 +64,7 @@ class AzureCollector:
 
         # Supplementary collections (enrich existing assets or add new types)
         await self._collect_flow_logs(client, subscription_id, account)
+        await self._collect_diagnostic_settings(client, subscription_id, account)
         await self._collect_activity_log_alerts(client, subscription_id, account)
         await self._collect_role_definitions(client, subscription_id, account)
         await self._collect_subscription_state(credential, subscription_id, account)
@@ -228,6 +229,83 @@ class AzureCollector:
 
         await self.db.flush()
         logger.info("Flow logs collection complete")
+
+    async def _collect_diagnostic_settings(
+        self, client: ResourceGraphClient, subscription_id: str, account: CloudAccount
+    ) -> None:
+        """Query diagnostic settings and patch each target asset with its settings.
+
+        Diagnostic settings in Resource Graph are resources of type
+        ``microsoft.insights/diagnosticsettings`` whose ``id`` has the form::
+
+            {targetResourceId}/providers/microsoft.insights/diagnosticSettings/{name}
+
+        We split the id on that separator to get the target resource id and
+        attach a list of diagnostic setting summaries to the target asset's
+        ``raw_properties["diagnosticSettings"]``. Evaluators then check for
+        a non-empty list to decide pass/fail.
+        """
+        query = "resources | where type =~ 'microsoft.insights/diagnosticsettings' | project id, name, properties"
+        skip_token = None
+        separator = "/providers/microsoft.insights/diagnosticsettings/"
+
+        while True:
+            request = QueryRequest(
+                subscriptions=[subscription_id],
+                query=query,
+                options={"$skip": 0, "$top": 1000, "$skipToken": skip_token},
+            )
+            response = await _query_resource_graph(client, request)
+
+            for row in response.data:
+                full_id = row.get("id", "")
+                # The Resource Graph id is case-preserving; the separator we
+                # search for is lowercased by the KQL type comparison above,
+                # so do a case-insensitive split.
+                lowered = full_id.lower()
+                sep_idx = lowered.find(separator)
+                if sep_idx < 0:
+                    continue
+                target_id = full_id[:sep_idx]
+
+                target_asset = self._asset_map.get(target_id)
+                if target_asset is None:
+                    # Try case-insensitive lookup: Resource Graph sometimes
+                    # lower-cases the provider segment of the id.
+                    for provider_id, asset_candidate in self._asset_map.items():
+                        if provider_id.lower() == target_id.lower():
+                            target_asset = asset_candidate
+                            break
+                if target_asset is None:
+                    continue
+                if target_asset.raw_properties is None:
+                    target_asset.raw_properties = {}
+
+                props = row.get("properties", {}) or {}
+                setting_summary = {
+                    "id": row.get("id"),
+                    "name": row.get("name"),
+                    "workspaceId": props.get("workspaceId"),
+                    "storageAccountId": props.get("storageAccountId"),
+                    "eventHubName": props.get("eventHubName"),
+                    "logs_count": len(props.get("logs") or []),
+                    "metrics_count": len(props.get("metrics") or []),
+                }
+
+                raw = dict(target_asset.raw_properties)
+                existing = raw.get("diagnosticSettings")
+                if not isinstance(existing, list):
+                    existing = []
+                existing.append(setting_summary)
+                raw["diagnosticSettings"] = existing
+                target_asset.raw_properties = raw
+
+            skip_token = response.skip_token
+            if not skip_token:
+                break
+
+        await self.db.flush()
+        logger.info("Diagnostic settings collection complete")
 
     async def _collect_activity_log_alerts(
         self, client: ResourceGraphClient, subscription_id: str, account: CloudAccount
