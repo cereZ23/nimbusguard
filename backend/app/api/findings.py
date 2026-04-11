@@ -230,8 +230,6 @@ async def get_finding(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
 )
 async def get_finding_remediation(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     """Return IaC remediation snippets (Terraform, Bicep, Azure CLI) for a finding's control."""
-    from app.models.control import Control
-
     result = await db.execute(
         select(Finding)
         .join(CloudAccount)

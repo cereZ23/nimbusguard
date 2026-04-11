@@ -16,8 +16,8 @@
   <img src="https://img.shields.io/badge/PostgreSQL_16-4169e1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Redis_7-dc382d?logo=redis&logoColor=white" alt="Redis" />
   <img src="https://img.shields.io/badge/Celery-37814a?logo=celery&logoColor=white" alt="Celery" />
-  <img src="https://img.shields.io/badge/tests-1066_passing-brightgreen" alt="Tests" />
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
+  <img src="https://img.shields.io/badge/tests-1273_passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/license-PolyForm%20NC%201.0.0-orange" alt="License" />
   <br/>
   <a href="https://github.com/cereZ23/nimbusguard/actions"><img src="https://github.com/cereZ23/nimbusguard/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="https://img.shields.io/badge/code%20style-ruff-261230?logo=ruff&logoColor=d7ff64" alt="Ruff" />
@@ -37,11 +37,13 @@ NimbusGuard is a **multi-tenant CSPM** (Cloud Security Posture Management) platf
 ### Key Features
 
 - **162 built-in security checks** across Azure (142 controls) and AWS (20 controls), mapped to CIS v3.0
+- **Priority/Triage layer (P0..P3)** — every failing finding is automatically bucketed by severity + effort + exposure, so that your team fixes the right things first instead of drowning in a flat list of issues. Top-10 grouped remediation actions on the dashboard resolve multiple findings with a single fix
+- **Secure Score projection** — the dashboard shows exactly how much your Secure Score would increase if you fixed the P0 bucket, or P0+P1, so the path from "23% now" to "62% after one week of fixes" is explicit
 - **Multi-cloud support** — Azure today, AWS in progress, GCP on the roadmap
 - **Dedicated Scans page** — first-class scan history with live updates, filters by account and status, per-scan findings breakdown (pass/fail/total)
 - **Real-time Secure Score** — aggregated per-account and cross-cloud
 - **Asset inventory** — full visibility into every cloud resource, searchable and filterable
-- **Findings management** — prioritized by severity, with remediation guidance and evidence
+- **Findings management** — prioritized by severity AND priority bucket, with remediation guidance and evidence
 - **Bulk operations** — waive, comment, and manage findings at scale
 - **PDF evidence packs** — export compliance reports with one click
 - **Multi-tenant architecture** — designed for MSSPs managing multiple customers
@@ -60,6 +62,54 @@ NimbusGuard is a **multi-tenant CSPM** (Cloud Security Posture Management) platf
 
 ### Recently shipped — April 2026
 
+**🎯 Priority/Triage layer (P0..P3)** — commit `c9ebd15`
+
+The single most strategic feature on the product. Transforms NimbusGuard from "Scanner" tier to "Advisor" tier by turning a flat list of findings into a ranked action plan that the user can work through top-down.
+
+**How it works:**
+
+Every failing finding is automatically assigned a priority bucket (`P0` / `P1` / `P2` / `P3`) computed from three transparent axes encoded in `control_mappings.yaml`:
+
+| Axis         | Values                            | How it's set                                                                                                                        |
+| ------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Severity** | `high` / `medium` / `low`         | From the CIS benchmark definition (existing field)                                                                                  |
+| **Effort**   | `quick` / `moderate` / `refactor` | Explicit in yaml or inferred from keywords in the control name (e.g. "CMK encryption" → refactor, "enabled" → quick)                |
+| **Exposure** | `internet` / `internal` / `none`  | Explicit in yaml or inferred from the resource type (e.g. `microsoft.web/sites` → internet, `microsoft.keyvault/vaults` → internal) |
+
+The formula is a 3×3 matrix bumped up one tier when the finding is internet-exposed. It is **entirely transparent** — no ML black box, no vendor lock-in, and 100% customisable per tenant via yaml overrides.
+
+```
+               quick      moderate    refactor
+high:            P0          P1          P2
+medium:          P1          P2          P3
+low:             P2          P3          P3
+
++ internet exposure → bump up one tier (capped at P0)
+```
+
+**What the user sees:**
+
+- **Dashboard "Priority Overview" card**: 4 large clickable counters (P0/P1/P2/P3) plus a segmented Secure Score projection bar showing _current score → after fixing P0 → after fixing P0+P1_ with the delta in points. Click any bucket to jump to `/findings?priority=P0&status=fail`.
+- **Dashboard "Top actions to fix this week" card**: the top 5 remediation groups (e.g. _"Enable Microsoft Defender for Cloud Standard plan"_, _"Set minTlsVersion=1.2 on web apps"_) with the number of findings each action resolves. One click opens the filtered findings list so the team can work through the group as a unit.
+- **Findings page**: new **Priority** column as the first data column, default sort is now by priority (P0 always at the top), new **Priority** filter dropdown and **Remediation Group** filter wired via URL params.
+
+**Backend changes:**
+
+- Alembic migration `f6a7b8c9d0e1` adds `priority` + `priority_score` to `findings` and `effort` + `exposure` + `remediation_group` + `remediation_action` to `controls`, with indexes on `priority` and `priority_score DESC`.
+- New `app/services/priority.py` with `compute_priority()`, `compute_priority_score()` (0-255 stable intra-bucket sort), `default_effort()` / `default_exposure()` helpers, and `project_secure_score_after_fixing()`.
+- Evaluator populates the priority on every failing finding during a scan.
+- New `GET /api/v1/dashboard/priority-summary` endpoint returning counts, top remediation groups, and Secure Score projections.
+- `GET /api/v1/findings` extended with `priority` and `remediation_group` filters and `sort_by=priority`.
+- 62 controls annotated with explicit `remediation_group` in yaml (19 groups total) so that common fixes like "Enable Defender for Cloud", "Restrict storage public access", "Enforce managed identity" aggregate correctly.
+
+**Why it matters (strategic positioning):**
+
+Without triage, a tenant with 68 failing findings produces **noise**. The user opens the findings page, sees a flat list, closes it. With triage, the same tenant shows _"12 P0 items — fix now — +15% Secure Score after fixing"_ and _"Top action: Enable Defender for Cloud Standard → resolves 6 findings with one click"_. Same underlying data, entirely different user experience.
+
+Competitors (Wiz, Prisma Cloud, Defender CSPM, Orca) use proprietary black-box ML scoring that the buyer can't inspect or customise. Open-source CSPMs (Prowler, Steampipe, CloudQuery, ScoutSuite) have no triage at all. A transparent, yaml-driven, customisable priority formula is a unique position on the market and is the feature that unlocks the "Advisor" pricing tier (~3-5x vs "Scanner").
+
+---
+
 Azure coverage nearly **doubled** in one day: **62 new CIS-Lite controls** (CIS-AZ-85..146), grouped in 7 self-contained sprints, all deployed via the CD pipeline. Every sprint is validated locally against 1000+ unit tests before being pushed to main.
 
 **Numbers at a glance**
@@ -69,7 +119,7 @@ Azure coverage nearly **doubled** in one day: **62 new CIS-Lite controls** (CIS-
 | Azure CIS-Lite controls (yaml) | 84     | **146**  |
 | Azure evaluators registered    | 80     | **142**  |
 | Total registry (Azure + AWS)   | 100    | **162**  |
-| Backend tests                  | 815    | **1066** |
+| Backend tests                  | 815    | **1273** |
 | Azure resource types covered   | 30     | **35**   |
 
 **Sprint 1 — Depth expansion on existing resource types** (CIS-AZ-85..103, commit `55a9dc3`)
@@ -348,7 +398,7 @@ nimbusguard/
 │   │   ├── worker/           # Celery tasks (scan pipeline)
 │   │   └── deps.py           # DI: auth, tenancy, DB session
 │   ├── alembic/              # Database migrations
-│   ├── tests/                # 1066 tests (pytest)
+│   ├── tests/                # 1273 tests (pytest)
 │   │   ├── api/              # Integration tests
 │   │   └── services/         # Unit tests (checks, auth, etc.)
 │   └── pyproject.toml
@@ -367,7 +417,7 @@ nimbusguard/
 ## Testing
 
 ```bash
-# Backend — 1066 tests
+# Backend — 1273 tests
 cd backend && pytest -v --cov=app
 
 # Frontend — 81 unit tests
@@ -664,13 +714,16 @@ Add a new boto3 API call to fetch the resource type and create `Asset` records w
 ### Done
 
 - [x] Azure Resource Graph collector
-- [x] **142 Azure CIS-Lite controls** (84 foundational + 62 added April 2026)
+- [x] **162 Azure CIS-Lite controls** (84 foundational + 79 added April 2026)
+- [x] **Priority/Triage layer (P0..P3)** with transparent yaml-driven formula, dashboard overview card, Secure Score projection, top-10 grouped remediation actions, findings page priority column + filter
 - [x] **Subscription-level collector** — Defender plans, security contacts, auto-provisioning, owner count (CIS-AZ-104..113)
 - [x] **Backup & DR posture checks** (CIS-AZ-114..121) — Recovery Services Vaults, SQL, Cosmos DB
 - [x] **Network exposure hardening** (CIS-AZ-122..127) — management/DB ports, wildcard rules, Public IP, Azure Firewall
 - [x] **AKS deep hardening** (CIS-AZ-128..134) — private cluster, Workload Identity, Azure RBAC, auto-upgrade
 - [x] **ACR supply-chain controls** (CIS-AZ-135..140) — anonymous pull, quarantine, content trust, CMK
 - [x] **PG/MySQL flex hardening** (CIS-AZ-141..146) — TLS, public access, geo-redundant backup, retention
+- [x] **VM deep hardening** (CIS-AZ-147..153) — Trusted Launch, vTPM, managed identity, auto-patching, availability
+- [x] **Diagnostic settings sweep** (CIS-AZ-154..163) — 10 critical resource types (SQL, Key Vault, Web App, VM, Cosmos, AKS, App Gateway, Front Door, Service Bus, NSG) with a new Resource Graph collector query
 - [x] 20 AWS CIS controls
 - [x] Multi-tenant architecture
 - [x] SSO/OIDC + MFA
@@ -683,11 +736,12 @@ Add a new boto3 API call to fetch the resource type and create `Asset` records w
 
 ### Planned
 
-- [ ] **Defender assessment enricher** — unlock CIS-AZ-19 (VM endpoint protection) and CIS-AZ-20 (system updates) by reading `Microsoft.Security/assessments` on subscriptions where the collector detected Defender is ON
+- [ ] **Smart alerting** — send Slack / email / webhook notifications on scan completion filtered by priority (e.g. "only notify me on new P0 findings"). Builds on the triage layer
+- [ ] **Remediation playbooks** — bulk ticket creation in Jira / one-click auto-remediation for selected remediation groups
 - [ ] **Entra ID / Microsoft Graph collector** — tenant-level MFA controls (CIS-AZ-01, 02), Conditional Access policies, PIM status. Blocked on granting `Directory.Read.All` + `Policy.Read.All` to the service principal
 - [ ] Scan drill-down page `/scans/{id}` with delta findings vs previous scan
 - [ ] Onboarding UX polish (copy-paste CLI for service principal, inline validation, better confirm step)
-- [ ] Diagnostic settings enforcement per resource type (beyond storage)
+- [ ] RBAC least-privilege deep checks (stale role assignments, over-privileged service principals, custom role wildcard permissions)
 - [ ] GCP support (Cloud Asset Inventory + CIS GCP benchmark)
 - [ ] Kubernetes support (CIS Kubernetes Benchmark + Pod Security Standards)
 - [ ] Auto-remediation playbooks
@@ -699,13 +753,34 @@ Add a new boto3 API call to fetch the resource type and create `Asset` records w
 ### Known issues / deferred
 
 - `.trivyignore` contains 2 accepted-risk HIGH CVEs (ncurses CVE-2025-69720, systemd CVE-2026-29111) waiting for Debian patches. Periodically re-check and remove entries as they are fixed upstream.
-- CI backend test job takes ~10 minutes to run 1066 tests. The main bottlenecks are tenant-isolation test setup (~1s per test × 19 tests) and coverage instrumentation (~25% overhead). `pytest-xdist` parallelization was attempted but blocked on per-worker DB isolation — tracked as a future refactor.
+- CI backend test job takes ~10 minutes to run 1273 tests. The main bottlenecks are tenant-isolation test setup (~1s per test × 19 tests) and coverage instrumentation (~25% overhead). `pytest-xdist` parallelization was attempted but blocked on per-worker DB isolation — tracked as a future refactor.
 
 ---
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+**PolyForm Noncommercial License 1.0.0** (effective 2026-04-11). See [LICENSE](LICENSE) for the full text and notices.
+
+### What's allowed
+
+- Self-hosting NimbusGuard for **your own** cloud infrastructure
+- Personal projects, research, learning, teaching, hobby use
+- Academic and public-interest use (universities, public research, government)
+- Internal evaluation by a commercial organization
+- Forking, modifying, redistributing — **as long as the new use is also noncommercial**
+
+### What requires a commercial license
+
+- Offering NimbusGuard as a **paid service** to customers (SaaS, MSSP, consulting embedded in billable engagements)
+- Bundling NimbusGuard inside a **commercial product** you sell
+- **Selling** access, reports, dashboards, or any NimbusGuard-powered output
+
+If you want a commercial license, open an issue at
+[cerez23/nimbusguard](https://github.com/cereZ23/nimbusguard) or contact the author.
+
+### Prior releases
+
+Releases prior to commit `c9ebd15` were distributed under Apache License 2.0. Users who already received those versions retain their Apache 2.0 rights for those specific versions — a unilateral retroactive re-license is not legally possible. However, the project's **stated intent** from 2026-04-11 onwards is fully noncommercial, and all future contributions, features, and releases are exclusively licensed under PolyForm NC 1.0.0. See the NOTICE section at the bottom of [LICENSE](LICENSE) for details.
 
 ---
 
