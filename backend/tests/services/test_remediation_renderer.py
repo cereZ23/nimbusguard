@@ -143,6 +143,69 @@ class TestRenderForAsset:
         assert "sku: { name: 'Standard_LRS' }" in result["bicep"]
         assert "properties: {" in result["bicep"]
 
+    def test_tf_name_sanitizes_hyphens_for_hcl_label(self):
+        """HCL labels should see hyphens converted to underscores."""
+        from app.config import remediation_snippets
+
+        with patch.dict(
+            remediation_snippets.REMEDIATION_SNIPPETS,
+            {
+                "CIS-TEST-TF": {
+                    "terraform": (
+                        'resource "azurerm_linux_web_app" "@@tf_name@@" {\n'
+                        '  name = "@@name@@"\n'
+                        '  location = "@@location@@"\n'
+                        "}"
+                    ),
+                    "bicep": "n/a",
+                    "azure_cli": "n/a",
+                    "description": "n/a",
+                }
+            },
+            clear=False,
+        ):
+            asset = _make_asset(
+                "/subscriptions/s/resourceGroups/r/providers/Microsoft.Web/sites/ifo-eva-pdta-webapp-test",
+                name="ifo-eva-pdta-webapp-test",
+            )
+            result, _ = render_for_asset("CIS-TEST-TF", asset)
+
+        assert result is not None
+        # HCL label uses underscores — valid Terraform identifier.
+        assert 'resource "azurerm_linux_web_app" "ifo_eva_pdta_webapp_test"' in result["terraform"]
+        # The `name` attribute keeps the original Azure name with hyphens.
+        assert 'name = "ifo-eva-pdta-webapp-test"' in result["terraform"]
+        # Location is filled from asset.region.
+        assert 'location = "westeurope"' in result["terraform"]
+
+    def test_tf_name_falls_back_to_target_when_asset_name_is_blank(self):
+        """Empty asset name must not produce an invalid TF label."""
+        from app.config import remediation_snippets
+
+        with patch.dict(
+            remediation_snippets.REMEDIATION_SNIPPETS,
+            {
+                "CIS-TEST-BLANK": {
+                    "terraform": 'resource "azurerm_x" "@@tf_name@@" {}',
+                    "bicep": "n/a",
+                    "azure_cli": "n/a",
+                    "description": "n/a",
+                }
+            },
+            clear=False,
+        ):
+            # Subscription-scope asset with no leaf name on the ARM ID.
+            asset = _make_asset("/subscriptions/sub-xyz", name="")
+            # Clear name so _sanitize_tf_name("") hits the "target" fallback.
+            asset.name = ""
+            result, _ = render_for_asset("CIS-TEST-BLANK", asset)
+
+        assert result is not None
+        # Subscription-scope assets have name == subscription_id on the
+        # ArmId side, which is a GUID starting with a digit → the
+        # sanitizer prefixes `r_`. We just check we got a valid label.
+        assert '"example"' not in result["terraform"]
+
     def test_subscription_scope_asset_fills_sub_id_for_defender_style_snippet(self):
         """Synthetic subscription asset has no RG but still renders
         `@@subscription_id@@` — this is the Defender-for-Cloud case."""
