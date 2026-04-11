@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lightbulb, Code, Terminal } from "lucide-react";
+import { Lightbulb, Code, Terminal, Sparkles } from "lucide-react";
 import CopyButton from "./copy-button";
 
 export interface RemediationData {
@@ -14,7 +14,18 @@ export interface RemediationData {
     bicep: string | null;
     azure_cli: string | null;
   };
+  // True when the snippet was rendered with the finding's asset values
+  // (subscription, resource group, resource name). Drives the "Filled
+  // for <asset>" badge.
+  filled_for_asset?: boolean;
+  // The asset display name the snippet was filled for. Only set when
+  // `filled_for_asset` is true.
+  asset_name?: string | null;
 }
+
+// Regex to detect remaining @@marker@@ placeholders in a snippet — used
+// to warn the user that they still need to fill in some values manually.
+const UNFILLED_MARKER_RE = /@@[a-z_]+@@/;
 
 type SnippetTab = "terraform" | "bicep" | "azure_cli";
 
@@ -61,6 +72,12 @@ function RemediationPanel({
     : (availableTabs[0]?.key ?? "terraform");
 
   const activeSnippet = remediation?.snippets[effectiveTab] ?? null;
+  const hasUnfilledMarkers = activeSnippet
+    ? UNFILLED_MARKER_RE.test(activeSnippet)
+    : false;
+  const filledForAsset = Boolean(
+    remediation?.filled_for_asset && remediation?.asset_name,
+  );
 
   // If no remediation data at all, fall back to hint
   if (!remediation && !fallbackHint) return null;
@@ -69,10 +86,21 @@ function RemediationPanel({
     <div className="rounded-xl border border-emerald-200 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/20">
       {/* Header */}
       <div className="px-5 pt-5 pb-3">
-        <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-          <Lightbulb className="h-4 w-4 flex-shrink-0" />
-          Remediation Guidance
-        </h2>
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+            <Lightbulb className="h-4 w-4 flex-shrink-0" />
+            Remediation Guidance
+          </h2>
+          {filledForAsset && (
+            <span
+              title="Snippet pre-filled with this resource's subscription, resource group, and name"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm dark:bg-emerald-500"
+            >
+              <Sparkles className="h-3 w-3" />
+              Filled for {remediation?.asset_name}
+            </span>
+          )}
+        </div>
         {remediation?.description && (
           <p className="text-sm text-emerald-700 dark:text-emerald-300">
             {remediation.description}
@@ -119,6 +147,12 @@ function RemediationPanel({
               <pre className="max-h-80 overflow-auto p-4 text-xs leading-relaxed text-gray-100">
                 <code>{activeSnippet}</code>
               </pre>
+              {hasUnfilledMarkers && (
+                <p className="border-t border-gray-700 px-3 py-2 text-[11px] text-amber-300">
+                  Some values marked <code>@@name@@</code> still need to be
+                  filled in manually (e.g. workspace ID, Key Vault key name).
+                </p>
+              )}
             </div>
           )}
         </div>

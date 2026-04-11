@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.config.remediation_snippets import get_remediation_for_control
+from app.config.remediation_snippets import render_for_asset
 from app.deps import DB, AdminUser, CurrentUser
 from app.models.cloud_account import CloudAccount
 from app.models.control import Control
@@ -229,12 +229,18 @@ async def get_finding(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
     response_model=ApiResponse[RemediationResponse],
 )
 async def get_finding_remediation(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
-    """Return IaC remediation snippets (Terraform, Bicep, Azure CLI) for a finding's control."""
+    """Return IaC remediation snippets (Terraform, Bicep, Azure CLI) for a finding's control.
+
+    Snippets are rendered with the finding's asset ARM ID so that the
+    response contains `{name}`/`{resource_group}`/`{subscription_id}`
+    already filled in. When the asset has no parseable ARM ID, the
+    un-rendered template is returned and `filled_for_asset` is False.
+    """
     result = await db.execute(
         select(Finding)
         .join(CloudAccount)
         .where(Finding.id == finding_id, CloudAccount.tenant_id == user.tenant_id)
-        .options(selectinload(Finding.control))
+        .options(selectinload(Finding.control), selectinload(Finding.asset))
     )
     finding = result.scalar_one_or_none()
     if finding is None:
@@ -247,7 +253,7 @@ async def get_finding_remediation(finding_id: uuid.UUID, db: DB, user: CurrentUs
             detail="No control associated with this finding",
         )
 
-    snippets_data = get_remediation_for_control(control.code)
+    snippets_data, filled = render_for_asset(control.code, finding.asset)
 
     remediation = RemediationResponse(
         control_code=control.code,
@@ -259,12 +265,15 @@ async def get_finding_remediation(finding_id: uuid.UUID, db: DB, user: CurrentUs
             bicep=snippets_data.get("bicep") if snippets_data else None,
             azure_cli=snippets_data.get("azure_cli") if snippets_data else None,
         ),
+        filled_for_asset=filled,
+        asset_name=finding.asset.name if (filled and finding.asset is not None) else None,
     )
 
     logger.info(
-        "Remediation snippets requested for finding %s (control %s)",
+        "Remediation snippets requested for finding %s (control %s, filled=%s)",
         finding_id,
         control.code,
+        filled,
     )
     return {"data": remediation, "error": None, "meta": None}
 

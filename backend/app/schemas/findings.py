@@ -130,3 +130,10 @@ class RemediationResponse(BaseModel):
     description: str | None = None
     remediation_hint: str | None = None
     snippets: RemediationSnippets
+    # True when the snippets were successfully rendered with the asset's
+    # real ARM ID values (name / resource group / subscription). False
+    # when we fell back to the raw template with `{placeholder}` fields.
+    filled_for_asset: bool = False
+    # The asset display name the snippet was filled for, when `filled_for_asset`
+    # is True. The frontend shows it in a "Filled for <name>" badge.
+    asset_name: str | None = None
