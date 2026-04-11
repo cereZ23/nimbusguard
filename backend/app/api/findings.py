@@ -12,12 +12,13 @@ from app.config.remediation_snippets import render_for_asset
 from app.deps import DB, AdminUser, CurrentUser
 from app.models.cloud_account import CloudAccount
 from app.models.control import Control
+from app.models.evidence import Evidence
 from app.models.exception import Exception_
 from app.models.finding import Finding
 from app.models.finding_comment import FindingComment
 from app.models.finding_event import FindingEvent
 from app.models.user import User
-from app.schemas.common import ApiResponse, PaginationMeta
+from app.schemas.common import ApiResponse, CursorMeta, PaginationMeta
 from app.schemas.finding_event import FindingEventResponse
 from app.schemas.findings import (
     AssignRequest,
@@ -25,6 +26,7 @@ from app.schemas.findings import (
     BulkWaiveResult,
     CommentCreate,
     CommentResponse,
+    EvidenceResponse,
     FindingDetail,
     FindingResponse,
     RemediationResponse,
@@ -79,12 +81,24 @@ def _finding_response_with_assignee(finding: Finding) -> dict:
     return data
 
 
-def _finding_detail_with_assignee(finding: Finding) -> dict:
-    """Build a dict for FindingDetail with assignee info."""
+def _finding_detail_with_assignee(
+    finding: Finding,
+    *,
+    latest_evidence: list,
+    total_evidence_count: int,
+) -> dict:
+    """Build a dict for FindingDetail with assignee info.
+
+    Evidence is capped to `latest_evidence` (typically the single most
+    recent row) plus a `total_evidence_count`, so the detail payload
+    stays bounded even on findings with hundreds of historical evidence
+    rows. Older rows are loaded on demand via `/{id}/evidence`.
+    """
     data = _finding_response_with_assignee(finding)
     data["asset"] = finding.asset
     data["control"] = finding.control
-    data["evidences"] = finding.evidences
+    data["evidences"] = latest_evidence
+    data["total_evidence_count"] = total_evidence_count
     return data
 
 
@@ -204,6 +218,11 @@ async def list_findings(
 
 @router.get("/{finding_id}", response_model=ApiResponse[FindingDetail])
 async def get_finding(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
+    # Load the finding itself without eager-loading the full evidences
+    # collection (which is unbounded and was causing the detail page to
+    # grow to MBs on long-running findings). We fetch only the most
+    # recent evidence row separately and the total count, so the
+    # response stays small.
     result = await db.execute(
         select(Finding)
         .join(CloudAccount)
@@ -211,14 +230,32 @@ async def get_finding(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
         .options(
             selectinload(Finding.asset),
             selectinload(Finding.control),
-            selectinload(Finding.evidences),
             selectinload(Finding.assignee),
         )
     )
     finding = result.scalar_one_or_none()
     if finding is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found")
-    return {"data": _finding_detail_with_assignee(finding), "error": None, "meta": None}
+
+    # Only the latest evidence row is embedded — older rows are fetched
+    # on demand via `GET /findings/{id}/evidence`.
+    latest_evidence_result = await db.execute(
+        select(Evidence).where(Evidence.finding_id == finding_id).order_by(Evidence.collected_at.desc()).limit(1)
+    )
+    latest_evidence = latest_evidence_result.scalars().all()
+
+    count_result = await db.execute(select(func.count()).select_from(Evidence).where(Evidence.finding_id == finding_id))
+    total_evidence = count_result.scalar_one()
+
+    return {
+        "data": _finding_detail_with_assignee(
+            finding,
+            latest_evidence=list(latest_evidence),
+            total_evidence_count=total_evidence,
+        ),
+        "error": None,
+        "meta": None,
+    }
 
 
 # ── Remediation snippets ────────────────────────────────────────────
@@ -517,17 +554,50 @@ async def bulk_waive_findings(body: BulkWaiveRequest, db: DB, user: AdminUser) -
 
 
 @router.get("/{finding_id}/comments", response_model=ApiResponse[list[CommentResponse]])
-async def list_comments(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
+async def list_comments(
+    finding_id: uuid.UUID,
+    db: DB,
+    user: CurrentUser,
+    limit: int = Query(20, ge=1, le=100),
+    before: datetime | None = Query(
+        None,
+        description=(
+            "ISO timestamp cursor — return comments strictly older than this. "
+            "Use the oldest `created_at` from the previous page."
+        ),
+    ),
+) -> dict:
+    """List comments (newest first), cursor-paginated.
+
+    Default limit 20. On the first request the client omits `before`.
+    On subsequent requests, pass the oldest `created_at` from the
+    previous page to fetch the next (older) batch.
+    """
     # Validate finding belongs to tenant
     await _get_tenant_finding(db, finding_id, user.tenant_id)
 
-    result = await db.execute(
+    # Total count for the UI badge — cheap because `finding_id` is indexed.
+    count_result = await db.execute(
+        select(func.count()).select_from(FindingComment).where(FindingComment.finding_id == finding_id)
+    )
+    total = count_result.scalar_one()
+
+    query = (
         select(FindingComment)
         .where(FindingComment.finding_id == finding_id)
         .options(selectinload(FindingComment.user))
-        .order_by(FindingComment.created_at.asc())
+        .order_by(FindingComment.created_at.desc())
+        .limit(limit + 1)  # fetch one extra to detect `has_more`
     )
-    comments = result.scalars().all()
+    if before is not None:
+        query = query.where(FindingComment.created_at < before)
+
+    result = await db.execute(query)
+    rows = list(result.scalars().all())
+
+    has_more = len(rows) > limit
+    page = rows[:limit]
+    next_cursor = page[-1].created_at.isoformat() if has_more and page else None
 
     data = [
         CommentResponse(
@@ -538,9 +608,10 @@ async def list_comments(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dic
             user_name=c.user.full_name if c.user else None,
             created_at=c.created_at,
         )
-        for c in comments
+        for c in page
     ]
-    return {"data": data, "error": None, "meta": None}
+    meta = CursorMeta(total=total, limit=limit, has_more=has_more, next_cursor=next_cursor)
+    return {"data": data, "error": None, "meta": meta}
 
 
 @router.post(
@@ -656,17 +727,50 @@ async def delete_comment(
     "/{finding_id}/timeline",
     response_model=ApiResponse[list[FindingEventResponse]],
 )
-async def get_finding_timeline(finding_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
+async def get_finding_timeline(
+    finding_id: uuid.UUID,
+    db: DB,
+    user: CurrentUser,
+    limit: int = Query(20, ge=1, le=100),
+    before: datetime | None = Query(
+        None,
+        description=(
+            "ISO timestamp cursor — return events strictly older than this. "
+            "Use the oldest `created_at` from the previous page."
+        ),
+    ),
+) -> dict:
+    """List timeline events (newest first), cursor-paginated.
+
+    Timeline is unbounded over a finding's lifetime (every rescan,
+    status change, comment, assignment produces one event), so we
+    return only the latest `limit` rows by default and expose a cursor
+    for loading older pages.
+    """
     # Validate finding belongs to tenant
     await _get_tenant_finding(db, finding_id, user.tenant_id)
 
-    result = await db.execute(
+    count_result = await db.execute(
+        select(func.count()).select_from(FindingEvent).where(FindingEvent.finding_id == finding_id)
+    )
+    total = count_result.scalar_one()
+
+    query = (
         select(FindingEvent)
         .where(FindingEvent.finding_id == finding_id)
         .options(selectinload(FindingEvent.user))
         .order_by(FindingEvent.created_at.desc())
+        .limit(limit + 1)
     )
-    events = result.scalars().all()
+    if before is not None:
+        query = query.where(FindingEvent.created_at < before)
+
+    result = await db.execute(query)
+    rows = list(result.scalars().all())
+
+    has_more = len(rows) > limit
+    page = rows[:limit]
+    next_cursor = page[-1].created_at.isoformat() if has_more and page else None
 
     data = [
         FindingEventResponse(
@@ -679,6 +783,66 @@ async def get_finding_timeline(finding_id: uuid.UUID, db: DB, user: CurrentUser)
             details=ev.details,
             created_at=ev.created_at,
         )
-        for ev in events
+        for ev in page
     ]
-    return {"data": data, "error": None, "meta": None}
+    meta = CursorMeta(total=total, limit=limit, has_more=has_more, next_cursor=next_cursor)
+    return {"data": data, "error": None, "meta": meta}
+
+
+# ── Evidence history (paginated) ─────────────────────────────────────
+
+
+@router.get(
+    "/{finding_id}/evidence",
+    response_model=ApiResponse[list[EvidenceResponse]],
+)
+async def list_finding_evidence(
+    finding_id: uuid.UUID,
+    db: DB,
+    user: CurrentUser,
+    limit: int = Query(20, ge=1, le=100),
+    before: datetime | None = Query(
+        None,
+        description=(
+            "ISO timestamp cursor — return evidence strictly older than this. "
+            "Use the oldest `collected_at` from the previous page."
+        ),
+    ),
+) -> dict:
+    """List historical evidence rows (newest first), cursor-paginated.
+
+    The `GET /findings/{id}` detail endpoint embeds only the most
+    recent evidence row. Use this endpoint to load older rows on
+    demand (e.g. when the user clicks "Show previous evidence").
+    """
+    await _get_tenant_finding(db, finding_id, user.tenant_id)
+
+    count_result = await db.execute(select(func.count()).select_from(Evidence).where(Evidence.finding_id == finding_id))
+    total = count_result.scalar_one()
+
+    query = (
+        select(Evidence)
+        .where(Evidence.finding_id == finding_id)
+        .order_by(Evidence.collected_at.desc())
+        .limit(limit + 1)
+    )
+    if before is not None:
+        query = query.where(Evidence.collected_at < before)
+
+    result = await db.execute(query)
+    rows = list(result.scalars().all())
+
+    has_more = len(rows) > limit
+    page = rows[:limit]
+    next_cursor = page[-1].collected_at.isoformat() if has_more and page else None
+
+    data = [
+        EvidenceResponse(
+            id=e.id,
+            snapshot=e.snapshot,
+            collected_at=e.collected_at,
+        )
+        for e in page
+    ]
+    meta = CursorMeta(total=total, limit=limit, has_more=has_more, next_cursor=next_cursor)
+    return {"data": data, "error": None, "meta": meta}
