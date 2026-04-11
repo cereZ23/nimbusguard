@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Redis_7-dc382d?logo=redis&logoColor=white" alt="Redis" />
   <img src="https://img.shields.io/badge/Celery-37814a?logo=celery&logoColor=white" alt="Celery" />
   <img src="https://img.shields.io/badge/tests-1273_passing-brightgreen" alt="Tests" />
-  <img src="https://img.shields.io/badge/license-PolyForm%20NC%201.0.0-orange" alt="License" />
+  <img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License" />
   <br/>
   <a href="https://github.com/cereZ23/nimbusguard/actions"><img src="https://github.com/cereZ23/nimbusguard/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="https://img.shields.io/badge/code%20style-ruff-261230?logo=ruff&logoColor=d7ff64" alt="Ruff" />
@@ -759,28 +759,7 @@ Add a new boto3 API call to fetch the resource type and create `Asset` records w
 
 ## License
 
-**PolyForm Noncommercial License 1.0.0** (effective 2026-04-11). See [LICENSE](LICENSE) for the full text and notices.
-
-### What's allowed
-
-- Self-hosting NimbusGuard for **your own** cloud infrastructure
-- Personal projects, research, learning, teaching, hobby use
-- Academic and public-interest use (universities, public research, government)
-- Internal evaluation by a commercial organization
-- Forking, modifying, redistributing — **as long as the new use is also noncommercial**
-
-### What requires a commercial license
-
-- Offering NimbusGuard as a **paid service** to customers (SaaS, MSSP, consulting embedded in billable engagements)
-- Bundling NimbusGuard inside a **commercial product** you sell
-- **Selling** access, reports, dashboards, or any NimbusGuard-powered output
-
-If you want a commercial license, open an issue at
-[cerez23/nimbusguard](https://github.com/cereZ23/nimbusguard) or contact the author.
-
-### Prior releases
-
-Releases prior to commit `c9ebd15` were distributed under Apache License 2.0. Users who already received those versions retain their Apache 2.0 rights for those specific versions — a unilateral retroactive re-license is not legally possible. However, the project's **stated intent** from 2026-04-11 onwards is fully noncommercial, and all future contributions, features, and releases are exclusively licensed under PolyForm NC 1.0.0. See the NOTICE section at the bottom of [LICENSE](LICENSE) for details.
+Apache License 2.0. See [LICENSE](LICENSE) for details.
 
 ---
 
