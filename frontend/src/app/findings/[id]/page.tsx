@@ -70,6 +70,7 @@ interface FindingDetailData {
     snapshot: Record<string, unknown>;
     collected_at: string;
   }>;
+  total_evidence_count: number;
 }
 
 // ── Main page component ──────────────────────────────────────────────
@@ -101,9 +102,29 @@ export default function FindingDetailPage() {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
 
-  // Timeline state
+  // Timeline state (cursor-paginated, newest first)
   const [timelineEvents, setTimelineEvents] = useState<FindingEvent[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timelineTotal, setTimelineTotal] = useState(0);
+  const [timelineHasMore, setTimelineHasMore] = useState(false);
+  const [timelineCursor, setTimelineCursor] = useState<string | null>(null);
+
+  // Comments state (cursor-paginated, newest first from API, reversed for UI)
+  const [commentsTotal, setCommentsTotal] = useState(0);
+  const [commentsHasMore, setCommentsHasMore] = useState(false);
+  const [commentsCursor, setCommentsCursor] = useState<string | null>(null);
+
+  // Evidence history state (lazy — older rows are loaded on demand)
+  const [olderEvidence, setOlderEvidence] = useState<
+    Array<{
+      id: string;
+      snapshot: Record<string, unknown>;
+      collected_at: string;
+    }>
+  >([]);
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const [evidenceHasMore, setEvidenceHasMore] = useState(false);
+  const [evidenceCursor, setEvidenceCursor] = useState<string | null>(null);
 
   // Similar findings state
   const [similarFindings, setSimilarFindings] = useState<SimilarFinding[]>([]);
@@ -111,6 +132,14 @@ export default function FindingDetailPage() {
 
   // Remediation snippets state
   const [remediation, setRemediation] = useState<RemediationData | null>(null);
+
+  // Meta shape returned by cursor-paginated endpoints.
+  interface CursorMeta {
+    total: number;
+    limit: number;
+    has_more: boolean;
+    next_cursor: string | null;
+  }
 
   const isAdmin = user?.role === "admin";
 
@@ -122,7 +151,15 @@ export default function FindingDetailPage() {
     api
       .get(`/findings/${id}`)
       .then((res) => {
-        setFinding(res.data?.data as FindingDetailData);
+        const detail = res.data?.data as FindingDetailData;
+        setFinding(detail);
+        // Reset the "older evidence" state whenever the finding is
+        // refreshed so we don't mix old and new history.
+        setOlderEvidence([]);
+        setEvidenceCursor(detail?.evidences?.[0]?.collected_at ?? null);
+        // "Has more" for evidence is derived from the total count vs
+        // the single embedded evidence row.
+        setEvidenceHasMore((detail?.total_evidence_count ?? 0) > 1);
       })
       .catch((err: unknown) => {
         setError(extractApiError(err));
@@ -130,20 +167,38 @@ export default function FindingDetailPage() {
       .finally(() => setIsLoading(false));
   }, [id]);
 
-  const fetchComments = useCallback(() => {
-    if (!id) return;
-    setCommentsLoading(true);
+  const fetchComments = useCallback(
+    (append = false, before?: string) => {
+      if (!id) return;
+      if (!append) setCommentsLoading(true);
 
-    api
-      .get(`/findings/${id}/comments`)
-      .then((res) => {
-        setComments((res.data?.data as FindingComment[]) ?? []);
-      })
-      .catch(() => {
-        // Silently fail for comments — not critical
-      })
-      .finally(() => setCommentsLoading(false));
-  }, [id]);
+      const params = new URLSearchParams({ limit: "20" });
+      if (before) params.set("before", before);
+
+      api
+        .get(`/findings/${id}/comments?${params.toString()}`)
+        .then((res) => {
+          const page = (res.data?.data as FindingComment[]) ?? [];
+          // API returns newest first; we render chronologically (oldest
+          // at top) so we reverse the page and prepend older pages.
+          const reversedPage = [...page].reverse();
+          setComments((prev) =>
+            append ? [...reversedPage, ...prev] : reversedPage,
+          );
+          const meta = res.data?.meta as CursorMeta | undefined;
+          if (meta) {
+            setCommentsTotal(meta.total);
+            setCommentsHasMore(meta.has_more);
+            setCommentsCursor(meta.next_cursor);
+          }
+        })
+        .catch(() => {
+          // Silently fail for comments — not critical
+        })
+        .finally(() => setCommentsLoading(false));
+    },
+    [id],
+  );
 
   const fetchTenantUsers = useCallback(() => {
     api
@@ -156,20 +211,70 @@ export default function FindingDetailPage() {
       });
   }, []);
 
-  const fetchTimeline = useCallback(() => {
-    if (!id) return;
-    setTimelineLoading(true);
+  const fetchTimeline = useCallback(
+    (append = false, before?: string) => {
+      if (!id) return;
+      if (!append) setTimelineLoading(true);
 
-    api
-      .get(`/findings/${id}/timeline`)
-      .then((res) => {
-        setTimelineEvents((res.data?.data as FindingEvent[]) ?? []);
-      })
-      .catch(() => {
-        // Silently fail for timeline — not critical
-      })
-      .finally(() => setTimelineLoading(false));
-  }, [id]);
+      const params = new URLSearchParams({ limit: "20" });
+      if (before) params.set("before", before);
+
+      api
+        .get(`/findings/${id}/timeline?${params.toString()}`)
+        .then((res) => {
+          const page = (res.data?.data as FindingEvent[]) ?? [];
+          // Timeline is rendered newest-first so we append older pages
+          // at the bottom (after the existing events).
+          setTimelineEvents((prev) => (append ? [...prev, ...page] : page));
+          const meta = res.data?.meta as CursorMeta | undefined;
+          if (meta) {
+            setTimelineTotal(meta.total);
+            setTimelineHasMore(meta.has_more);
+            setTimelineCursor(meta.next_cursor);
+          }
+        })
+        .catch(() => {
+          // Silently fail for timeline — not critical
+        })
+        .finally(() => setTimelineLoading(false));
+    },
+    [id],
+  );
+
+  const fetchOlderEvidence = useCallback(
+    (before?: string) => {
+      if (!id) return;
+      setEvidenceLoading(true);
+
+      const params = new URLSearchParams({ limit: "20" });
+      if (before) params.set("before", before);
+
+      api
+        .get(`/findings/${id}/evidence?${params.toString()}`)
+        .then((res) => {
+          const page =
+            (res.data?.data as Array<{
+              id: string;
+              snapshot: Record<string, unknown>;
+              collected_at: string;
+            }>) ?? [];
+          // The finding detail already embeds the single most recent
+          // evidence row — every /evidence page contains older rows so
+          // we append to the existing list.
+          setOlderEvidence((prev) => [...prev, ...page]);
+          const meta = res.data?.meta as CursorMeta | undefined;
+          if (meta) {
+            setEvidenceHasMore(meta.has_more);
+            setEvidenceCursor(meta.next_cursor);
+          }
+        })
+        .catch(() => {
+          // Silently fail — evidence history is optional context.
+        })
+        .finally(() => setEvidenceLoading(false));
+    },
+    [id],
+  );
 
   const fetchSimilarFindings = useCallback(() => {
     if (!id) return;
@@ -547,17 +652,27 @@ export default function FindingDetailPage() {
           )}
         </div>
 
-        {/* Evidence */}
-        {finding.evidences.length > 0 && (
+        {/* Evidence — latest row embedded in detail, older rows lazy-loaded */}
+        {(finding.evidences.length > 0 || finding.total_evidence_count > 0) && (
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
               <h2 className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                 <FileText className="h-4 w-4" />
-                Evidence ({finding.evidences.length})
+                Evidence ({finding.total_evidence_count})
               </h2>
             </div>
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {finding.evidences.map((ev) => (
+                <div key={ev.id} className="p-4">
+                  <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">
+                    Latest · Collected: {formatDateTime(ev.collected_at)}
+                  </p>
+                  <pre className="max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                    {JSON.stringify(ev.snapshot, null, 2)}
+                  </pre>
+                </div>
+              ))}
+              {olderEvidence.map((ev) => (
                 <div key={ev.id} className="p-4">
                   <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">
                     Collected: {formatDateTime(ev.collected_at)}
@@ -568,6 +683,25 @@ export default function FindingDetailPage() {
                 </div>
               ))}
             </div>
+            {evidenceHasMore && (
+              <div className="border-t border-gray-100 p-3 text-center dark:border-gray-700">
+                <button
+                  onClick={() =>
+                    fetchOlderEvidence(evidenceCursor ?? undefined)
+                  }
+                  disabled={evidenceLoading}
+                  className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50 dark:text-blue-400"
+                >
+                  {evidenceLoading
+                    ? "Loading…"
+                    : `Load older evidence (${
+                        finding.total_evidence_count -
+                        finding.evidences.length -
+                        olderEvidence.length
+                      } remaining)`}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -688,7 +822,7 @@ export default function FindingDetailPage() {
           <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
             <h2 className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
               <History className="h-4 w-4" />
-              Timeline ({timelineEvents.length})
+              Timeline ({timelineTotal || timelineEvents.length})
             </h2>
           </div>
 
@@ -702,16 +836,35 @@ export default function FindingDetailPage() {
                 No timeline events yet
               </div>
             ) : (
-              <div className="relative">
-                {/* Vertical line */}
-                <div className="absolute left-[15px] top-2 bottom-2 w-px bg-gray-200 dark:bg-gray-700" />
+              <>
+                <div className="relative">
+                  {/* Vertical line */}
+                  <div className="absolute left-[15px] top-2 bottom-2 w-px bg-gray-200 dark:bg-gray-700" />
 
-                <div className="space-y-4">
-                  {timelineEvents.map((event) => (
-                    <TimelineItem key={event.id} event={event} />
-                  ))}
+                  <div className="space-y-4">
+                    {timelineEvents.map((event) => (
+                      <TimelineItem key={event.id} event={event} />
+                    ))}
+                  </div>
                 </div>
-              </div>
+                {timelineHasMore && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={() =>
+                        fetchTimeline(true, timelineCursor ?? undefined)
+                      }
+                      disabled={timelineLoading}
+                      className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50 dark:text-blue-400"
+                    >
+                      {timelineLoading
+                        ? "Loading…"
+                        : `Load older events (${
+                            timelineTotal - timelineEvents.length
+                          } remaining)`}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -721,9 +874,25 @@ export default function FindingDetailPage() {
           <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
             <h2 className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
               <MessageSquare className="h-4 w-4" />
-              Comments ({comments.length})
+              Comments ({commentsTotal || comments.length})
             </h2>
           </div>
+
+          {commentsHasMore && (
+            <div className="border-b border-gray-100 p-3 text-center dark:border-gray-700">
+              <button
+                onClick={() => fetchComments(true, commentsCursor ?? undefined)}
+                disabled={commentsLoading}
+                className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50 dark:text-blue-400"
+              >
+                {commentsLoading
+                  ? "Loading…"
+                  : `Load older comments (${
+                      commentsTotal - comments.length
+                    } remaining)`}
+              </button>
+            </div>
+          )}
 
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {commentsLoading && comments.length === 0 ? (

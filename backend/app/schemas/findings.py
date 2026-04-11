@@ -33,7 +33,13 @@ class FindingResponse(BaseModel):
 class FindingDetail(FindingResponse):
     asset: AssetSummary | None = None
     control: ControlSummary | None = None
+    # Only the most recent evidence is embedded in the detail response
+    # so the payload stays bounded. Older evidence is available via
+    # `GET /findings/{id}/evidence?limit=20&before=<cursor>`.
+    # `evidences` is kept as a list for backward compatibility with the
+    # current frontend, but contains at most 1 item.
     evidences: list[EvidenceResponse] = []
+    total_evidence_count: int = 0
 
 
 class AssetSummary(BaseModel):

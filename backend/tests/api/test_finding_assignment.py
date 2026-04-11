@@ -270,10 +270,19 @@ async def test_list_comments(client: AsyncClient, auth_headers: dict, db: AsyncS
 
     res = await client.get(f"/api/v1/findings/{finding_id}/comments", headers=auth_headers)
     assert res.status_code == 200
-    data = res.json()["data"]
+    payload = res.json()
+    data = payload["data"]
     assert len(data) == 2
-    assert data[0]["content"] == "First comment"
-    assert data[1]["content"] == "Second comment"
+    # Cursor pagination: newest first. Frontend reverses client-side for
+    # the chronological thread view.
+    assert data[0]["content"] == "Second comment"
+    assert data[1]["content"] == "First comment"
+    # Cursor meta is populated even when has_more is False.
+    meta = payload["meta"]
+    assert meta["total"] == 2
+    assert meta["limit"] == 20
+    assert meta["has_more"] is False
+    assert meta["next_cursor"] is None
 
 
 @pytest.mark.asyncio
