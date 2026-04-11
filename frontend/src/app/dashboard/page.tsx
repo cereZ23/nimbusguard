@@ -23,6 +23,8 @@ import {
   TimeRangeSelector,
   AccountBreakdown,
 } from "@/components/dashboard";
+import PriorityOverviewCard from "@/components/dashboard/priority-overview-card";
+import TopActionsCard from "@/components/dashboard/top-actions-card";
 
 // Lazy load Recharts-heavy components to reduce initial bundle size (~160KB)
 const SeverityDonut = dynamic(
@@ -58,6 +60,7 @@ import type {
   CloudAccount,
   DashboardSummary,
   Finding,
+  PrioritySummary,
   TimeRange,
   TrendPoint,
   TrendResponse,
@@ -79,6 +82,9 @@ export default function DashboardPage() {
     mutate: mutateSummary,
   } = useSWR("/dashboard/summary");
 
+  // -- SWR: priority summary (triage layer) --
+  const { data: priorityEnvelope } = useSWR("/dashboard/priority-summary");
+
   // -- SWR: findings trend (re-fetches when timeRange changes) --
   const {
     data: trendEnvelope,
@@ -99,6 +105,8 @@ export default function DashboardPage() {
 
   // Unwrap API envelope data
   const summary = (summaryEnvelope?.data ?? null) as DashboardSummary | null;
+  const prioritySummary = (priorityEnvelope?.data ??
+    null) as PrioritySummary | null;
   const trendResponse = (trendEnvelope?.data ?? null) as TrendResponse | null;
   const trendData: TrendPoint[] = trendResponse?.data ?? [];
   const recentFindings = (findingsEnvelope?.data ?? []) as Finding[];
@@ -291,6 +299,17 @@ export default function DashboardPage() {
                 iconBg="bg-red-100 dark:bg-red-900/40"
               />
             </div>
+
+            {/* Priority / Triage Row: Priority Overview + Top Actions */}
+            {prioritySummary && (
+              <div
+                data-tour="priority-layer"
+                className="grid grid-cols-1 gap-6 lg:grid-cols-2"
+              >
+                <PriorityOverviewCard summary={prioritySummary} />
+                <TopActionsCard summary={prioritySummary} />
+              </div>
+            )}
 
             {/* Charts Row: Gauge + Donut + Trend */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

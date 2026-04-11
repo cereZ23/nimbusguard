@@ -503,3 +503,109 @@ async def dashboard_cross_cloud(db: DB, user: CurrentUser) -> dict:
     await cache_set(cache_key, summary.model_dump())
 
     return {"data": summary, "error": None, "meta": None}
+
+
+# ── Priority / Triage layer ──────────────────────────────────────────
+
+
+@router.get("/priority-summary")
+async def dashboard_priority_summary(db: DB, user: CurrentUser) -> dict:
+    """Aggregate findings by priority bucket and suggest top remediation groups.
+
+    Returns:
+        priority_counts: per-bucket count of failing findings (P0..P3)
+        top_remediation_groups: top 10 groups ordered by affected_count
+        current_secure_score: pass/(pass+fail) * 100
+        projected_after_p0: score if all P0 findings were fixed
+        projected_after_p0_p1: score if all P0+P1 findings were fixed
+    """
+    tenant_id = user.tenant_id
+
+    # Priority counts — join on cloud_accounts for tenant isolation (same pattern
+    # used by /dashboard/summary). Group by finding.priority, failing non-waived only.
+    counts_result = await db.execute(
+        select(Finding.priority, func.count(Finding.id))
+        .join(CloudAccount, Finding.cloud_account_id == CloudAccount.id)
+        .where(
+            CloudAccount.tenant_id == tenant_id,
+            Finding.status == "fail",
+            Finding.waived.is_(False),
+        )
+        .group_by(Finding.priority)
+    )
+    priority_counts: dict[str, int] = {"P0": 0, "P1": 0, "P2": 0, "P3": 0}
+    for priority, count in counts_result.all():
+        if priority in priority_counts:
+            priority_counts[priority] = count
+
+    # Top remediation groups — join findings → cloud_accounts + controls.
+    groups_result = await db.execute(
+        select(
+            Control.remediation_group,
+            Control.remediation_action,
+            func.count(Finding.id).label("affected_count"),
+            func.min(Finding.priority).label("top_priority"),
+        )
+        .join(CloudAccount, Finding.cloud_account_id == CloudAccount.id)
+        .join(Control, Finding.control_id == Control.id)
+        .where(
+            CloudAccount.tenant_id == tenant_id,
+            Finding.status == "fail",
+            Finding.waived.is_(False),
+            Control.remediation_group.is_not(None),
+        )
+        .group_by(Control.remediation_group, Control.remediation_action)
+        .order_by(func.count(Finding.id).desc())
+        .limit(10)
+    )
+    top_remediation_groups = [
+        {
+            "group": row.remediation_group,
+            "action": row.remediation_action,
+            "affected_count": int(row.affected_count),
+            "top_priority": row.top_priority,
+        }
+        for row in groups_result.all()
+    ]
+
+    # Pass/fail totals for score + projections.
+    status_result = await db.execute(
+        select(Finding.status, func.count(Finding.id))
+        .join(CloudAccount, Finding.cloud_account_id == CloudAccount.id)
+        .where(
+            CloudAccount.tenant_id == tenant_id,
+            Finding.waived.is_(False),
+            Finding.status.in_(("pass", "fail")),
+        )
+        .group_by(Finding.status)
+    )
+    pass_count = 0
+    fail_count = 0
+    for status_val, count in status_result.all():
+        if status_val == "pass":
+            pass_count = count
+        elif status_val == "fail":
+            fail_count = count
+
+    total = pass_count + fail_count
+    current_score = round((pass_count / total) * 100.0, 1) if total > 0 else 0.0
+
+    p0_fix_count = priority_counts.get("P0", 0)
+    p0_p1_fix_count = p0_fix_count + priority_counts.get("P1", 0)
+
+    projected_after_p0 = round(((pass_count + p0_fix_count) / total) * 100.0, 1) if total > 0 else 0.0
+    projected_after_p0_p1 = round(((pass_count + p0_p1_fix_count) / total) * 100.0, 1) if total > 0 else 0.0
+
+    return {
+        "data": {
+            "priority_counts": priority_counts,
+            "top_remediation_groups": top_remediation_groups,
+            "current_secure_score": current_score,
+            "projected_after_p0": projected_after_p0,
+            "projected_after_p0_p1": projected_after_p0_p1,
+            "total_fail": fail_count,
+            "total_pass": pass_count,
+        },
+        "error": None,
+        "meta": None,
+    }

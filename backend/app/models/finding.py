@@ -59,6 +59,11 @@ class Finding(Base, UUIDPrimaryKey, TimestampMixin):
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False)  # pass|fail|error|not_applicable
     severity: Mapped[str] = mapped_column(String(20), default="medium")  # high|medium|low
+    # Priority layer fields — computed by the evaluator from
+    # severity + control.effort + control.exposure. Only populated for
+    # failing findings; NULL for pass/error/not_applicable.
+    priority: Mapped[str | None] = mapped_column(String(4), nullable=True)  # P0|P1|P2|P3
+    priority_score: Mapped[int | None] = mapped_column(nullable=True)  # 0-255 stable sort key
     dedup_key: Mapped[str] = mapped_column(String(1024), nullable=False)
     title: Mapped[str] = mapped_column(String(512), default="")
     jira_ticket_key: Mapped[str | None] = mapped_column(String(50), nullable=True)

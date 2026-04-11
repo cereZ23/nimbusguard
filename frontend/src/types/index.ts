@@ -22,10 +22,16 @@ export interface Asset {
   cloud_account_id: string;
 }
 
+export type Priority = "P0" | "P1" | "P2" | "P3";
+
 export interface Finding {
   id: string;
   status: FindingStatus;
   severity: Severity;
+  priority: Priority | null;
+  priority_score: number | null;
+  remediation_group: string | null;
+  remediation_action: string | null;
   title: string;
   dedup_key: string;
   waived: boolean;
@@ -40,6 +46,23 @@ export interface Finding {
   assignee_name: string | null;
   jira_ticket_key: string | null;
   jira_ticket_url: string | null;
+}
+
+export interface RemediationGroupSummary {
+  group: string;
+  action: string;
+  affected_count: number;
+  top_priority: Priority | null;
+}
+
+export interface PrioritySummary {
+  priority_counts: Record<Priority, number>;
+  top_remediation_groups: RemediationGroupSummary[];
+  current_secure_score: number;
+  projected_after_p0: number;
+  projected_after_p0_p1: number;
+  total_fail: number;
+  total_pass: number;
 }
 
 export interface CloudAccount {

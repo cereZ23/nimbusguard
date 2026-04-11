@@ -10,6 +10,10 @@ class FindingResponse(BaseModel):
     id: uuid.UUID
     status: str
     severity: str
+    priority: str | None = None
+    priority_score: int | None = None
+    remediation_group: str | None = None
+    remediation_action: str | None = None
     title: str
     dedup_key: str
     waived: bool

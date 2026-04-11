@@ -154,6 +154,18 @@ async def evaluate_all(
             control = controls_by_code[control_code]
             dedup_key = f"eval:{asset.provider_id}:{control_code}"
 
+            # Compute priority / priority_score for findings that represent
+            # a fail. Pass findings don't get a priority bucket — they
+            # aren't action items.
+            from app.services.priority import compute_priority, compute_priority_score
+
+            if eval_result.status == "fail":
+                priority_value = compute_priority(control.severity, control.effort, control.exposure)
+                priority_score_value = compute_priority_score(control.severity, control.effort, control.exposure)
+            else:
+                priority_value = None
+                priority_score_value = None
+
             # Look up existing finding from pre-loaded map (no DB query)
             finding = existing_findings_by_dedup.get(dedup_key)
 
@@ -161,6 +173,8 @@ async def evaluate_all(
                 finding.status = eval_result.status
                 finding.last_evaluated_at = now
                 finding.scan_id = scan_id
+                finding.priority = priority_value
+                finding.priority_score = priority_score_value
                 stats["findings_updated"] += 1
             else:
                 finding = Finding(
@@ -174,6 +188,8 @@ async def evaluate_all(
                     dedup_key=dedup_key,
                     first_detected_at=now,
                     last_evaluated_at=now,
+                    priority=priority_value,
+                    priority_score=priority_score_value,
                 )
                 db.add(finding)
                 existing_findings_by_dedup[dedup_key] = finding

@@ -18,6 +18,7 @@ import { TableSkeleton } from "@/components/ui/skeleton";
 import Pagination from "@/components/ui/pagination";
 import FilterPanel from "@/components/ui/filter-panel";
 import type { FilterConfig } from "@/components/ui/filter-panel";
+import PriorityBadge from "@/components/ui/priority-badge";
 import SortIndicator from "@/components/ui/sort-indicator";
 import api from "@/lib/api";
 import { extractApiError } from "@/lib/errors";
@@ -29,17 +30,24 @@ type FindingsSortColumn =
   | "severity"
   | "status"
   | "first_detected_at"
-  | "last_evaluated_at";
+  | "last_evaluated_at"
+  | "priority";
 
 type SortOrder = "asc" | "desc";
 
-const DEFAULT_SORT_BY: FindingsSortColumn = "last_evaluated_at";
+const DEFAULT_SORT_BY: FindingsSortColumn = "priority";
 const DEFAULT_SORT_ORDER: SortOrder = "desc";
 const DEFAULT_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
 
 // Filter keys that should be cleared on "Clear all"
-const FILTER_KEYS = ["severity", "status", "account_id"] as const;
+const FILTER_KEYS = [
+  "severity",
+  "status",
+  "account_id",
+  "priority",
+  "remediation_group",
+] as const;
 
 export default function FindingsPage() {
   return (
@@ -57,6 +65,8 @@ function FindingsContent() {
   // -- URL-derived state --
   const severityFilter = searchParams.get("severity") ?? "";
   const statusFilter = searchParams.get("status") ?? "";
+  const priorityFilter = searchParams.get("priority") ?? "";
+  const remediationGroupFilter = searchParams.get("remediation_group") ?? "";
   const accountIdFilter = searchParams.get("account_id") ?? "";
   const searchQuery = searchParams.get("search") ?? "";
   const sortBy = (searchParams.get("sort_by") ??
@@ -175,6 +185,18 @@ function FindingsContent() {
   const filterConfigs: FilterConfig[] = useMemo(() => {
     const configs: FilterConfig[] = [
       {
+        key: "priority",
+        label: "Priority",
+        type: "select",
+        options: [
+          { value: "P0", label: "P0 — Fix now" },
+          { value: "P1", label: "P1 — Fix this week" },
+          { value: "P2", label: "P2 — Fix this sprint" },
+          { value: "P3", label: "P3 — Best practice" },
+        ],
+        placeholder: "All Priorities",
+      },
+      {
         key: "severity",
         label: "Severity",
         type: "select",
@@ -217,11 +239,12 @@ function FindingsContent() {
 
   const filterValues: Record<string, string> = useMemo(() => {
     const values: Record<string, string> = {};
+    if (priorityFilter) values.priority = priorityFilter;
     if (severityFilter) values.severity = severityFilter;
     if (statusFilter) values.status = statusFilter;
     if (accountIdFilter) values.account_id = accountIdFilter;
     return values;
-  }, [severityFilter, statusFilter, accountIdFilter]);
+  }, [priorityFilter, severityFilter, statusFilter, accountIdFilter]);
 
   const handleFilterChange = useCallback(
     (key: string, value: string | null) => {
@@ -254,6 +277,12 @@ function FindingsContent() {
     if (statusFilter) {
       params.status = statusFilter;
     }
+    if (priorityFilter) {
+      params.priority = priorityFilter;
+    }
+    if (remediationGroupFilter) {
+      params.remediation_group = remediationGroupFilter;
+    }
     if (accountIdFilter) {
       params.account_id = accountIdFilter;
     }
@@ -280,6 +309,8 @@ function FindingsContent() {
     size,
     severityFilter,
     statusFilter,
+    priorityFilter,
+    remediationGroupFilter,
     accountIdFilter,
     searchQuery,
     sortBy,
@@ -491,6 +522,24 @@ function FindingsContent() {
                       </th>
                       <th
                         className={sortableThClass}
+                        onClick={() => handleSort("priority")}
+                        aria-sort={
+                          sortBy === "priority"
+                            ? sortOrder === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                      >
+                        Priority
+                        <SortIndicator
+                          column="priority"
+                          active={sortBy}
+                          order={sortOrder}
+                        />
+                      </th>
+                      <th
+                        className={sortableThClass}
                         onClick={() => handleSort("title")}
                         aria-sort={
                           sortBy === "title"
@@ -612,6 +661,9 @@ function FindingsContent() {
                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800"
                             aria-label={`Select finding: ${finding.title}`}
                           />
+                        </td>
+                        <td className="px-4 py-3">
+                          <PriorityBadge value={finding.priority} />
                         </td>
                         <td className="max-w-xs truncate px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
                           {finding.title}

@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from app.config.remediation_snippets import get_remediation_for_control
 from app.deps import DB, AdminUser, CurrentUser
 from app.models.cloud_account import CloudAccount
+from app.models.control import Control
 from app.models.exception import Exception_
 from app.models.finding import Finding
 from app.models.finding_comment import FindingComment
@@ -43,10 +44,22 @@ router = APIRouter()
 
 def _finding_response_with_assignee(finding: Finding) -> dict:
     """Build a dict suitable for FindingResponse, enriching assignee info if loaded."""
+    # Control fields may be denormalised eagerly or left for later — we
+    # populate them only when the control relationship was eager-loaded.
+    remediation_group = None
+    remediation_action = None
+    if finding.control is not None:
+        remediation_group = finding.control.remediation_group
+        remediation_action = finding.control.remediation_action
+
     data = {
         "id": finding.id,
         "status": finding.status,
         "severity": finding.severity,
+        "priority": finding.priority,
+        "priority_score": finding.priority_score,
+        "remediation_group": remediation_group,
+        "remediation_action": remediation_action,
         "title": finding.title,
         "dedup_key": finding.dedup_key,
         "waived": finding.waived,
@@ -96,6 +109,8 @@ async def list_findings(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     severity: str | None = Query(None),
+    priority: str | None = Query(None, pattern=r"^(P0|P1|P2|P3)$"),
+    remediation_group: str | None = Query(None),
     finding_status: str | None = Query(None, alias="status"),
     account_id: uuid.UUID | None = Query(None),
     asset_id: uuid.UUID | None = Query(None),
@@ -106,7 +121,7 @@ async def list_findings(
     date_to: str | None = Query(None),
     sort_by: str = Query(
         "last_evaluated_at",
-        pattern=r"^(title|severity|status|first_detected_at|last_evaluated_at)$",
+        pattern=r"^(title|severity|status|first_detected_at|last_evaluated_at|priority)$",
     ),
     sort_order: str = Query("desc", pattern=r"^(asc|desc)$"),
 ) -> dict:
@@ -114,7 +129,10 @@ async def list_findings(
         select(Finding)
         .join(CloudAccount)
         .where(CloudAccount.tenant_id == user.tenant_id)
-        .options(selectinload(Finding.assignee))
+        .options(
+            selectinload(Finding.assignee),
+            selectinload(Finding.control),
+        )
     )
     count_base = select(func.count(Finding.id)).join(CloudAccount).where(CloudAccount.tenant_id == user.tenant_id)
 
@@ -126,6 +144,17 @@ async def list_findings(
     if severity:
         base = base.where(Finding.severity == severity)
         count_base = count_base.where(Finding.severity == severity)
+    if priority:
+        base = base.where(Finding.priority == priority)
+        count_base = count_base.where(Finding.priority == priority)
+    if remediation_group:
+        # remediation_group lives on controls, join is required.
+        base = base.join(Control, Finding.control_id == Control.id).where(
+            Control.remediation_group == remediation_group
+        )
+        count_base = count_base.join(Control, Finding.control_id == Control.id).where(
+            Control.remediation_group == remediation_group
+        )
     if finding_status:
         base = base.where(Finding.status == finding_status)
         count_base = count_base.where(Finding.status == finding_status)
@@ -152,8 +181,14 @@ async def list_findings(
 
     total = (await db.execute(count_base)).scalar() or 0
 
-    sort_col = getattr(Finding, sort_by)
-    order = sort_col.desc() if sort_order == "desc" else sort_col.asc()
+    if sort_by == "priority":
+        # Sort by priority_score DESC (higher = more urgent) so that P0
+        # lands at the top. Ignore sort_order for this synthetic column —
+        # ascending priority doesn't have a natural meaning.
+        order = Finding.priority_score.desc().nulls_last()
+    else:
+        sort_col = getattr(Finding, sort_by)
+        order = sort_col.desc() if sort_order == "desc" else sort_col.asc()
     result = await db.execute(base.order_by(order).offset((page - 1) * size).limit(size))
     findings = result.scalars().all()
 

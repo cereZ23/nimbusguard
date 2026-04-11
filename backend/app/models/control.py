@@ -24,6 +24,15 @@ class Control(Base, UUIDPrimaryKey, TimestampMixin):
     # e.g. {"soc2": ["CC6.1", "CC6.6"], "nist": ["AC-2", "AC-3"]}
     framework_mappings: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
 
+    # ── Priority layer metadata ──────────────────────────────────────
+    # Populated by seed_controls from the yaml, with fallback to defaults
+    # inferred by ``app.services.priority`` helpers when the yaml doesn't
+    # specify a value.
+    effort: Mapped[str | None] = mapped_column(String(16), nullable=True)  # quick | moderate | refactor
+    exposure: Mapped[str | None] = mapped_column(String(16), nullable=True)  # internet | internal | none
+    remediation_group: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    remediation_action: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     findings: Mapped[list[Finding]] = relationship(back_populates="control", lazy="noload")
 
 
