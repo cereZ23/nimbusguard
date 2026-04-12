@@ -75,8 +75,12 @@ function LoginContent() {
 
     try {
       await login({ email, password });
-      // Full page reload ensures middleware sees the new cookie
-      const redirect = searchParams.get("redirect") || "/dashboard";
+      // Full page reload ensures middleware sees the new cookie.
+      // SECURITY: only allow relative paths to prevent open redirect
+      // (e.g. ?redirect=https://evil.com). See C-3 in brutal review.
+      const raw = searchParams.get("redirect") || "/dashboard";
+      const redirect =
+        raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard";
       window.location.href = redirect;
     } catch (err) {
       if (err instanceof MfaRequiredError) {
@@ -97,7 +101,9 @@ function LoginContent() {
 
     try {
       await completeMfaLogin(mfaToken, mfaCode.trim());
-      const redirect = searchParams.get("redirect") || "/dashboard";
+      const raw = searchParams.get("redirect") || "/dashboard";
+      const redirect =
+        raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard";
       window.location.href = redirect;
     } catch {
       setError("Invalid verification code. Please try again.");

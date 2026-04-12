@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.slack_integration import SlackIntegration
 from app.services.credentials import decrypt_value
+from app.utils.url_validation import create_ssrf_safe_client
 
 logger = logging.getLogger(__name__)
 
@@ -255,7 +255,7 @@ async def send_slack_notification(webhook_url: str, event_type: str, payload: di
     message = format_slack_message(event_type, payload)
 
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+        async with create_ssrf_safe_client(timeout=TIMEOUT) as client:
             resp = await client.post(webhook_url, json=message)
 
         if 200 <= resp.status_code < 300:
@@ -317,7 +317,7 @@ async def send_test_slack_notification(webhook_url: str) -> tuple[bool, str]:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+        async with create_ssrf_safe_client(timeout=TIMEOUT) as client:
             resp = await client.post(webhook_url, json=message)
 
         success = 200 <= resp.status_code < 300

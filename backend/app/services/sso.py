@@ -78,7 +78,7 @@ async def discover_oidc_config(issuer_url: str, metadata_url: str | None = None)
     base = issuer_url.rstrip("/")
     urls_to_try.append(f"{base}/.well-known/openid-configuration")
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with create_ssrf_safe_client(timeout=10.0) as client:
         for url in urls_to_try:
             try:
                 resp = await client.get(url)

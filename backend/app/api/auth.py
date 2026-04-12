@@ -8,11 +8,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
-from app.deps import DB, CurrentUser
+from app.deps import DB, AdminUser, CurrentUser
 from app.models.sso_config import SsoConfig
 from app.models.tenant import Tenant
 from app.models.user import User
-from app.rate_limit import limiter
+from app.rate_limit import get_client_ip, limiter
 from app.schemas.auth import (
     AuthCookieResponse,
     ForgotPasswordRequest,
@@ -114,8 +114,8 @@ async def password_strength(request: Request, body: dict) -> dict:
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/hour")
-async def register(request: Request, body: RegisterRequest, db: DB, user: CurrentUser) -> dict:
-    """Create a new tenant + admin user. Requires authentication (invitation-only model).
+async def register(request: Request, body: RegisterRequest, db: DB, user: AdminUser) -> dict:
+    """Create a new tenant + admin user. Requires admin role.
 
     This endpoint is used by the admin panel to provision new tenants.
     It does NOT set auth cookies (the caller remains logged in as themselves).
@@ -174,7 +174,7 @@ async def login(request: Request, body: LoginRequest, db: DB, response: Response
         action="user.login",
         resource_type="user",
         resource_id=str(user.id),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
     )
 
     access_token = create_access_token(str(user.id), str(user.tenant_id))
@@ -266,13 +266,18 @@ async def forgot_password(request: Request, body: ForgotPasswordRequest, db: DB)
     """Request a password reset link. Always returns 204 to prevent user enumeration."""
     token = await request_password_reset(db, body.email)
     if token:
-        reset_url = f"{settings.frontend_url}/reset-password?token={token}"
-        logger.info("Password reset requested for %s: %s", body.email, reset_url)
+        # SECURITY: Never log the token — it is a one-time credential.
+        # The URL should only be delivered via email (or fallback log in
+        # dev mode without SMTP). See C-1 in brutal-review-2026-04-12.
+        logger.info("Password reset requested for %s (token generated, not logged)", body.email)
+        # TODO: send the reset URL via email service once SMTP is configured.
+        # reset_url = f"{settings.frontend_url}/reset-password?token={token}"
     # Always return 204 regardless of whether the user exists
 
 
 @router.post("/reset-password")
-async def reset_password_endpoint(body: ResetPasswordRequest, db: DB) -> dict:
+@limiter.limit("10/hour")
+async def reset_password_endpoint(request: Request, body: ResetPasswordRequest, db: DB) -> dict:
     """Reset password using a valid reset token."""
     try:
         success = await reset_password(db, body.token, body.new_password)
@@ -486,7 +491,7 @@ async def mfa_login(request: Request, body: MfaLoginRequest, db: DB, response: R
         resource_type="user",
         resource_id=user_id,
         detail="MFA verified",
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
     )
 
     access_token = create_access_token(user_id, tenant_id)
@@ -533,6 +538,7 @@ async def sso_public_config(
 
 
 @router.get("/sso/authorize")
+@limiter.limit("20/minute")
 async def sso_authorize(
     db: DB,
     request: Request,
@@ -579,6 +585,7 @@ async def sso_authorize(
 
 
 @router.get("/sso/callback")
+@limiter.limit("20/minute")
 async def sso_callback(
     db: DB,
     request: Request,
@@ -641,7 +648,7 @@ async def sso_callback(
         resource_type="user",
         resource_id=str(user.id),
         detail=f"SSO provider: {sso_config.provider}",
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
     )
     await db.commit()
 

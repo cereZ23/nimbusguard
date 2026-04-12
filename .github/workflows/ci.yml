@@ -53,7 +53,10 @@ jobs:
       REDIS_URL: "redis://localhost:6379/0"
       DEBUG: "true"
       SECRET_KEY: "ci-test-secret-key-not-for-production"
-      CREDENTIAL_ENCRYPTION_KEY: ${{ secrets.CI_ENCRYPTION_KEY || 'dGobVEboxqrlrFeAn9pC4X7FRkJgypcWVmQ0Ry_FVFw=' }}
+      # SECURITY: Never use a hardcoded fallback for the encryption key.
+      # The CI secret must be set in GitHub Actions settings. If missing,
+      # the test conftest.py generates a throwaway Fernet key at runtime.
+      CREDENTIAL_ENCRYPTION_KEY: ${{ secrets.CI_ENCRYPTION_KEY }}
 
     steps:
       - uses: actions/checkout@v4

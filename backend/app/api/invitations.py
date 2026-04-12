@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from app.config.settings import settings
 from app.deps import DB, AdminUser
+from app.rate_limit import get_client_ip
 from app.schemas.common import ApiResponse
 from app.schemas.invitation import (
     AcceptInvitationRequest,
@@ -73,7 +74,7 @@ async def create_invite(
         resource_type="invitation",
         resource_id=str(invitation.id),
         detail=f"Invited {body.email} as {body.role}",
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
     )
 
     await db.commit()
@@ -149,7 +150,7 @@ async def resend_invite(
         resource_type="invitation",
         resource_id=str(invitation.id),
         detail=f"Resent invitation to {invitation.email}",
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
     )
 
     await db.commit()
@@ -195,7 +196,7 @@ async def revoke_invite(
         resource_type="invitation",
         resource_id=str(invitation.id),
         detail=f"Revoked invitation for {invitation.email}",
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
     )
 
     await db.commit()

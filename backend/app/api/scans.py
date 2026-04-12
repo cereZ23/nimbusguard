@@ -12,7 +12,7 @@ from app.exceptions import ConflictError
 from app.models.cloud_account import CloudAccount
 from app.models.finding import Finding
 from app.models.scan import Scan
-from app.rate_limit import limiter
+from app.rate_limit import get_client_ip, limiter
 from app.schemas.common import ApiResponse, PaginationMeta
 from app.schemas.scans import ScanCreate, ScanResponse
 from app.services.audit import record_audit
@@ -126,7 +126,7 @@ async def create_scan(request: Request, body: ScanCreate, db: DB, user: AdminUse
         resource_type="scan",
         resource_id=str(scan.id),
         detail=f"Scan triggered for account {body.cloud_account_id}",
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
     )
     await db.commit()
     await db.refresh(scan)

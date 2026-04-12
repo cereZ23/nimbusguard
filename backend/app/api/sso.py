@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import DB, AdminUser
 from app.models.sso_config import SsoConfig
+from app.rate_limit import get_client_ip
 from app.schemas.common import ApiResponse
 from app.schemas.sso import (
     SsoConfigCreate,
@@ -93,7 +94,7 @@ async def upsert_sso_config(
         action=action,
         resource_type="sso_config",
         resource_id=str(config.id),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
     )
     await db.commit()
     await db.refresh(config)
@@ -147,7 +148,7 @@ async def patch_sso_config(
         resource_type="sso_config",
         resource_id=str(config.id),
         detail=f"Fields updated: {', '.join(update_data.keys())}",
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
     )
     await db.commit()
     await db.refresh(config)
@@ -179,7 +180,7 @@ async def delete_sso_config(
         action="sso.config.deleted",
         resource_type="sso_config",
         resource_id=config_id,
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
     )
     await db.delete(config)
     await db.commit()

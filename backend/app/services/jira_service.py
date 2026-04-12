@@ -6,7 +6,6 @@ import base64
 import logging
 import uuid
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -14,6 +13,7 @@ from sqlalchemy.orm import selectinload
 from app.models.finding import Finding
 from app.models.jira_integration import JiraIntegration
 from app.services.credentials import decrypt_credentials, encrypt_credentials
+from app.utils.url_validation import create_ssrf_safe_client
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class JiraClient:
 
     async def test_connection(self) -> dict:
         """Test the Jira connection by fetching the current user."""
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with create_ssrf_safe_client(timeout=15) as client:
             resp = await client.get(
                 f"{self.base_url}/rest/api/2/myself",
                 headers=self._headers(),
@@ -70,7 +70,7 @@ class JiraClient:
 
         payload = {"fields": fields}
 
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with create_ssrf_safe_client(timeout=30) as client:
             resp = await client.post(
                 f"{self.base_url}/rest/api/2/issue",
                 headers=self._headers(),
@@ -84,7 +84,7 @@ class JiraClient:
 
     async def get_projects(self) -> list[dict]:
         """List available projects."""
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with create_ssrf_safe_client(timeout=15) as client:
             resp = await client.get(
                 f"{self.base_url}/rest/api/2/project",
                 headers=self._headers(),

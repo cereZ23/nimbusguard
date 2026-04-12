@@ -53,7 +53,7 @@ async def dispatch_webhooks(
 
             if wh.secret:
                 plain_secret = decrypt_value(wh.secret)
-                sig = hmac.new(plain_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
+                sig = hmac.HMAC(plain_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
                 headers["X-CSPM-Signature"] = f"sha256={sig}"
 
             async with create_ssrf_safe_client(timeout=TIMEOUT) as client:
@@ -94,7 +94,7 @@ async def send_test_webhook(webhook: Webhook) -> tuple[int, str]:
 
     if webhook.secret:
         plain_secret = decrypt_value(webhook.secret)
-        sig = hmac.new(plain_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
+        sig = hmac.HMAC(plain_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
         headers["X-CSPM-Signature"] = f"sha256={sig}"
 
     async with create_ssrf_safe_client(timeout=TIMEOUT) as client:

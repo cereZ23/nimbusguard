@@ -28,7 +28,7 @@ def _is_trusted_proxy(ip: str) -> bool:
     return False
 
 
-def _get_client_ip(request: Request) -> str:
+def get_client_ip(request: Request) -> str:
     """Extract real client IP. Only trust forwarded headers from known proxies."""
     direct_ip = request.client.host if request.client else "127.0.0.1"
 
@@ -44,4 +44,4 @@ def _get_client_ip(request: Request) -> str:
     return direct_ip
 
 
-limiter = Limiter(key_func=_get_client_ip, storage_uri=settings.redis_url)
+limiter = Limiter(key_func=get_client_ip, storage_uri=settings.redis_url)
