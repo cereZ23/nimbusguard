@@ -32,6 +32,10 @@ celery_app.conf.update(
             "task": "cleanup_old_evidence",
             "schedule": 86400.0,  # daily
         },
+        "cleanup-expired-refresh-tokens": {
+            "task": "cleanup_expired_refresh_tokens",
+            "schedule": 3600.0,  # hourly
+        },
     },
 )
 

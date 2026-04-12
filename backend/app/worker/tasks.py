@@ -363,3 +363,24 @@ async def _cleanup_evidence_async() -> dict:
         count = result.rowcount
         logger.info("Evidence cleanup: deleted %d rows older than 90 days", count)
         return {"deleted": count}
+
+
+@celery_app.task(name="cleanup_expired_refresh_tokens")
+def cleanup_expired_refresh_tokens() -> dict:
+    """Delete refresh tokens that have expired. Runs hourly via beat."""
+    logger.info("Starting refresh token cleanup")
+    return asyncio.run(_cleanup_refresh_tokens_async())
+
+
+async def _cleanup_refresh_tokens_async() -> dict:
+    from sqlalchemy import delete
+
+    from app.models.refresh_token import RefreshToken
+
+    async with _worker_session() as db:
+        result = await db.execute(delete(RefreshToken).where(RefreshToken.expires_at < datetime.now(UTC)))
+        await db.commit()
+        count = result.rowcount
+        if count > 0:
+            logger.info("Refresh token cleanup: deleted %d expired tokens", count)
+        return {"deleted": count}

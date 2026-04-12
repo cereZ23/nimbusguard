@@ -465,6 +465,7 @@ class AzureCollector:
             )
         )
         findings_by_dedup: dict[str, Finding] = {f.dedup_key: f for f in existing_findings_result.scalars().all()}
+        new_findings_for_evidence: list[tuple[Finding, dict]] = []
 
         query = "securityresources | where type == 'microsoft.security/assessments' | project id, name, properties"
         skip_token = None
@@ -534,19 +535,21 @@ class AzureCollector:
                     )
                     self.db.add(finding)
                     findings_by_dedup[dedup_key] = finding
+                    new_findings_for_evidence.append((finding, {**props, "name": assessment_id}))
                     self.stats["findings_created"] += 1
-
-                    # Save evidence with assessment_id for re-normalization
-                    evidence = Evidence(
-                        finding_id=finding.id,
-                        snapshot={**props, "name": assessment_id},
-                    )
-                    self.db.add(evidence)
 
             skip_token = response.skip_token
             if not skip_token:
                 break
 
+        # Flush all findings first so Postgres assigns IDs, then create
+        # evidence referencing the now-valid finding.id. Before this fix,
+        # evidence was added before flush, causing finding_id=None → NOT NULL
+        # violation that crashed the scan permanently.
+        await self.db.flush()
+
+        for finding, snapshot in new_findings_for_evidence:
+            self.db.add(Evidence(finding_id=finding.id, snapshot=snapshot))
         await self.db.flush()
         logger.info(
             "Recommendations: %d created, %d updated",

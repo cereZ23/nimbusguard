@@ -13,7 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.asset import Asset
@@ -92,6 +92,9 @@ def evaluate_asset(
     return results
 
 
+_ASSET_BATCH_SIZE = 500
+
+
 async def evaluate_all(
     db: AsyncSession,
     cloud_account_id: uuid.UUID,
@@ -99,19 +102,24 @@ async def evaluate_all(
 ) -> dict:
     """Evaluate all assets for a cloud account and create/update findings.
 
+    Assets are processed in batches of `_ASSET_BATCH_SIZE` to avoid
+    loading an entire subscription's worth of JSONB `raw_properties`
+    into RAM at once (which OOM-kills the Celery worker on accounts
+    with 5 000+ resources). Findings and evidence are flushed per
+    batch, keeping peak memory proportional to the batch size rather
+    than the total asset count.
+
     Returns stats dict with pass/fail/created/updated counts.
     """
-    # Load controls by code
+    from app.services.priority import compute_priority, compute_priority_score
+
+    # Load controls by code — small table, safe to keep in RAM.
     result = await db.execute(select(Control))
     controls_by_code = {c.code: c for c in result.scalars().all()}
 
-    # Load assets for this account
-    result = await db.execute(select(Asset).where(Asset.cloud_account_id == cloud_account_id))
-    assets = result.scalars().all()
-
-    # Batch-load all existing eval findings for this account to avoid N+1 queries.
-    # The dedup_key format is "eval:{provider_id}:{control_code}" so we can match
-    # by the "eval:" prefix and cloud_account_id.
+    # Pre-load existing eval findings for this account so dedup lookups
+    # are O(1). This table can be large but each row is much lighter
+    # than an Asset (no JSONB column). We keep it for the full run.
     existing_findings_result = await db.execute(
         select(Finding).where(
             Finding.cloud_account_id == cloud_account_id,
@@ -130,103 +138,122 @@ async def evaluate_all(
     }
     now = datetime.now(UTC)
 
-    # Collect new findings in a batch, then flush once to get IDs for evidence FKs
-    # Also cache check results to avoid running checks twice per asset
-    all_check_results: list[tuple[Asset, str, EvalResult]] = []
+    # Count total assets to iterate via keyset pagination.
+    total_result = await db.execute(
+        select(func.count()).select_from(Asset).where(Asset.cloud_account_id == cloud_account_id)
+    )
+    total_assets = total_result.scalar_one()
 
-    for asset in assets:
-        checks = evaluate_asset(asset, controls_by_code)
-        if not checks:
-            continue
-
-        stats["assets_evaluated"] += 1
-
-        for control_code, eval_result in checks:
-            stats["checks_run"] += 1
-            if eval_result.status == "pass":
-                stats["pass_count"] += 1
-            else:
-                stats["fail_count"] += 1
-
-            # Cache for evidence creation later
-            all_check_results.append((asset, control_code, eval_result))
-
-            control = controls_by_code[control_code]
-            dedup_key = f"eval:{asset.provider_id}:{control_code}"
-
-            # Compute priority / priority_score for findings that represent
-            # a fail. Pass findings don't get a priority bucket — they
-            # aren't action items.
-            from app.services.priority import compute_priority, compute_priority_score
-
-            if eval_result.status == "fail":
-                priority_value = compute_priority(control.severity, control.effort, control.exposure)
-                priority_score_value = compute_priority_score(control.severity, control.effort, control.exposure)
-            else:
-                priority_value = None
-                priority_score_value = None
-
-            # Look up existing finding from pre-loaded map (no DB query)
-            finding = existing_findings_by_dedup.get(dedup_key)
-
-            if finding:
-                finding.status = eval_result.status
-                finding.last_evaluated_at = now
-                finding.scan_id = scan_id
-                finding.priority = priority_value
-                finding.priority_score = priority_score_value
-                stats["findings_updated"] += 1
-            else:
-                finding = Finding(
-                    cloud_account_id=cloud_account_id,
-                    asset_id=asset.id,
-                    control_id=control.id,
-                    scan_id=scan_id,
-                    status=eval_result.status,
-                    severity=control.severity,
-                    title=control.name,
-                    dedup_key=dedup_key,
-                    first_detected_at=now,
-                    last_evaluated_at=now,
-                    priority=priority_value,
-                    priority_score=priority_score_value,
-                )
-                db.add(finding)
-                existing_findings_by_dedup[dedup_key] = finding
-                stats["findings_created"] += 1
-
-    # Single flush for all new findings — gets IDs in one DB roundtrip
-    await db.flush()
-
-    # Create evidence using cached check results (no second evaluate_asset call)
-    evidence_batch: list[Evidence] = []
-    for asset, control_code, eval_result in all_check_results:
-        dedup_key = f"eval:{asset.provider_id}:{control_code}"
-        finding = existing_findings_by_dedup.get(dedup_key)
-        if finding is None:
-            continue
-        evidence_batch.append(
-            Evidence(
-                finding_id=finding.id,
-                snapshot={
-                    "source": "evaluation_engine",
-                    "control_code": control_code,
-                    "status": eval_result.status,
-                    "description": eval_result.description,
-                    "resource_id": asset.provider_id,
-                    "resource_name": asset.name,
-                    "resource_type": asset.resource_type,
-                    "properties": eval_result.evidence,
-                    "evaluated_at": now.isoformat(),
-                },
-                collected_at=now,
-            )
+    offset = 0
+    while offset < total_assets:
+        # ── Load one batch of assets ────────────────────────────────
+        batch_result = await db.execute(
+            select(Asset)
+            .where(Asset.cloud_account_id == cloud_account_id)
+            .order_by(Asset.id)
+            .offset(offset)
+            .limit(_ASSET_BATCH_SIZE)
         )
+        batch = list(batch_result.scalars().all())
+        if not batch:
+            break
+        offset += len(batch)
 
-    # Batch add all evidence
-    if evidence_batch:
-        db.add_all(evidence_batch)
+        batch_check_results: list[tuple[Asset, str, EvalResult]] = []
+
+        for asset in batch:
+            checks = evaluate_asset(asset, controls_by_code)
+            if not checks:
+                continue
+
+            stats["assets_evaluated"] += 1
+
+            for control_code, eval_result in checks:
+                stats["checks_run"] += 1
+                if eval_result.status == "pass":
+                    stats["pass_count"] += 1
+                else:
+                    stats["fail_count"] += 1
+
+                batch_check_results.append((asset, control_code, eval_result))
+
+                control = controls_by_code[control_code]
+                dedup_key = f"eval:{asset.provider_id}:{control_code}"
+
+                if eval_result.status == "fail":
+                    priority_value = compute_priority(control.severity, control.effort, control.exposure)
+                    priority_score_value = compute_priority_score(control.severity, control.effort, control.exposure)
+                else:
+                    priority_value = None
+                    priority_score_value = None
+
+                # Look up existing finding from pre-loaded map (no DB query)
+                finding = existing_findings_by_dedup.get(dedup_key)
+
+                if finding:
+                    finding.status = eval_result.status
+                    finding.last_evaluated_at = now
+                    finding.scan_id = scan_id
+                    finding.priority = priority_value
+                    finding.priority_score = priority_score_value
+                    stats["findings_updated"] += 1
+                else:
+                    finding = Finding(
+                        cloud_account_id=cloud_account_id,
+                        asset_id=asset.id,
+                        control_id=control.id,
+                        scan_id=scan_id,
+                        status=eval_result.status,
+                        severity=control.severity,
+                        title=control.name,
+                        dedup_key=dedup_key,
+                        first_detected_at=now,
+                        last_evaluated_at=now,
+                        priority=priority_value,
+                        priority_score=priority_score_value,
+                    )
+                    db.add(finding)
+                    existing_findings_by_dedup[dedup_key] = finding
+                    stats["findings_created"] += 1
+
+        # ── Flush findings for this batch (gets IDs for evidence FKs) ──
         await db.flush()
+
+        # ── Create evidence for this batch ──────────────────────────
+        evidence_batch: list[Evidence] = []
+        for asset, control_code, eval_result in batch_check_results:
+            dedup_key = f"eval:{asset.provider_id}:{control_code}"
+            finding = existing_findings_by_dedup.get(dedup_key)
+            if finding is None:
+                continue
+            evidence_batch.append(
+                Evidence(
+                    finding_id=finding.id,
+                    snapshot={
+                        "source": "evaluation_engine",
+                        "control_code": control_code,
+                        "status": eval_result.status,
+                        "description": eval_result.description,
+                        "resource_id": asset.provider_id,
+                        "resource_name": asset.name,
+                        "resource_type": asset.resource_type,
+                        "properties": eval_result.evidence,
+                        "evaluated_at": now.isoformat(),
+                    },
+                    collected_at=now,
+                )
+            )
+        if evidence_batch:
+            db.add_all(evidence_batch)
+            await db.flush()
+
+        logger.info(
+            "Evaluated batch %d-%d / %d assets for account %s",
+            offset - len(batch) + 1,
+            offset,
+            total_assets,
+            cloud_account_id,
+        )
 
     # Calculate and update secure score
     total = stats["pass_count"] + stats["fail_count"]

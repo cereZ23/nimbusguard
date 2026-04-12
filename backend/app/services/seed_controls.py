@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 
 import yaml
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.control import Control
@@ -53,7 +52,19 @@ def _resolve_exposure(ctrl: dict) -> str:
 
 
 async def seed_controls(db: AsyncSession) -> int:
-    """Load controls from YAML and upsert into database. Returns count of controls upserted."""
+    """Load controls from YAML and upsert into database.
+
+    Uses a single ``INSERT ... ON CONFLICT (code) DO UPDATE`` per
+    control instead of the old SELECT-then-INSERT pattern. This is:
+    - **Atomic** — no TOCTOU race when two processes start concurrently.
+    - **Faster** — one statement per control instead of two.
+    - **Safe for rolling deploys** where both the API and Celery worker
+      run seed_controls at startup.
+
+    Returns count of controls upserted.
+    """
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
     with open(MAPPINGS_FILE) as f:
         data = yaml.safe_load(f)
 
@@ -61,46 +72,45 @@ async def seed_controls(db: AsyncSession) -> int:
     count = 0
 
     for ctrl in controls:
-        existing = await db.execute(select(Control).where(Control.code == ctrl["code"]))
-        control = existing.scalar_one_or_none()
-
         framework_mappings = ctrl.get("framework_mappings", {})
         effort = _resolve_effort(ctrl)
         exposure = _resolve_exposure(ctrl)
-        remediation_group = ctrl.get("remediation_group")
-        remediation_action = ctrl.get("remediation_action")
 
-        if control:
-            control.name = ctrl["name"]
-            control.description = ctrl["description"]
-            control.severity = ctrl["severity"]
-            control.framework = ctrl.get("framework", "cis-lite")
-            control.remediation_hint = ctrl.get("remediation_hint")
-            control.provider_check_ref = ctrl.get("provider_check_ref", {})
-            control.framework_mappings = framework_mappings
-            control.effort = effort
-            control.exposure = exposure
-            control.remediation_group = remediation_group
-            control.remediation_action = remediation_action
-        else:
-            control = Control(
-                code=ctrl["code"],
-                name=ctrl["name"],
-                description=ctrl["description"],
-                severity=ctrl["severity"],
-                framework=ctrl.get("framework", "cis-lite"),
-                remediation_hint=ctrl.get("remediation_hint"),
-                provider_check_ref=ctrl.get("provider_check_ref", {}),
-                framework_mappings=framework_mappings,
-                effort=effort,
-                exposure=exposure,
-                remediation_group=remediation_group,
-                remediation_action=remediation_action,
-            )
-            db.add(control)
+        values = {
+            "code": ctrl["code"],
+            "name": ctrl["name"],
+            "description": ctrl["description"],
+            "severity": ctrl["severity"],
+            "framework": ctrl.get("framework", "cis-lite"),
+            "remediation_hint": ctrl.get("remediation_hint"),
+            "provider_check_ref": ctrl.get("provider_check_ref", {}),
+            "framework_mappings": framework_mappings,
+            "effort": effort,
+            "exposure": exposure,
+            "remediation_group": ctrl.get("remediation_group"),
+            "remediation_action": ctrl.get("remediation_action"),
+        }
 
+        stmt = pg_insert(Control).values(**values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["code"],
+            set_={
+                "name": stmt.excluded.name,
+                "description": stmt.excluded.description,
+                "severity": stmt.excluded.severity,
+                "framework": stmt.excluded.framework,
+                "remediation_hint": stmt.excluded.remediation_hint,
+                "provider_check_ref": stmt.excluded.provider_check_ref,
+                "framework_mappings": stmt.excluded.framework_mappings,
+                "effort": stmt.excluded.effort,
+                "exposure": stmt.excluded.exposure,
+                "remediation_group": stmt.excluded.remediation_group,
+                "remediation_action": stmt.excluded.remediation_action,
+            },
+        )
+        await db.execute(stmt)
         count += 1
 
     await db.commit()
-    logger.info("Seeded %d controls with priority metadata", count)
+    logger.info("Seeded %d controls with priority metadata (ON CONFLICT upsert)", count)
     return count
