@@ -251,8 +251,8 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: 146.190.178.108
-          username: root
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER || 'deploy' }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e

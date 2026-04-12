@@ -119,6 +119,7 @@ class AzureCollector:
                     self.stats["assets_updated"] += 1
                 else:
                     asset = Asset(
+                        tenant_id=account.tenant_id,
                         cloud_account_id=account.id,
                         provider_id=provider_id,
                         name=row.get("name", ""),
@@ -335,6 +336,7 @@ class AzureCollector:
                     asset.last_seen_at = datetime.now(UTC)
                 else:
                     asset = Asset(
+                        tenant_id=account.tenant_id,
                         cloud_account_id=account.id,
                         provider_id=provider_id,
                         name=row.get("name", ""),
@@ -384,6 +386,7 @@ class AzureCollector:
             self.stats["assets_updated"] += 1
         else:
             asset = Asset(
+                tenant_id=account.tenant_id,
                 cloud_account_id=account.id,
                 provider_id=provider_id,
                 name=f"Subscription {subscription_id}",
@@ -432,6 +435,7 @@ class AzureCollector:
                     asset.last_seen_at = datetime.now(UTC)
                 else:
                     asset = Asset(
+                        tenant_id=account.tenant_id,
                         cloud_account_id=account.id,
                         provider_id=provider_id,
                         name=row.get("name", ""),
@@ -524,6 +528,7 @@ class AzureCollector:
                         severity = "medium"
 
                     finding = Finding(
+                        tenant_id=account.tenant_id,
                         cloud_account_id=account.id,
                         asset_id=asset.id if asset else None,
                         control_id=control_id,

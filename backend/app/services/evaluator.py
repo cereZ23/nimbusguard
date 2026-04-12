@@ -113,6 +113,11 @@ async def evaluate_all(
     """
     from app.services.priority import compute_priority, compute_priority_score
 
+    # Resolve the tenant_id for this cloud account — needed for the
+    # NOT NULL constraint on findings.tenant_id and assets.tenant_id.
+    acct_result = await db.execute(select(CloudAccount.tenant_id).where(CloudAccount.id == cloud_account_id))
+    tenant_id = acct_result.scalar_one()
+
     # Load controls by code — small table, safe to keep in RAM.
     result = await db.execute(select(Control))
     controls_by_code = {c.code: c for c in result.scalars().all()}
@@ -199,6 +204,7 @@ async def evaluate_all(
                     stats["findings_updated"] += 1
                 else:
                     finding = Finding(
+                        tenant_id=tenant_id,
                         cloud_account_id=cloud_account_id,
                         asset_id=asset.id,
                         control_id=control.id,

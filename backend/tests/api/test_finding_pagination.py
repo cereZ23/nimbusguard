@@ -55,6 +55,7 @@ async def _create_finding(db: AsyncSession, account_id: str) -> uuid.UUID:
     assert account is not None
 
     asset = Asset(
+        tenant_id=account.tenant_id,
         cloud_account_id=account.id,
         provider_id=f"/subscriptions/sub-test/vm/{uuid.uuid4().hex[:6]}",
         resource_type="microsoft.compute/virtualmachines",
@@ -75,6 +76,7 @@ async def _create_finding(db: AsyncSession, account_id: str) -> uuid.UUID:
     await db.flush()
 
     finding = Finding(
+        tenant_id=account.tenant_id,
         cloud_account_id=account.id,
         asset_id=asset.id,
         control_id=control.id,

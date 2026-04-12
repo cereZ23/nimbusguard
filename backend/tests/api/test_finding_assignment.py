@@ -10,6 +10,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.asset import Asset
+from app.models.cloud_account import CloudAccount
 from app.models.control import Control
 from app.models.finding import Finding
 
@@ -18,7 +19,9 @@ from app.models.finding import Finding
 
 async def _create_finding(db: AsyncSession, account_id: str) -> str:
     """Create a test finding and return its id."""
+    account = await db.get(CloudAccount, uuid.UUID(account_id))
     asset = Asset(
+        tenant_id=account.tenant_id,
         cloud_account_id=account_id,
         provider_id=f"/subscriptions/{uuid.uuid4().hex}",
         resource_type="Microsoft.Compute/virtualMachines",
@@ -38,6 +41,7 @@ async def _create_finding(db: AsyncSession, account_id: str) -> str:
     await db.flush()
 
     finding = Finding(
+        tenant_id=account.tenant_id,
         cloud_account_id=account_id,
         asset_id=asset.id,
         control_id=control.id,
