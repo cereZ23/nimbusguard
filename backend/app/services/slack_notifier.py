@@ -179,6 +179,108 @@ def format_finding_alert(payload: dict, severity: str) -> dict:
     }
 
 
+def _priority_emoji(priority: str) -> str:
+    """Return an emoji for the priority bucket."""
+    return {
+        "P0": ":red_circle:",
+        "P1": ":large_orange_circle:",
+        "P2": ":large_yellow_circle:",
+        "P3": ":large_green_circle:",
+    }.get(priority, ":white_circle:")
+
+
+def format_new_priority_findings(payload: dict) -> dict:
+    """Format finding.new_p0 event — new critical findings since last scan.
+
+    This is the core smart alerting message. It tells the SOC team
+    exactly what changed, how many new P0s appeared, what the Secure
+    Score impact is, and links to the filtered findings list.
+    """
+    account_name = payload.get("cloud_account_name", "Unknown")
+    new_p0 = payload.get("new_p0_count", 0)
+    new_p1 = payload.get("new_p1_count", 0)
+    total_new = new_p0 + new_p1
+    fixed_count = payload.get("fixed_count", 0)
+    secure_score = payload.get("secure_score")
+    scan_url = payload.get("scan_url", "")
+    findings_url = payload.get("findings_url", "")
+    findings_list = payload.get("new_findings", [])
+
+    # Header urgency based on P0 count
+    if new_p0 > 0:
+        header = f":rotating_light: {new_p0} New P0 Finding{'s' if new_p0 != 1 else ''} — Fix Now"
+        color = "#a30200"  # red
+    else:
+        header = f":warning: {new_p1} New P1 Finding{'s' if new_p1 != 1 else ''} — Fix This Week"
+        color = "#daa038"  # orange
+
+    score_text = f"{secure_score}%" if secure_score is not None else "N/A"
+
+    blocks: list[dict] = [
+        {
+            "type": "header",
+            "text": {"type": "plain_text", "text": header},
+        },
+        {
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f"*Account:*\n{account_name}"},
+                {"type": "mrkdwn", "text": f"*Secure Score:*\n{score_text}"},
+                {"type": "mrkdwn", "text": f"*New P0:*\n{new_p0}"},
+                {"type": "mrkdwn", "text": f"*New P1:*\n{new_p1}"},
+                {"type": "mrkdwn", "text": f"*Fixed:*\n{fixed_count}"},
+                {
+                    "type": "mrkdwn",
+                    "text": f"*Net delta:*\n{'+' if total_new > fixed_count else ''}{total_new - fixed_count}",
+                },
+            ],
+        },
+    ]
+
+    # Top 5 new findings with priority badge
+    for f in findings_list[:5]:
+        priority = f.get("priority", "P1")
+        emoji = _priority_emoji(priority)
+        title = f.get("title", "Unknown")
+        blocks.append(
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"{emoji} *{priority}* — {title}",
+                },
+            }
+        )
+
+    if len(findings_list) > 5:
+        blocks.append(
+            {
+                "type": "context",
+                "elements": [{"type": "mrkdwn", "text": f"_...and {len(findings_list) - 5} more new findings_"}],
+            }
+        )
+
+    # Action buttons
+    actions = []
+    if findings_url:
+        actions.append(
+            {
+                "type": "button",
+                "text": {"type": "plain_text", "text": "View P0 Findings"},
+                "url": findings_url,
+                "style": "danger",
+            }
+        )
+    if scan_url:
+        actions.append({"type": "button", "text": {"type": "plain_text", "text": "View Scan Detail"}, "url": scan_url})
+    if actions:
+        blocks.append({"type": "actions", "elements": actions})
+
+    return {
+        "attachments": [{"color": color, "blocks": blocks}],
+    }
+
+
 def format_scan_failed(payload: dict) -> dict:
     """Format scan.failed event as Slack Block Kit message."""
     account_name = payload.get("cloud_account_name", "Unknown")
@@ -226,6 +328,8 @@ def format_slack_message(event_type: str, payload: dict) -> dict:
     """Route event type to the appropriate formatter."""
     if event_type == "scan.completed":
         return format_scan_completed(payload)
+    if event_type == "finding.new_p0":
+        return format_new_priority_findings(payload)
     if event_type in ("finding.high", "finding.critical_change"):
         severity = "high" if event_type == "finding.high" else "critical"
         return format_finding_alert(payload, severity)

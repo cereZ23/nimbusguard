@@ -195,7 +195,7 @@ async def _post_scan_notifications(db: AsyncSession, scan, account, stats: dict)
     except Exception:
         logger.exception("Failed to dispatch Slack for scan.completed (scan %s)", scan.id)
 
-    # finding.high notifications
+    # finding.high notifications (legacy — kept for backward compatibility)
     try:
         from sqlalchemy import select
 
@@ -231,6 +231,128 @@ async def _post_scan_notifications(db: AsyncSession, scan, account, stats: dict)
             await _slack(db, tenant_id, "finding.high", finding_high_payload)
     except Exception:
         logger.exception("Failed to dispatch finding.high notifications (scan %s)", scan.id)
+
+    # Smart alerting: finding.new_p0 — only fires when NEW P0/P1
+    # findings appear that were not present in the previous scan.
+    # This is the key retention feature that turns PostureOne from
+    # "open the dashboard when you remember" to "get alerted on
+    # things that matter".
+    try:
+        await _dispatch_new_priority_alert(db, scan, account, stats)
+    except Exception:
+        logger.exception("Failed to dispatch finding.new_p0 alert (scan %s)", scan.id)
+
+
+async def _dispatch_new_priority_alert(db: AsyncSession, scan, account, stats: dict) -> None:
+    """Compare P0/P1 findings with the previous scan and alert on new ones.
+
+    Only fires when there are NEW P0 or P1 findings that did not exist
+    in the previous completed scan on the same account. This prevents
+    alert fatigue from re-sending the same findings every scan.
+    """
+    from sqlalchemy import select
+
+    from app.models.finding import Finding
+    from app.models.scan import Scan
+
+    tenant_id = str(account.tenant_id)
+
+    # Find the previous completed scan on this account.
+    prev_result = await db.execute(
+        select(Scan.id)
+        .where(
+            Scan.cloud_account_id == scan.cloud_account_id,
+            Scan.status == "completed",
+            Scan.id != scan.id,
+            Scan.finished_at < scan.finished_at,
+        )
+        .order_by(Scan.finished_at.desc())
+        .limit(1)
+    )
+    prev_scan_id = prev_result.scalar_one_or_none()
+
+    # Current P0 + P1 dedup keys.
+    curr_result = await db.execute(
+        select(Finding.dedup_key, Finding.priority, Finding.title, Finding.id).where(
+            Finding.scan_id == scan.id,
+            Finding.status == "fail",
+            Finding.priority.in_(["P0", "P1"]),
+        )
+    )
+    curr_findings = curr_result.all()
+
+    if not curr_findings:
+        return  # Nothing to alert on.
+
+    # Previous scan's P0+P1 dedup keys (empty set if first scan).
+    prev_keys: set[str] = set()
+    fixed_count = 0
+    if prev_scan_id is not None:
+        prev_result = await db.execute(
+            select(Finding.dedup_key).where(
+                Finding.scan_id == prev_scan_id,
+                Finding.status == "fail",
+                Finding.priority.in_(["P0", "P1"]),
+            )
+        )
+        prev_keys = {r[0] for r in prev_result.all()}
+
+        # Count fixed (were in prev, not in current).
+        curr_keys = {f.dedup_key for f in curr_findings}
+        fixed_count = len(prev_keys - curr_keys)
+
+    # Find NEW findings (in current but not in previous).
+    new_findings = [f for f in curr_findings if f.dedup_key not in prev_keys]
+
+    if not new_findings:
+        logger.info("No new P0/P1 findings for scan %s — skipping alert", scan.id)
+        return
+
+    new_p0 = [f for f in new_findings if f.priority == "P0"]
+    new_p1 = [f for f in new_findings if f.priority == "P1"]
+
+    # Build Secure Score from evaluator stats.
+    evaluator = stats.get("evaluator", {})
+    total = evaluator.get("pass_count", 0) + evaluator.get("fail_count", 0)
+    secure_score = round(evaluator.get("pass_count", 0) / total * 100, 1) if total > 0 else None
+
+    # Build URLs (best-effort — uses FRONTEND_URL from settings).
+    from app.config.settings import settings
+
+    base = settings.frontend_url.rstrip("/") if settings.frontend_url else ""
+    scan_url = f"{base}/scans/{scan.id}" if base else ""
+    findings_url = f"{base}/findings?priority=P0&status=fail" if base else ""
+
+    payload = {
+        "event": "finding.new_p0",
+        "scan_id": str(scan.id),
+        "cloud_account_id": str(account.id),
+        "cloud_account_name": account.display_name,
+        "new_p0_count": len(new_p0),
+        "new_p1_count": len(new_p1),
+        "fixed_count": fixed_count,
+        "secure_score": secure_score,
+        "scan_url": scan_url,
+        "findings_url": findings_url,
+        "new_findings": [
+            {"id": str(f.id), "title": f.title, "priority": f.priority}
+            for f in sorted(new_findings, key=lambda x: (x.priority, x.title))[:20]
+        ],
+    }
+
+    from app.services.slack_notifier import dispatch_slack_notifications
+    from app.services.webhook_dispatcher import dispatch_webhooks
+
+    await dispatch_webhooks(db, tenant_id, "finding.new_p0", payload)
+    await dispatch_slack_notifications(db, tenant_id, "finding.new_p0", payload)
+
+    logger.info(
+        "Smart alert dispatched for scan %s: %d new P0, %d new P1, %d fixed",
+        scan.id,
+        len(new_p0),
+        len(new_p1),
+        fixed_count,
+    )
 
 
 async def _notify_scan_failed(db: AsyncSession, scan, account) -> None:
