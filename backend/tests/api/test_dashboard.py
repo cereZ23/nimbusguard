@@ -200,7 +200,7 @@ async def test_priority_summary_counts_and_projection(
     db.add(
         Finding(
             tenant_id=seed_data["tenant_id"],
-        cloud_account_id=seed_data["account_id"],
+            cloud_account_id=seed_data["account_id"],
             asset_id=seed_data["asset_id"],
             control_id=seed_data["control_id"],
             status="fail",
@@ -216,7 +216,7 @@ async def test_priority_summary_counts_and_projection(
     db.add(
         Finding(
             tenant_id=seed_data["tenant_id"],
-        cloud_account_id=seed_data["account_id"],
+            cloud_account_id=seed_data["account_id"],
             asset_id=seed_data["asset_id"],
             control_id=seed_data["control_id"],
             status="pass",

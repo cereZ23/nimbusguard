@@ -647,7 +647,6 @@ async def test_evaluate_all_creates_findings(db: AsyncSession, auth_headers, cli
     assert acc_res.status_code == 201
     account_id = uuid.UUID(acc_res.json()["data"]["id"])
 
-
     acct = await db.get(CloudAccount, account_id)
     assert acct is not None
 
