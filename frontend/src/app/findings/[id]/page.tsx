@@ -18,6 +18,7 @@ import {
   Layers,
 } from "lucide-react";
 import AppShell from "@/components/layout/app-shell";
+import PriorityBadge from "@/components/ui/priority-badge";
 import SeverityBadge from "@/components/ui/severity-badge";
 import StatusBadge from "@/components/ui/status-badge";
 import ErrorState from "@/components/ui/error-state";
@@ -31,6 +32,7 @@ import { formatDate, formatDateTime } from "@/lib/dates";
 import type {
   FindingComment,
   FindingEvent,
+  Priority,
   SimilarFinding,
   TenantUser,
 } from "@/types";
@@ -39,6 +41,7 @@ interface FindingDetailData {
   id: string;
   status: string;
   severity: string;
+  priority: string | null;
   title: string;
   dedup_key: string;
   waived: boolean;
@@ -64,6 +67,8 @@ interface FindingDetailData {
     severity: string;
     framework: string;
     remediation_hint?: string;
+    effort?: string | null;
+    exposure?: string | null;
   } | null;
   evidences: Array<{
     id: string;
@@ -448,6 +453,12 @@ export default function FindingDetailPage() {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {finding.title}
                 </h1>
+                <PriorityBadge
+                  value={finding.priority as Priority | null}
+                  severity={finding.severity}
+                  effort={finding.control?.effort}
+                  exposure={finding.control?.exposure}
+                />
                 <SeverityBadge severity={finding.severity} />
                 <StatusBadge status={finding.status} />
                 {finding.waived && (

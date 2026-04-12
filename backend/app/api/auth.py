@@ -46,6 +46,7 @@ from app.services.auth import (
     verify_password,
 )
 from app.services.credentials import decrypt_value, encrypt_value
+from app.services.email import send_password_reset_email
 from app.services.mfa import (
     generate_backup_codes,
     generate_mfa_secret,
@@ -266,12 +267,11 @@ async def forgot_password(request: Request, body: ForgotPasswordRequest, db: DB)
     """Request a password reset link. Always returns 204 to prevent user enumeration."""
     token = await request_password_reset(db, body.email)
     if token:
+        reset_url = f"{settings.frontend_url}/reset-password?token={token}"
         # SECURITY: Never log the token — it is a one-time credential.
-        # The URL should only be delivered via email (or fallback log in
-        # dev mode without SMTP). See C-1 in brutal-review-2026-04-12.
-        logger.info("Password reset requested for %s (token generated, not logged)", body.email)
-        # TODO: send the reset URL via email service once SMTP is configured.
-        # reset_url = f"{settings.frontend_url}/reset-password?token={token}"
+        # Deliver via email only (falls back to logging in dev without SMTP).
+        await send_password_reset_email(body.email, reset_url)
+        logger.info("Password reset requested for %s (email dispatched)", body.email)
     # Always return 204 regardless of whether the user exists
 
 

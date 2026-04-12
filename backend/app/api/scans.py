@@ -14,7 +14,7 @@ from app.models.finding import Finding
 from app.models.scan import Scan
 from app.rate_limit import get_client_ip, limiter
 from app.schemas.common import ApiResponse, PaginationMeta
-from app.schemas.scans import ScanCreate, ScanResponse
+from app.schemas.scans import ScanCreate, ScanDetailResponse, ScanResponse
 from app.services.audit import record_audit
 
 logger = logging.getLogger(__name__)
@@ -209,8 +209,9 @@ async def list_scans(
     }
 
 
-@router.get("/{scan_id}", response_model=ApiResponse[ScanResponse])
+@router.get("/{scan_id}", response_model=ApiResponse[ScanDetailResponse])
 async def get_scan(scan_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
+    """Get scan detail with priority breakdown and delta vs previous scan."""
     result = await db.execute(
         select(Scan, CloudAccount)
         .join(CloudAccount, Scan.cloud_account_id == CloudAccount.id)
@@ -221,12 +222,57 @@ async def get_scan(scan_id: uuid.UUID, db: DB, user: CurrentUser) -> dict:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found")
     scan, account = row
     counts_by_scan = await _findings_counts(db, [scan.id])
-    return {
-        "data": _scan_to_response(
-            scan,
-            account=account,
-            counts=counts_by_scan.get(scan.id),
-        ),
-        "error": None,
-        "meta": None,
-    }
+    base = _scan_to_response(scan, account=account, counts=counts_by_scan.get(scan.id))
+
+    # Priority breakdown — count of failing findings per priority bucket.
+    prio_result = await db.execute(
+        select(Finding.priority, func.count())
+        .where(Finding.scan_id == scan.id, Finding.status == "fail")
+        .group_by(Finding.priority)
+    )
+    priority_breakdown = {row[0] or "none": row[1] for row in prio_result.all()}
+
+    # Delta vs previous scan — find the most recent completed scan on the
+    # same cloud account that finished before this one.
+    prev_result = await db.execute(
+        select(Scan.id)
+        .where(
+            Scan.cloud_account_id == scan.cloud_account_id,
+            Scan.status == "completed",
+            Scan.id != scan.id,
+            Scan.finished_at < scan.finished_at if scan.finished_at else Scan.finished_at.isnot(None),
+        )
+        .order_by(Scan.finished_at.desc())
+        .limit(1)
+    )
+    prev_scan_id = prev_result.scalar_one_or_none()
+
+    delta_new = 0
+    delta_fixed = 0
+    delta_unchanged = 0
+
+    if prev_scan_id is not None:
+        # Dedup keys present in each scan (only failing findings).
+        curr_keys_result = await db.execute(
+            select(Finding.dedup_key).where(Finding.scan_id == scan.id, Finding.status == "fail")
+        )
+        curr_keys = {r[0] for r in curr_keys_result.all()}
+
+        prev_keys_result = await db.execute(
+            select(Finding.dedup_key).where(Finding.scan_id == prev_scan_id, Finding.status == "fail")
+        )
+        prev_keys = {r[0] for r in prev_keys_result.all()}
+
+        delta_new = len(curr_keys - prev_keys)
+        delta_fixed = len(prev_keys - curr_keys)
+        delta_unchanged = len(curr_keys & prev_keys)
+
+    detail = ScanDetailResponse(
+        **base,
+        priority_breakdown=priority_breakdown,
+        delta_new=delta_new,
+        delta_fixed=delta_fixed,
+        delta_unchanged=delta_unchanged,
+        previous_scan_id=prev_scan_id,
+    )
+    return {"data": detail, "error": None, "meta": None}
