@@ -663,7 +663,10 @@ function FindingsContent() {
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <PriorityBadge value={finding.priority} />
+                          <PriorityBadge
+                            value={finding.priority}
+                            severity={finding.severity}
+                          />
                         </td>
                         <td className="max-w-xs truncate px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
                           {finding.title}

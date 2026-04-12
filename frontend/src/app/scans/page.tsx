@@ -428,7 +428,8 @@ function ScansContent() {
                       return (
                         <tr
                           key={scan.id}
-                          className={`border-b border-gray-100 dark:border-gray-700 ${
+                          onClick={() => router.push(`/scans/${scan.id}`)}
+                          className={`cursor-pointer border-b border-gray-100 transition-colors hover:bg-blue-50/50 dark:border-gray-700 dark:hover:bg-blue-900/10 ${
                             idx % 2 === 1
                               ? "bg-gray-50/50 dark:bg-gray-800/70"
                               : ""

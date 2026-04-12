@@ -90,6 +90,80 @@ async def send_invitation_email(
     msg.attach(MIMEText(text_body, "plain"))
     msg.attach(MIMEText(html_body, "html"))
 
+    _send(to_email, msg)
+
+
+async def send_password_reset_email(to_email: str, reset_url: str) -> None:
+    """Send a password reset email. Falls back to logging when SMTP is not configured."""
+    if not settings.smtp_host:
+        logger.warning(
+            "[EMAIL-FALLBACK] Password reset for %s: %s (SMTP not configured, logging only)",
+            to_email,
+            reset_url,
+        )
+        return
+
+    subject = "PostureOne — Reset your password"
+    body_style = (
+        "font-family: -apple-system, BlinkMacSystemFont,"
+        " 'Segoe UI', Roboto, sans-serif;"
+        " max-width: 600px; margin: 0 auto; padding: 20px;"
+    )
+    card_style = (
+        "background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; text-align: center;"
+    )
+    btn_style = (
+        "display: inline-block;"
+        " background: linear-gradient(135deg, #6366f1, #3b82f6);"
+        " color: white; text-decoration: none;"
+        " padding: 12px 32px; border-radius: 8px;"
+        " font-weight: 600; font-size: 15px;"
+    )
+    html_body = f"""\
+<html>
+<body style="{body_style}">
+    <div style="text-align: center; padding: 30px 0;">
+        <h1 style="color: #1e1b4b; font-size: 24px; margin-bottom: 8px;">PostureOne</h1>
+        <p style="color: #64748b; font-size: 14px;">Cloud Security Posture Management</p>
+    </div>
+    <div style="{card_style}">
+        <h2 style="color: #1e293b; font-size: 20px; margin-bottom: 12px;">Reset your password</h2>
+        <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+            We received a request to reset your password. Click the button
+            below to choose a new password.
+        </p>
+        <a href="{reset_url}" style="{btn_style}">
+            Reset Password
+        </a>
+        <p style="color: #94a3b8; font-size: 13px; margin-top: 24px;">
+            This link expires in 1 hour. If you didn't request this, you can safely ignore this email.
+        </p>
+    </div>
+    <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px;">
+        If the button doesn't work, copy and paste this URL into your browser:<br/>
+        <a href="{reset_url}" style="color: #6366f1; word-break: break-all;">{reset_url}</a>
+    </p>
+</body>
+</html>
+"""
+    text_body = (
+        "Reset your PostureOne password.\n\n"
+        f"Visit this URL to choose a new password:\n{reset_url}\n\n"
+        "This link expires in 1 hour. If you didn't request this, ignore this email."
+    )
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = settings.smtp_from
+    msg["To"] = to_email
+    msg.attach(MIMEText(text_body, "plain"))
+    msg.attach(MIMEText(html_body, "html"))
+
+    _send(to_email, msg)
+
+
+def _send(to_email: str, msg: MIMEMultipart) -> None:
+    """Low-level SMTP delivery with logging. Best-effort — does not raise."""
     try:
         with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
             server.ehlo()
@@ -99,8 +173,6 @@ async def send_invitation_email(
             if settings.smtp_user:
                 server.login(settings.smtp_user, settings.smtp_password)
             server.sendmail(settings.smtp_from, [to_email], msg.as_string())
-        logger.info("[EMAIL] Invitation sent to %s", to_email)
+        logger.info("[EMAIL] Sent to %s", to_email)
     except smtplib.SMTPException:
-        logger.exception("[EMAIL] Failed to send invitation to %s", to_email)
-        # Do not raise — the invitation was created, the email is a best-effort delivery.
-        # The admin can use the resend endpoint or share the link manually.
+        logger.exception("[EMAIL] Failed to send to %s", to_email)

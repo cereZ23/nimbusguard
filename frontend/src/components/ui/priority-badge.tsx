@@ -55,9 +55,38 @@ interface PriorityBadgeProps {
   value: Priority | null | undefined;
   /** If true, render as a dash placeholder when value is null. */
   placeholder?: boolean;
+  /** Optional formula inputs — when provided the tooltip shows the
+   *  specific reason this finding was bucketed as P0/P1/P2/P3. */
+  severity?: string | null;
+  effort?: string | null;
+  exposure?: string | null;
 }
 
-function PriorityBadge({ value, placeholder = true }: PriorityBadgeProps) {
+function buildFormulaTooltip(
+  value: Priority,
+  severity?: string | null,
+  effort?: string | null,
+  exposure?: string | null,
+): string {
+  const base = config[value].tooltip;
+  if (!severity) return base;
+  const parts = [`Severity: ${severity}`];
+  if (effort) parts.push(`Effort: ${effort}`);
+  if (exposure) parts.push(`Exposure: ${exposure}`);
+  const isExposed = exposure === "internet";
+  const formula = parts.join(" · ");
+  return isExposed
+    ? `${formula} (internet-exposed bump) → ${value}\n${base}`
+    : `${formula} → ${value}\n${base}`;
+}
+
+function PriorityBadge({
+  value,
+  placeholder = true,
+  severity,
+  effort,
+  exposure,
+}: PriorityBadgeProps) {
   if (!value) {
     if (!placeholder) return null;
     return (
@@ -67,9 +96,10 @@ function PriorityBadge({ value, placeholder = true }: PriorityBadgeProps) {
     );
   }
   const c = config[value];
+  const tooltip = buildFormulaTooltip(value, severity, effort, exposure);
   return (
     <span
-      title={c.tooltip}
+      title={tooltip}
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${c.bg} ${c.text} ${c.darkBg} ${c.darkText}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />

@@ -57,6 +57,8 @@ class ControlSummary(BaseModel):
     name: str
     severity: str
     framework: str
+    effort: str | None = None
+    exposure: str | None = None
 
     model_config = {"from_attributes": True}
 
