@@ -580,7 +580,7 @@ class TestCheckRegistry:
         #            7 VM hardening + 10 diagnostic settings sweep)
         # + 20 AWS = 179 registered evaluators.
         # Update whenever a new @check is added.
-        assert len(all_checks) == 179
+        assert len(all_checks) == 181
 
     def test_registry_case_insensitive(self):
         checks_lower = registry.get_checks_for("microsoft.storage/storageaccounts")

@@ -72,6 +72,18 @@ class AzureCollector:
         await self._collect_secure_score(credential, subscription_id, account)
         await self._collect_recommendations(client, subscription_id, account)
 
+        # Entra ID / Azure AD tenant state (Conditional Access, MFA registration).
+        # Requires Directory.Read.All + Policy.Read.All on the service principal.
+        # Fails gracefully if Graph permissions are not granted.
+        try:
+            from app.services.azure.entra_collector import collect_entra_id
+
+            entra_stats = await collect_entra_id(self.db, account)
+            self.stats["entra"] = entra_stats
+        except Exception:
+            logger.exception("Entra ID collection failed — Graph permissions may not be granted")
+            self.stats["entra"] = {"entra_collected": False, "error": "exception"}
+
         account.last_scan_at = datetime.now(UTC)
         await self.db.commit()
         return self.stats
