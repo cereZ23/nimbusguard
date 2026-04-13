@@ -286,6 +286,6 @@ Apache License 2.0. See [LICENSE](LICENSE).
 ---
 
 <p align="center">
-  Copyright &copy; 2026 Andrea Ceresoni. All rights reserved.<br/>
-  Licensed under the <a href="LICENSE">Apache License 2.0</a>.
+  Created by <strong><a href="https://github.com/cereZ23">Andrea Ceresoni</a></strong><br/>
+  Copyright &copy; 2026 Andrea Ceresoni &middot; <a href="LICENSE">Apache License 2.0</a>
 </p>
