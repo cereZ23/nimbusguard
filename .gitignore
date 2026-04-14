@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+*.db
+
+# Node
+node_modules/
+.next/
+.turbo/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Docker
+pgdata/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+htmlcov/
+.coverage
+coverage/
+
+# Claude Code internal
+.claude/
+CLAUDE.md
+cloude.md
+SECURITY_AUDIT.md
+resolved.txt
+.specify/
+
+# Test artifacts
+*.jsonl

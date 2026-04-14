@@ -1,0 +1,14 @@
+# CSPM Production Environment
+# Copy to .env on the server and fill in real values
+
+# Database
+DB_PASSWORD=CHANGE_ME_strong_random_password
+
+# Redis
+REDIS_PASSWORD=CHANGE_ME_strong_random_password
+
+# App secret (generate with: python -c "import secrets; print(secrets.token_hex(32))")
+SECRET_KEY=CHANGE_ME_generate_with_secrets_token_hex
+
+# Fernet key for credential encryption (generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+CREDENTIAL_ENCRYPTION_KEY=CHANGE_ME_generate_fernet_key

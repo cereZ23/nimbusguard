@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL_16-4169e1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/tests-1273_passing-brightgreen" alt="Tests" />
   <img src="https://img.shields.io/badge/checks-179-0ea5e9" alt="Security Checks" />
-  <img src="https://img.shields.io/badge/license-BSL%201.1-blue" alt="License" />
+  <img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License" />
   <br/>
   <a href="https://github.com/cereZ23/nimbusguard/actions"><img src="https://github.com/cereZ23/nimbusguard/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="https://img.shields.io/badge/security-CIS%20Benchmarks%20v3.0-00b4d8" alt="CIS Benchmarks" />
@@ -281,18 +281,11 @@ nimbusguard/
 
 ## License
 
-This project is licensed under the [Business Source License 1.1](LICENSE).
-
-You may use, modify, and distribute this software for **non-commercial purposes**.
-Commercial use requires a separate license from the author.
-
-On **April 14, 2030**, the code will automatically convert to Apache License 2.0.
-
-For commercial licensing inquiries: andrea@securekt.com
+Apache License 2.0. See [LICENSE](LICENSE).
 
 ---
 
 <p align="center">
   Created by <strong><a href="https://github.com/cereZ23">Andrea Ceresoni</a></strong><br/>
-  Copyright &copy; 2026 Andrea Ceresoni &middot; <a href="LICENSE">BSL 1.1</a>
+  Copyright &copy; 2026 Andrea Ceresoni &middot; <a href="LICENSE">Apache License 2.0</a>
 </p>

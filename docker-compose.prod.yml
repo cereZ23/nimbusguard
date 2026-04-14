@@ -1,0 +1,220 @@
+services:
+  cspm-db:
+    image: postgres:16-alpine
+    container_name: cspm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cspm
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: cspm
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes:
+    - cspm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U cspm
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+    networks:
+    - cspm-network
+  cspm-redis:
+    image: redis:7-alpine
+    container_name: cspm-redis
+    restart: unless-stopped
+    command: 'redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy
+      allkeys-lru --rename-command FLUSHALL "" --rename-command FLUSHDB "" --rename-command
+      DEBUG ""
+
+      '
+    volumes:
+    - cspm_redis:/data
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - -a
+      - ${REDIS_PASSWORD}
+      - ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    networks:
+    - cspm-network
+  cspm-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cspm-backend
+    restart: unless-stopped
+    environment:
+      DEBUG: 'false'
+      SECRET_KEY: ${SECRET_KEY}
+      DATABASE_URL: postgresql+asyncpg://cspm:${DB_PASSWORD}@cspm-db:5432/cspm
+      REDIS_URL: redis://:${REDIS_PASSWORD}@cspm-redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@cspm-redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@cspm-redis:6379/1
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY}
+      CORS_ORIGINS: '["https://cspm.securekt.com"]'
+      FRONTEND_URL: https://cspm.securekt.com
+    depends_on:
+      cspm-db:
+        condition: service_healthy
+      cspm-redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - python -c 'import urllib.request; urllib.request.urlopen("http://localhost:8000/health")'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+    networks:
+    - cspm-network
+    ports:
+    - 127.0.0.1:8001:8000
+  cspm-celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cspm-celery
+    restart: unless-stopped
+    command: celery -A app.worker.celery_app worker --loglevel=warning --concurrency=2
+    environment:
+      DEBUG: 'false'
+      SECRET_KEY: ${SECRET_KEY}
+      DATABASE_URL: postgresql+asyncpg://cspm:${DB_PASSWORD}@cspm-db:5432/cspm
+      REDIS_URL: redis://:${REDIS_PASSWORD}@cspm-redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@cspm-redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@cspm-redis:6379/1
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY}
+    depends_on:
+      cspm-db:
+        condition: service_healthy
+      cspm-redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: '5'
+    networks:
+    - cspm-network
+  cspm-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cspm-beat
+    restart: unless-stopped
+    command: celery -A app.worker.celery_app beat --loglevel=warning
+    environment:
+      DEBUG: 'false'
+      SECRET_KEY: ${SECRET_KEY}
+      DATABASE_URL: postgresql+asyncpg://cspm:${DB_PASSWORD}@cspm-db:5432/cspm
+      REDIS_URL: redis://:${REDIS_PASSWORD}@cspm-redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@cspm-redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@cspm-redis:6379/1
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY}
+    depends_on:
+      cspm-redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    networks:
+    - cspm-network
+  cspm-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cspm-frontend
+    restart: unless-stopped
+    environment:
+      API_URL: http://cspm-backend:8000
+    depends_on:
+      cspm-backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - wget -q --spider http://localhost:3000 || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    networks:
+    - cspm-network
+    ports:
+    - 127.0.0.1:3001:3000
+volumes:
+  cspm_pgdata: null
+  cspm_redis: null
+networks:
+  cspm-network:
+    driver: bridge

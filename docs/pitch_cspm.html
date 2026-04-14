@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; }
+
+  .page {
+    width: 210mm;
+    height: 297mm;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    padding: 0;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* === SLIDE 1 — TITLE === */
+  .page-1 {
+    background: #1a2332;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 60px 50px;
+  }
+  .page-1 .circle {
+    position: absolute;
+    top: -80px;
+    right: -100px;
+    width: 380px;
+    height: 380px;
+    border: 55px solid #2a3f5f;
+    border-radius: 50%;
+  }
+  .page-1 h1 {
+    font-size: 64px;
+    font-weight: 800;
+    color: #00d4ff;
+    margin-bottom: 8px;
+    line-height: 1.1;
+  }
+  .page-1 h2 {
+    font-size: 48px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.15;
+    margin-bottom: 20px;
+  }
+  .page-1 .tagline {
+    font-size: 17px;
+    color: #b0bec5;
+    margin-bottom: 80px;
+    max-width: 500px;
+    line-height: 1.5;
+  }
+  .stats-row {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 80px;
+  }
+  .stat { text-align: left; }
+  .stat .number {
+    font-size: 58px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .stat .label {
+    font-size: 13px;
+    color: #8899aa;
+    margin-top: 2px;
+  }
+  .stat .sublabel {
+    font-size: 11px;
+    color: #667788;
+  }
+  .stat:nth-child(1) .number { color: #00d4ff; }
+  .stat:nth-child(2) .number { color: #f5a623; }
+  .stat:nth-child(3) .number { color: #9b59b6; }
+  .stat:nth-child(4) .number { color: #2ecc71; }
+
+  .page-1 .footer-tag {
+    position: absolute;
+    bottom: 40px;
+    left: 60px;
+    font-size: 14px;
+    color: #2ecc71;
+  }
+
+  /* === SLIDE 2 — IL PROBLEMA === */
+  .page-2, .page-3, .page-4, .page-5 {
+    background: #fff;
+    color: #1a2332;
+    padding: 45px 55px 40px;
+    position: relative;
+  }
+  .page-title {
+    font-size: 38px;
+    font-weight: 800;
+    margin-bottom: 14px;
+  }
+  .page-subtitle {
+    font-size: 15px;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    max-width: 680px;
+  }
+  .page-subtitle strong { color: #f5a623; font-weight: 700; }
+
+  .problem-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .problem-stat {
+    flex: 1;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px 14px;
+    text-align: center;
+  }
+  .problem-stat .ps-num {
+    font-size: 40px;
+    font-weight: 800;
+    color: #f5a623;
+    line-height: 1.1;
+  }
+  .problem-stat:nth-child(3) .ps-num { color: #e74c3c; }
+  .problem-stat:nth-child(4) .ps-num { color: #e67e22; }
+  .problem-stat .ps-text {
+    font-size: 12px;
+    color: #777;
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  .section-heading {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: #1a2332;
+  }
+  .bullet-list {
+    list-style: disc;
+    padding-left: 22px;
+    font-size: 13.5px;
+    color: #444;
+    line-height: 1.9;
+  }
+  .bullet-list li { margin-bottom: 2px; }
+  .bullet-list strong { color: #1a2332; }
+
+  .page-footer {
+    position: absolute;
+    bottom: 22px;
+    left: 55px;
+    right: 55px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #999;
+  }
+
+  /* === SLIDE 3 — LA SOLUZIONE === */
+  .features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .feature-box {
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  .feature-box h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 5px;
+  }
+  .feature-box:nth-child(odd) h4 { color: #00d4ff; }
+  .feature-box:nth-child(even) h4 { color: #f5a623; }
+  .feature-box p {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.5;
+  }
+  .pipeline {
+    font-size: 13px;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* === SLIDE 4 — PERCHE' NIMBUSGUARD === */
+  .quote {
+    font-size: 16px;
+    font-style: italic;
+    color: #555;
+    margin-bottom: 28px;
+    line-height: 1.6;
+    border-left: 4px solid #00d4ff;
+    padding-left: 18px;
+  }
+  .differentiators {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .diff-card {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 20px 22px;
+    border-left: 4px solid #00d4ff;
+  }
+  .diff-card:nth-child(even) { border-left-color: #f5a623; }
+  .diff-card .diff-icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+  }
+  .diff-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a2332;
+    margin-bottom: 4px;
+  }
+  .diff-card p {
+    font-size: 12.5px;
+    color: #555;
+    line-height: 1.5;
+  }
+  .diff-card .diff-highlight {
+    font-size: 22px;
+    font-weight: 800;
+    color: #00d4ff;
+    margin-bottom: 2px;
+  }
+  .diff-card:nth-child(even) .diff-highlight { color: #f5a623; }
+
+  .auto-list {
+    list-style: disc;
+    padding-left: 22px;
+    font-size: 12.5px;
+    color: #444;
+    line-height: 1.85;
+  }
+  .auto-list strong { color: #1a2332; }
+
+  /* === SLIDE 5 — PIANI === */
+  .plans-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-bottom: 28px;
+  }
+  .plans-table thead th {
+    padding: 12px 10px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+  }
+  .plans-table thead th:nth-child(1) { background: transparent; }
+  .plans-table thead th:nth-child(2) { background: #5da5c8; border-radius: 8px 0 0 0; }
+  .plans-table thead th:nth-child(3) { background: #2c5282; }
+  .plans-table thead th:nth-child(4) { background: #2d3748; border-radius: 0 8px 0 0; }
+  .plans-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+    font-size: 12px;
+    color: #444;
+  }
+  .plans-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    color: #1a2332;
+  }
+  .plans-table tbody tr:nth-child(even) { background: #f9fafb; }
+
+  .next-steps { margin-bottom: 20px; }
+  .next-steps h3 {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 14px;
+  }
+  .next-steps ol {
+    list-style: none;
+    padding: 0;
+    counter-reset: steps;
+  }
+  .next-steps li {
+    counter-increment: steps;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 10px;
+    padding-left: 32px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .next-steps li::before {
+    content: counter(steps) ".";
+    position: absolute;
+    left: 0;
+    font-weight: 800;
+    color: #f5a623;
+    font-size: 16px;
+  }
+  .final-footer {
+    text-align: center;
+    color: #888;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-top: 16px;
+  }
+  .final-footer .brand {
+    font-weight: 700;
+    color: #1a2332;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== SLIDE 1 ==================== -->
+<div class="page page-1">
+  <div class="circle"></div>
+  <h1>PostureOne</h1>
+  <h2>Cloud Security<br>Posture Management</h2>
+  <p class="tagline">La piattaforma CSPM che ti dice cosa fixare prima, perche', e come &mdash;<br>con una formula trasparente, non un algoritmo black-box.</p>
+  <div class="stats-row">
+    <div class="stat">
+      <div class="number">181</div>
+      <div class="label">Controlli CIS</div>
+      <div class="sublabel">Azure + AWS</div>
+    </div>
+    <div class="stat">
+      <div class="number">P0-P3</div>
+      <div class="label">Triage Automatico</div>
+      <div class="sublabel">Prioritizzazione trasparente</div>
+    </div>
+    <div class="stat">
+      <div class="number">40</div>
+      <div class="label">Fix Pronti</div>
+      <div class="sublabel">Terraform / Bicep / CLI</div>
+    </div>
+    <div class="stat">
+      <div class="number">24/7</div>
+      <div class="label">Smart Alerting</div>
+      <div class="sublabel">Solo nuovi P0</div>
+    </div>
+  </div>
+  <div class="footer-tag">Il CSPM che ti dice cosa fixare, perche' e come</div>
+</div>
+
+<!-- ==================== SLIDE 2 ==================== -->
+<div class="page page-2">
+  <h2 class="page-title">Il Problema</h2>
+  <p class="page-subtitle">Ogni organizzazione ha un'<strong>infrastruttura cloud non monitorata</strong>: misconfigurazioni ignorate, policy assenti, compliance non verificata.</p>
+
+  <div class="problem-stats">
+    <div class="problem-stat">
+      <div class="ps-num">82%</div>
+      <div class="ps-text">dei breach cloud causati<br>da misconfigurazioni</div>
+    </div>
+    <div class="problem-stat">
+      <div class="ps-num">45%</div>
+      <div class="ps-text">delle risorse cloud ha almeno<br>una vulnerabilita' critica</div>
+    </div>
+    <div class="problem-stat">
+      <div class="ps-num">180+</div>
+      <div class="ps-text">giorni medi per rilevare<br>una misconfiguration</div>
+    </div>
+    <div class="problem-stat">
+      <div class="ps-num">67%</div>
+      <div class="ps-text">delle aziende non ha visibilita'<br>multi-cloud unificata</div>
+    </div>
+  </div>
+
+  <h3 class="section-heading">Oggi i team di sicurezza gestiscono il cloud con:</h3>
+  <ul class="bullet-list">
+    <li>Console native separate per ogni provider &mdash; nessuna vista unificata</li>
+    <li>Audit manuali trimestrali a 15-30K&euro; &mdash; obsoleti in giorni</li>
+    <li>Checklist CIS su fogli Excel &mdash; nessun aggiornamento automatico</li>
+    <li>Nessun monitoraggio continuo su misconfigurazioni e drift</li>
+    <li>Zero correlazione tra finding cross-cloud</li>
+    <li>Kubernetes e container completamente fuori dal radar sicurezza</li>
+  </ul>
+
+  <div class="page-footer">
+    <span>PostureOne &mdash; Confidenziale</span>
+    <span>Pagina 2</span>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 3 ==================== -->
+<div class="page page-3">
+  <h2 class="page-title">La Soluzione</h2>
+  <p class="page-subtitle">Una piattaforma <strong>CSPM con triage integrato</strong> che scansiona il cloud, classifica ogni finding per priorita' (P0-P3) con una formula trasparente, e fornisce il comando esatto per il fix &mdash; precompilato con i dati reali della risorsa.</p>
+
+  <div class="features-grid">
+    <div class="feature-box">
+      <h4>Triage P0-P3 Trasparente</h4>
+      <p>Ogni finding e' classificato P0/P1/P2/P3 con formula severity &times; effort &times; exposure. Nessun black-box ML &mdash; la formula e' nel YAML, ispezionabile e personalizzabile per tenant.</p>
+    </div>
+    <div class="feature-box">
+      <h4>Remediation Auto-Fill</h4>
+      <p>40 controlli con snippet Terraform, Bicep e Azure CLI precompilati con nome risorsa, resource group e subscription reali. Copia, incolla, fixato.</p>
+    </div>
+    <div class="feature-box">
+      <h4>181 Controlli CIS</h4>
+      <p>163 Azure (34 resource type, incluso Entra ID/MFA) + 20 AWS. Subscription-level: Defender plans, security contacts, RBAC owners, Conditional Access.</p>
+    </div>
+    <div class="feature-box">
+      <h4>Smart Alerting</h4>
+      <p>Notifiche Slack/Webhook solo su NUOVI P0/P1 &mdash; non ripete quelli gia' visti. Delta vs scan precedente, Secure Score, link diretto ai finding.</p>
+    </div>
+    <div class="feature-box">
+      <h4>Secure Score &amp; Proiezione</h4>
+      <p>Dashboard con score attuale &rarr; dopo fix P0 &rarr; dopo fix P0+P1. Esempio reale: 24% &rarr; 53% &rarr; 87% in una settimana di fix.</p>
+    </div>
+    <div class="feature-box">
+      <h4>Scan Drill-Down con Delta</h4>
+      <p>Ogni scan mostra: nuovi finding, finding risolti, invariati. Priority breakdown P0/P1/P2/P3 con click-through alla lista filtrata.</p>
+    </div>
+    <div class="feature-box">
+      <h4>Multi-Tenant Nativo</h4>
+      <p>Isolamento completo tra tenant su ogni query (verificato su 322 endpoint). Perfetto per MSSP che gestiscono piu' clienti da un'unica istanza.</p>
+    </div>
+    <div class="feature-box">
+      <h4>SSO/MFA + RBAC + Compliance</h4>
+      <p>Azure AD, Okta, Google OIDC. TOTP con backup codes. Ruoli custom. Export PDF/CSV per audit. Jira e Slack integrati. API Keys per CI/CD.</p>
+    </div>
+  </div>
+
+  <p class="pipeline">Connect &rarr; Collect &rarr; Evaluate (181 checks) &rarr; Triage (P0-P3) &rarr; Alert &rarr; Fix (auto-fill)</p>
+
+  <div class="page-footer">
+    <span>PostureOne &mdash; Confidenziale</span>
+    <span>Pagina 3</span>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 4 ==================== -->
+<div class="page page-4">
+  <h2 class="page-title">Perche' PostureOne</h2>
+  <p class="quote">"Non un altro scanner che produce rumore. PostureOne ti dice: questi sono i 12 finding P0 da fixare adesso, ognuno con il comando Terraform pronto. Fixali e il tuo Secure Score passa dal 24% all'87%."</p>
+
+  <div class="differentiators">
+    <div class="diff-card">
+      <div class="diff-highlight">Triage Trasparente</div>
+      <h4>Formula YAML, non black-box ML</h4>
+      <p>La formula P0-P3 e' nel YAML: severity &times; effort &times; exposure + bump internet. Ispezionabile, personalizzabile per tenant, auditabile. Nessun vendor lock-in.</p>
+    </div>
+    <div class="diff-card">
+      <div class="diff-highlight">Fix Copy-Paste</div>
+      <h4>Remediation precompilata con i tuoi dati</h4>
+      <p>40 snippet Terraform/Bicep/CLI con nome risorsa, resource group e subscription gia' inseriti. Apri il finding, copia, incolla nel terminale, fatto.</p>
+    </div>
+    <div class="diff-card">
+      <div class="diff-highlight">24% &rarr; 87%</div>
+      <h4>Secure Score projection</h4>
+      <p>La dashboard mostra esattamente quanto migliora il Secure Score fixando i P0, poi i P0+P1. Risultato reale su tenant di produzione: una settimana di fix = +63%.</p>
+    </div>
+    <div class="diff-card">
+      <div class="diff-highlight">Solo Nuovi P0</div>
+      <h4>Smart alerting senza alert fatigue</h4>
+      <p>Slack/Webhook solo quando compaiono NUOVI finding P0/P1 rispetto allo scan precedente. Non ripete gli stessi finding ad ogni scan. Delta, Secure Score e link diretto.</p>
+    </div>
+    <div class="diff-card">
+      <div class="diff-highlight">Multi-Tenant Nativo</div>
+      <h4>Perfetto per MSSP</h4>
+      <p>Isolamento completo tra tenant: dati, utenti, branding, policy e report separati. Verificato su 322 query endpoint. SSO/OIDC per tenant.</p>
+    </div>
+    <div class="diff-card">
+      <div class="diff-highlight">1/10 del Costo</div>
+      <h4>Funzionalita' Advisor, prezzo Scanner</h4>
+      <p>Nessuna licenza per asset o utente. Self-hosted. Lo stesso livello di triage di Wiz senza i 100K&euro;/anno e senza mandare i dati a terzi.</p>
+    </div>
+  </div>
+
+  <h3 class="section-heading">Numeri reali, non marketing</h3>
+  <ul class="auto-list">
+    <li><strong>181 controlli CIS</strong> &mdash; 163 Azure (34 resource type + Entra ID MFA) + 20 AWS</li>
+    <li><strong>40 snippet auto-fill</strong> &mdash; Terraform + Bicep + Azure CLI con valori reali</li>
+    <li><strong>Scan in ~6 secondi</strong> &mdash; testato su tenant Azure reale con 86 valutazioni</li>
+    <li><strong>19 gruppi di remediation</strong> &mdash; un fix risolve piu' finding contemporaneamente</li>
+    <li><strong>1.297 test backend</strong> &mdash; 89 frontend, CI/CD con Trivy image scan</li>
+    <li><strong>0 vulnerabilita' CRITICAL/HIGH</strong> &mdash; audit indipendente aprile 2026, grade A-</li>
+    <li><strong>Scan drill-down con delta</strong> &mdash; nuovi finding, risolti, invariati rispetto allo scan precedente</li>
+  </ul>
+
+  <div class="page-footer">
+    <span>PostureOne &mdash; Confidenziale</span>
+    <span>Pagina 4</span>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 5 ==================== -->
+<div class="page page-5">
+  <h2 class="page-title">Piani disponibili</h2>
+
+  <table class="plans-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Starter</th>
+        <th>Professional</th>
+        <th>Enterprise</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Target</td><td>PMI &lt;50 risorse</td><td>Mid-Market 50-500 risorse</td><td>Enterprise 500+ risorse</td></tr>
+      <tr><td>Tenant</td><td>1</td><td>5</td><td>Illimitati</td></tr>
+      <tr><td>Cloud provider</td><td>1 (Azure o AWS)</td><td>3 (Azure+AWS+GCP)</td><td>4 (Azure+AWS+GCP+K8s)</td></tr>
+      <tr><td>Scan freq.</td><td>Settimanale</td><td>Giornaliero</td><td>Continuo + on-demand</td></tr>
+      <tr><td>CIS Controls</td><td>181 base</td><td>181 + custom</td><td>181 + custom + private</td></tr>
+      <tr><td>Triage P0-P3</td><td>&#10003;</td><td>&#10003; + custom formula</td><td>&#10003; + custom per tenant</td></tr>
+      <tr><td>Remediation Auto-Fill</td><td>&#10003; 40 snippet</td><td>&#10003; + custom</td><td>&#10003; + custom + auto-remediation</td></tr>
+      <tr><td>Alerting</td><td>Email</td><td>Smart P0 Slack + Email</td><td>Smart P0 + Webhook + PagerDuty</td></tr>
+      <tr><td>API access</td><td>&mdash;</td><td>&#10003; REST API</td><td>&#10003; REST API + Webhook</td></tr>
+      <tr><td>Export</td><td>CSV</td><td>CSV + PDF</td><td>CSV + PDF + API</td></tr>
+      <tr><td>Support</td><td>Community</td><td>Email prioritario</td><td>CSM dedicato + SLA</td></tr>
+      <tr><td>Deploy</td><td>Docker Compose</td><td>Docker + assistito</td><td>K8s + dedicato</td></tr>
+    </tbody>
+  </table>
+
+  <div class="next-steps">
+    <h3>Prossimi passi</h3>
+    <ol>
+      <li><strong>Demo personalizzata</strong> con scan live sul vostro ambiente cloud</li>
+      <li><strong>PoC gratuito 14 giorni</strong> &mdash; deploy in 30 minuti con Docker Compose</li>
+      <li><strong>Proposta commerciale</strong> su misura per la vostra organizzazione</li>
+    </ol>
+  </div>
+
+  <div class="final-footer">
+    <span class="brand">PostureOne</span> &mdash; Cloud Security Posture Management<br>
+    Triage trasparente &bull; Fix pronti &bull; Multi-tenant &bull; Smart alerting &bull; Self-hosted
+  </div>
+
+  <div class="page-footer">
+    <span>PostureOne &mdash; Confidenziale</span>
+    <span>Pagina 5</span>
+  </div>
+</div>
+
+</body>
+</html>
