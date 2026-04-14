@@ -68,7 +68,6 @@ class Settings(BaseSettings):
     # Frontend URL (used to build invitation links)
     frontend_url: str = "http://localhost:3000"
 
-
     # AWS LocalStack endpoint (empty = real AWS)
     aws_endpoint_url: str = ""
 
