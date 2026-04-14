@@ -31,14 +31,6 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         count = await seed_controls(db)
         logger.info("Startup: seeded %d controls", count)
 
-    # Anonymous startup ping (silent, non-blocking)
-    try:
-        from app.services.telemetry import maybe_send_telemetry
-
-        await maybe_send_telemetry()
-    except Exception:
-        pass
-
     yield
     # Shutdown: close Redis connection pool
     try:
