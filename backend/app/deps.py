@@ -16,6 +16,14 @@ from app.services.auth import decode_access_token
 
 logger = logging.getLogger(__name__)
 
+# HTTP methods that do not mutate state — API keys without a write scope are
+# allowed through these regardless of scope.
+_SAFE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+# Scopes that grant the ability to perform mutating (unsafe) requests. A key
+# whose scopes are limited to {"read"} must never reach a write endpoint, no
+# matter which dependency guards it.
+_WRITE_CAPABLE_SCOPES = frozenset({"write", "admin", "scim", "scan"})
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
@@ -48,6 +56,19 @@ async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired API key",
+            )
+
+        # Global write-scope backstop: enforced here (not only inside
+        # require_role) so that endpoints guarded by plain CurrentUser cannot be
+        # mutated by a read-only key. require_role still applies its finer-grained
+        # check (e.g. scan keys remain barred from admin endpoints).
+        api_scopes = getattr(user, "_api_key_scopes", None) or []
+        if request.method not in _SAFE_HTTP_METHODS and not any(
+            s in _WRITE_CAPABLE_SCOPES for s in api_scopes
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="API key does not have write permission",
             )
 
         request.state.tenant_id = str(user.tenant_id)

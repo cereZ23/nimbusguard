@@ -527,7 +527,7 @@ async def bulk_waive_findings(body: BulkWaiveRequest, db: DB, user: AdminUser) -
     for fid in valid_ids:
         if fid in already_excepted:
             continue
-        exc = Exception_(finding_id=fid, reason=body.reason, status="requested")
+        exc = Exception_(finding_id=fid, reason=body.reason, status="requested", requested_by=user.email)
         db.add(exc)
         # Record timeline event for each waiver request
         await record_event(

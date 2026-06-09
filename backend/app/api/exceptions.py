@@ -116,8 +116,11 @@ async def approve_exception(exception_id: uuid.UUID, db: DB, user: AdminUser) ->
             detail=f"Cannot approve exception in status '{exc.status}'",
         )
 
-    # Separation of duties: requester cannot approve their own exception
-    if exc.requested_by and exc.requested_by == user.email:
+    # Separation of duties: requester cannot approve their own exception.
+    # Fail safe — an exception with no recorded requester cannot be approved,
+    # otherwise the four-eyes control could be bypassed by any path that omits
+    # requested_by.
+    if not exc.requested_by or exc.requested_by == user.email:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot approve your own exception request",

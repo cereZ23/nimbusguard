@@ -262,3 +262,62 @@ async def test_api_key_hash_is_sha256(client: AsyncClient, auth_headers: dict) -
         result = await db.execute(select(ApiKey).where(ApiKey.id == key_id))
         record = result.scalar_one()
         assert record.key_hash == expected_hash
+
+
+@pytest.mark.asyncio
+async def test_read_only_key_blocked_on_non_admin_write(client: AsyncClient, auth_headers: dict) -> None:
+    """Regression (H1 / BL-01): a read-only API key must be rejected on a write
+    endpoint guarded by plain CurrentUser (not require_role). The original fix
+    only covered require_role endpoints, leaving these mutable by read keys."""
+    create_res = await client.post(
+        "/api/v1/api-keys",
+        headers=auth_headers,
+        json={"name": "ReadOnly", "scopes": ["read"]},
+    )
+    full_key = create_res.json()["data"]["api_key"]
+    client.cookies.clear()
+
+    res = await client.post(
+        "/api/v1/saved-filters",
+        headers={"Authorization": f"Bearer {full_key}"},
+        json={"name": "f", "page": "findings", "filters": {}},
+    )
+    assert res.status_code == 403
+    assert "write permission" in res.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_write_scope_key_allowed_on_non_admin_write(client: AsyncClient, auth_headers: dict) -> None:
+    """Counterpart: a write-scoped key must still succeed on the same endpoint."""
+    create_res = await client.post(
+        "/api/v1/api-keys",
+        headers=auth_headers,
+        json={"name": "Writer", "scopes": ["read", "write"]},
+    )
+    full_key = create_res.json()["data"]["api_key"]
+    client.cookies.clear()
+
+    res = await client.post(
+        "/api/v1/saved-filters",
+        headers={"Authorization": f"Bearer {full_key}"},
+        json={"name": "f", "page": "findings", "filters": {}},
+    )
+    assert res.status_code == 201
+
+
+@pytest.mark.asyncio
+async def test_read_only_key_allowed_on_get(client: AsyncClient, auth_headers: dict) -> None:
+    """A read-only key must still be able to perform safe (GET) requests."""
+    create_res = await client.post(
+        "/api/v1/api-keys",
+        headers=auth_headers,
+        json={"name": "Reader", "scopes": ["read"]},
+    )
+    full_key = create_res.json()["data"]["api_key"]
+    client.cookies.clear()
+
+    res = await client.get(
+        "/api/v1/saved-filters",
+        headers={"Authorization": f"Bearer {full_key}"},
+    )
+    assert res.status_code == 200

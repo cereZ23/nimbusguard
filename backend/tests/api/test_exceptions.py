@@ -100,3 +100,29 @@ async def test_reject_exception(client: AsyncClient, auth_headers: dict, seed_da
 async def test_exception_requires_auth(client: AsyncClient) -> None:
     res = await client.get("/api/v1/exceptions")
     assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_bulk_waive_self_approval_blocked(client: AsyncClient, auth_headers: dict, seed_data: dict) -> None:
+    """Regression (M1 / BL-02↔BL-03): an exception created via bulk-waive must
+    still be subject to separation-of-duties. Previously bulk-waive left
+    requested_by NULL, so the requester could approve their own waiver."""
+    finding_id = seed_data["finding_id"]
+    client.cookies.clear()
+
+    bulk = await client.post(
+        "/api/v1/findings/bulk-waive",
+        headers=auth_headers,
+        json={"finding_ids": [finding_id], "reason": "bulk self-approval test"},
+    )
+    assert bulk.status_code == 200
+    assert bulk.json()["data"]["processed"] == 1
+
+    client.cookies.clear()
+    listed = await client.get("/api/v1/exceptions", headers=auth_headers)
+    exc_id = listed.json()["data"][0]["id"]
+
+    client.cookies.clear()
+    res = await client.put(f"/api/v1/exceptions/{exc_id}/approve", headers=auth_headers)
+    assert res.status_code == 403
+    assert "Cannot approve your own" in res.json()["detail"]
