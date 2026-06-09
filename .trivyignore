@@ -3,7 +3,7 @@
 # These CVEs are flagged HIGH but are accepted as known issues until Debian
 # ships a fix. Each entry must include rationale.
 #
-# Last reviewed: 2026-04-10
+# Last reviewed: 2026-06-10
 # Re-check periodically: `trivy image --severity HIGH ghcr.io/cerez23/nimbusguard/backend:latest`
 # When a fix is available in Debian, remove the entry and rebuild the image.
 #
@@ -22,3 +22,26 @@ CVE-2025-69720
 # attack surface does not exist in our deployment. The libs are pulled in only
 # as transitive dependencies and never invoked.
 CVE-2026-29111
+
+# perl-base CVEs (CRITICAL/HIGH) — Debian 13 (trixie), status fix_deferred /
+# affected (no Debian fix available; `apt-get upgrade` cannot resolve them).
+# Affected: perl-base 5.40.1-6, an Essential Debian package that cannot be
+# removed without breaking dpkg/apt.
+# Rationale: the backend is a Python/uvicorn service. It runs NO Perl scripts
+# and never invokes the vulnerable modules (Archive::Tar, IO::Compress,
+# IO::Uncompress::Unzip) or the Perl compiler. Every one of these CVEs requires
+# attacker-controlled input to be fed to a Perl archive/compress tool, which
+# does not happen in our deployment — perl-base is present only as a transitive
+# base-image dependency. Re-check when Debian publishes a fixed perl-base.
+# CVE-2026-42496 — perl-archive-tar: path traversal via crafted symlinks (CRITICAL)
+CVE-2026-42496
+# CVE-2026-8376 — perl: heap buffer overflow compiling crafted regex (CRITICAL)
+CVE-2026-8376
+# CVE-2026-42497 — Archive::Tar < 3.08: hardlink extraction attack
+CVE-2026-42497
+# CVE-2026-48959 — IO::Uncompress::Unzip < 2.220: CPU exhaustion
+CVE-2026-48959
+# CVE-2026-48962 — perl-IO-Compress: ACE via attacker-controlled output glob
+CVE-2026-48962
+# CVE-2026-9538 — Archive::Tar < 3.10: memory exhaustion
+CVE-2026-9538
