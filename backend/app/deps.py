@@ -63,9 +63,7 @@ async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends
         # mutated by a read-only key. require_role still applies its finer-grained
         # check (e.g. scan keys remain barred from admin endpoints).
         api_scopes = getattr(user, "_api_key_scopes", None) or []
-        if request.method not in _SAFE_HTTP_METHODS and not any(
-            s in _WRITE_CAPABLE_SCOPES for s in api_scopes
-        ):
+        if request.method not in _SAFE_HTTP_METHODS and not any(s in _WRITE_CAPABLE_SCOPES for s in api_scopes):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="API key does not have write permission",
