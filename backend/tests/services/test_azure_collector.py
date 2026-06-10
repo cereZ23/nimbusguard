@@ -26,7 +26,6 @@ from app.models.tenant import Tenant
 from app.services.azure import collector as collector_mod
 from app.services.azure.collector import AzureCollector
 
-
 # ── Fakes ───────────────────────────────────────────────────────────
 
 
@@ -190,47 +189,79 @@ async def test_run_full_scan_end_to_end(db, patch_sdk, patch_subcollectors, monk
     routes = {
         # inventory query (starts with "Resources | project ...")
         "Resources | project": [
-            {"id": nsg_id, "name": "nsg1", "type": "microsoft.network/networksecuritygroups",
-             "location": "westeurope", "tags": {}, "properties": {}},
-            {"id": vm_id, "name": "vm1", "type": "microsoft.compute/virtualmachines",
-             "location": "westeurope", "tags": {"env": "prod"}, "properties": {"x": 1}},
+            {
+                "id": nsg_id,
+                "name": "nsg1",
+                "type": "microsoft.network/networksecuritygroups",
+                "location": "westeurope",
+                "tags": {},
+                "properties": {},
+            },
+            {
+                "id": vm_id,
+                "name": "vm1",
+                "type": "microsoft.compute/virtualmachines",
+                "location": "westeurope",
+                "tags": {"env": "prod"},
+                "properties": {"x": 1},
+            },
         ],
         "flowlogs": [
-            {"id": "/flowlog1", "name": "fl1",
-             "properties": {"targetResourceId": nsg_id, "enabled": True,
-                            "retentionPolicy": {"days": 30}}},
+            {
+                "id": "/flowlog1",
+                "name": "fl1",
+                "properties": {"targetResourceId": nsg_id, "enabled": True, "retentionPolicy": {"days": 30}},
+            },
         ],
         "diagnosticsettings": [
-            {"id": diag_id, "name": "diag1",
-             "properties": {"workspaceId": "ws1", "logs": [{"a": 1}], "metrics": []}},
+            {"id": diag_id, "name": "diag1", "properties": {"workspaceId": "ws1", "logs": [{"a": 1}], "metrics": []}},
         ],
         "activitylogalerts": [
-            {"id": "/alert1", "name": "alert1", "type": "microsoft.insights/activitylogalerts",
-             "location": "global", "tags": {}, "properties": {"enabled": True}},
+            {
+                "id": "/alert1",
+                "name": "alert1",
+                "type": "microsoft.insights/activitylogalerts",
+                "location": "global",
+                "tags": {},
+                "properties": {"enabled": True},
+            },
         ],
         "roledefinitions": [
-            {"id": "/roledef1", "name": "customrole",
-             "properties": {"type": "CustomRole", "roleName": "MyRole"}},
+            {"id": "/roledef1", "name": "customrole", "properties": {"type": "CustomRole", "roleName": "MyRole"}},
         ],
         "microsoft.security/assessments": [
-            {"id": "/assess1", "name": "uuid-1",
-             "properties": {"status": {"code": "Unhealthy"},
-                            "displayName": "Encrypt disks",
-                            "resourceDetails": {"Id": vm_id},
-                            "metadata": {"severity": "High"}}},
-            {"id": "/assess2", "name": "uuid-2",
-             "properties": {"status": {"code": "Healthy"},
-                            "displayName": "OK check",
-                            "resourceDetails": {"Id": vm_id}}},
-            {"id": "/assess3", "name": "uuid-3",
-             "properties": {"status": {"code": "NotApplicable"},
-                            "displayName": "NA check",
-                            "resourceDetails": {"Id": "/unknown"}}},
+            {
+                "id": "/assess1",
+                "name": "uuid-1",
+                "properties": {
+                    "status": {"code": "Unhealthy"},
+                    "displayName": "Encrypt disks",
+                    "resourceDetails": {"Id": vm_id},
+                    "metadata": {"severity": "High"},
+                },
+            },
+            {
+                "id": "/assess2",
+                "name": "uuid-2",
+                "properties": {
+                    "status": {"code": "Healthy"},
+                    "displayName": "OK check",
+                    "resourceDetails": {"Id": vm_id},
+                },
+            },
+            {
+                "id": "/assess3",
+                "name": "uuid-3",
+                "properties": {
+                    "status": {"code": "NotApplicable"},
+                    "displayName": "NA check",
+                    "resourceDetails": {"Id": "/unknown"},
+                },
+            },
         ],
     }
     monkeypatch.setattr(collector_mod, "_query_resource_graph", _make_query_router(routes))
-    _patch_secure_score(monkeypatch, status=200,
-                        payload={"properties": {"score": {"current": 45, "max": 60}}})
+    _patch_secure_score(monkeypatch, status=200, payload={"properties": {"score": {"current": 45, "max": 60}}})
 
     collector = AzureCollector(db, scan)
     stats = await collector.run()
@@ -249,9 +280,7 @@ async def test_run_full_scan_end_to_end(db, patch_sdk, patch_subcollectors, monk
     assert vm.raw_properties["diagnosticSettings"][0]["logs_count"] == 1
 
     # Subscription synthetic asset created
-    sub = (await db.execute(
-        select(Asset).where(Asset.provider_id == "/subscriptions/sub-abc")
-    )).scalar_one()
+    sub = (await db.execute(select(Asset).where(Asset.provider_id == "/subscriptions/sub-abc"))).scalar_one()
     assert sub.raw_properties["defender_plans"] == {"VirtualMachines": "Standard"}
 
     # Findings created with right statuses
@@ -295,11 +324,16 @@ async def test_run_with_control_normalization(db, patch_sdk, patch_subcollectors
     routes = {
         "Resources | project": [],
         "microsoft.security/assessments": [
-            {"id": "/a1", "name": "uuid-match",
-             "properties": {"status": {"code": "Unhealthy"},
-                            "displayName": "Mapped finding",
-                            "resourceDetails": {"Id": "/x"},
-                            "metadata": {"severity": "weird"}}},
+            {
+                "id": "/a1",
+                "name": "uuid-match",
+                "properties": {
+                    "status": {"code": "Unhealthy"},
+                    "displayName": "Mapped finding",
+                    "resourceDetails": {"Id": "/x"},
+                    "metadata": {"severity": "weird"},
+                },
+            },
         ],
     }
     monkeypatch.setattr(collector_mod, "_query_resource_graph", _make_query_router(routes))
@@ -323,10 +357,15 @@ async def test_incremental_scan_updates_findings(db, patch_sdk, patch_subcollect
     routes = {
         "Resources | project": [],
         "microsoft.security/assessments": [
-            {"id": "/a1", "name": "uuid-x",
-             "properties": {"status": {"code": "Unhealthy"},
-                            "displayName": "Flaky check",
-                            "resourceDetails": {"Id": "/res1"}}},
+            {
+                "id": "/a1",
+                "name": "uuid-x",
+                "properties": {
+                    "status": {"code": "Unhealthy"},
+                    "displayName": "Flaky check",
+                    "resourceDetails": {"Id": "/res1"},
+                },
+            },
         ],
     }
     monkeypatch.setattr(collector_mod, "_query_resource_graph", _make_query_router(routes))
@@ -376,14 +415,25 @@ async def test_inventory_pagination_and_update(db, patch_sdk, patch_subcollector
     new_id = "/subscriptions/sub-abc/providers/Microsoft.Compute/vm/newvm"
     paged = {
         "Resources | project": [
-            ([{"id": existing_id, "name": "new-name", "type": "vm", "location": "westus",
-               "tags": {}, "properties": {}}], "TOKEN1"),
-            ([{"id": new_id, "name": "newvm", "type": "vm", "location": "westus",
-               "tags": {}, "properties": {}}], None),
+            (
+                [
+                    {
+                        "id": existing_id,
+                        "name": "new-name",
+                        "type": "vm",
+                        "location": "westus",
+                        "tags": {},
+                        "properties": {},
+                    }
+                ],
+                "TOKEN1",
+            ),
+            ([{"id": new_id, "name": "newvm", "type": "vm", "location": "westus", "tags": {}, "properties": {}}], None),
         ],
     }
     monkeypatch.setattr(
-        collector_mod, "_query_resource_graph",
+        collector_mod,
+        "_query_resource_graph",
         _make_query_router({"microsoft.security/assessments": []}, paged=paged),
     )
     _patch_secure_score(monkeypatch, status=500)
@@ -420,11 +470,14 @@ async def test_subscription_collection_failure_is_swallowed(db, patch_sdk, monke
     monkeypatch.setattr(entra_mod, "collect_entra_id", _entra_boom)
 
     monkeypatch.setattr(
-        collector_mod, "_query_resource_graph",
-        _make_query_router({
-            "Resources | project": [],
-            "microsoft.security/assessments": [],
-        }),
+        collector_mod,
+        "_query_resource_graph",
+        _make_query_router(
+            {
+                "Resources | project": [],
+                "microsoft.security/assessments": [],
+            }
+        ),
     )
     _patch_secure_score(monkeypatch, status=200, payload={"properties": {"score": {}}})
 
@@ -432,9 +485,7 @@ async def test_subscription_collection_failure_is_swallowed(db, patch_sdk, monke
     stats = await collector.run()
 
     # No subscription synthetic asset created because collection raised.
-    sub = (await db.execute(
-        select(Asset).where(Asset.provider_id == "/subscriptions/sub-abc")
-    )).scalar_one_or_none()
+    sub = (await db.execute(select(Asset).where(Asset.provider_id == "/subscriptions/sub-abc"))).scalar_one_or_none()
     assert sub is None
     assert stats["entra"] == {"entra_collected": False, "error": "exception"}
 
@@ -449,8 +500,14 @@ async def test_subscription_state_updates_existing_asset(db, patch_sdk, patch_su
     routes = {
         # inventory returns the subscription-id asset so it pre-exists in the map
         "Resources | project": [
-            {"id": sub_id, "name": "sub", "type": "microsoft.subscription/subscription",
-             "location": "global", "tags": {}, "properties": {}},
+            {
+                "id": sub_id,
+                "name": "sub",
+                "type": "microsoft.subscription/subscription",
+                "location": "global",
+                "tags": {},
+                "properties": {},
+            },
         ],
         "microsoft.security/assessments": [],
     }
@@ -480,16 +537,25 @@ async def test_supplementary_edge_branches(db, patch_sdk, patch_subcollectors, m
     vm_id = "/subscriptions/sub-abc/providers/Microsoft.Compute/VirtualMachines/Vm1"
     diag_lower = vm_id.lower() + "/providers/microsoft.insights/diagnosticsettings/d1"
 
-    for pid, rtype in [(alert_id, "microsoft.insights/activitylogalerts"),
-                       (role_id, "microsoft.authorization/roledefinitions")]:
-        db.add(Asset(tenant_id=account.tenant_id, cloud_account_id=account.id,
-                     provider_id=pid, name="old", resource_type=rtype, region="global"))
+    for pid, rtype in [
+        (alert_id, "microsoft.insights/activitylogalerts"),
+        (role_id, "microsoft.authorization/roledefinitions"),
+    ]:
+        db.add(
+            Asset(
+                tenant_id=account.tenant_id,
+                cloud_account_id=account.id,
+                provider_id=pid,
+                name="old",
+                resource_type=rtype,
+                region="global",
+            )
+        )
     await db.flush()
 
     routes = {
         "Resources | project": [
-            {"id": vm_id, "name": "vm", "type": "vm", "location": "x",
-             "tags": {}, "properties": {}},
+            {"id": vm_id, "name": "vm", "type": "vm", "location": "x", "tags": {}, "properties": {}},
         ],
         "flowlogs": [
             # No targetResourceId -> the `if not target_id: continue` branch.
@@ -499,12 +565,17 @@ async def test_supplementary_edge_branches(db, patch_sdk, patch_subcollectors, m
             # id missing the separator -> `if sep_idx < 0: continue`.
             {"id": "/no-separator-here", "name": "d0", "properties": {}},
             # id with separator but target only matches case-insensitively.
-            {"id": diag_lower, "name": "d1",
-             "properties": {"logs": [], "metrics": [{"m": 1}]}},
+            {"id": diag_lower, "name": "d1", "properties": {"logs": [], "metrics": [{"m": 1}]}},
         ],
         "activitylogalerts": [
-            {"id": alert_id, "name": "al1", "type": "microsoft.insights/activitylogalerts",
-             "location": "global", "tags": {}, "properties": {"enabled": False}},
+            {
+                "id": alert_id,
+                "name": "al1",
+                "type": "microsoft.insights/activitylogalerts",
+                "location": "global",
+                "tags": {},
+                "properties": {"enabled": False},
+            },
         ],
         "roledefinitions": [
             {"id": role_id, "name": "r1", "properties": {"type": "CustomRole"}},
@@ -535,8 +606,11 @@ async def test_incremental_backfills_missing_control_id(db, patch_sdk, patch_sub
     tenant, account = await _make_account(db)
 
     control = Control(
-        code=f"CIS-{uuid.uuid4().hex[:4]}", name="C", description="d",
-        severity="high", framework="cis-lite",
+        code=f"CIS-{uuid.uuid4().hex[:4]}",
+        name="C",
+        description="d",
+        severity="high",
+        framework="cis-lite",
         provider_check_ref={"azure": "uuid-bf"},
     )
     db.add(control)
@@ -544,9 +618,12 @@ async def test_incremental_backfills_missing_control_id(db, patch_sdk, patch_sub
 
     # Existing finding with no control_id, status "fail".
     existing = Finding(
-        tenant_id=account.tenant_id, cloud_account_id=account.id,
-        status="fail", severity="medium",
-        dedup_key="azure:/res-bf:Backfill check", title="Backfill check",
+        tenant_id=account.tenant_id,
+        cloud_account_id=account.id,
+        status="fail",
+        severity="medium",
+        dedup_key="azure:/res-bf:Backfill check",
+        title="Backfill check",
     )
     db.add(existing)
     await db.flush()
@@ -554,10 +631,15 @@ async def test_incremental_backfills_missing_control_id(db, patch_sdk, patch_sub
     routes = {
         "Resources | project": [],
         "microsoft.security/assessments": [
-            {"id": "/a", "name": "uuid-bf",
-             "properties": {"status": {"code": "Healthy"},
-                            "displayName": "Backfill check",
-                            "resourceDetails": {"Id": "/res-bf"}}},
+            {
+                "id": "/a",
+                "name": "uuid-bf",
+                "properties": {
+                    "status": {"code": "Healthy"},
+                    "displayName": "Backfill check",
+                    "resourceDetails": {"Id": "/res-bf"},
+                },
+            },
         ],
     }
     monkeypatch.setattr(collector_mod, "_query_resource_graph", _make_query_router(routes))
@@ -567,7 +649,7 @@ async def test_incremental_backfills_missing_control_id(db, patch_sdk, patch_sub
     await inc.run()
 
     await db.refresh(existing)
-    assert existing.status == "pass"          # changed -> updated branch
+    assert existing.status == "pass"  # changed -> updated branch
     assert existing.control_id == control.id  # control_id backfilled
     assert inc.stats["findings_updated"] == 1
 
@@ -577,15 +659,17 @@ async def test_secure_score_missing_max_skips_persist(db, patch_sdk, patch_subco
     tenant, account = await _make_account(db)
     scan = await _make_scan(db, account, "full")
     monkeypatch.setattr(
-        collector_mod, "_query_resource_graph",
-        _make_query_router({
-            "Resources | project": [],
-            "microsoft.security/assessments": [],
-        }),
+        collector_mod,
+        "_query_resource_graph",
+        _make_query_router(
+            {
+                "Resources | project": [],
+                "microsoft.security/assessments": [],
+            }
+        ),
     )
     # current present but max is 0 -> falsy -> skip persistence
-    _patch_secure_score(monkeypatch, status=200,
-                        payload={"properties": {"score": {"current": 5, "max": 0}}})
+    _patch_secure_score(monkeypatch, status=200, payload={"properties": {"score": {"current": 5, "max": 0}}})
 
     collector = AzureCollector(db, scan)
     await collector.run()

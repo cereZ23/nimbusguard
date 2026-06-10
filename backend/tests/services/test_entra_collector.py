@@ -10,7 +10,6 @@ graceful-degradation logic without hitting Azure / Graph.
 from __future__ import annotations
 
 import uuid
-from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import select
@@ -127,9 +126,7 @@ async def _make_account(db) -> CloudAccount:
 async def test_collect_happy_path(db, patch_graph):
     account = await _make_account(db)
     _FakeGraphClient.routes = {
-        "conditionalAccess/policies": _FakeResponse(
-            200, {"value": [{"id": "p1"}, {"id": "p2"}]}
-        ),
+        "conditionalAccess/policies": _FakeResponse(200, {"value": [{"id": "p1"}, {"id": "p2"}]}),
         "directoryRoles": _FakeResponse(
             200,
             {

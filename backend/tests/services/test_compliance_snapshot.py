@@ -95,7 +95,7 @@ async def test_cis_azure_pass_fail_aggregation(db):
 
     c_pass = await _control(db, framework="cis-lite")
     c_fail = await _control(db, framework="cis-lite")
-    c_nodata = await _control(db, framework="cis-lite")  # no findings -> ignored
+    await _control(db, framework="cis-lite")  # no findings -> ignored by the snapshot
 
     # passing control: only pass findings
     await _finding(db, tenant_id=t.id, account_id=acc.id, control_id=c_pass.id, status="pass")
@@ -177,13 +177,17 @@ async def test_upsert_updates_existing_row(db):
 
     # exactly one row in DB for cis_azure today
     rows = (
-        await db.execute(
-            select(ComplianceSnapshot).where(
-                ComplianceSnapshot.tenant_id == t.id,
-                ComplianceSnapshot.framework == "cis_azure",
+        (
+            await db.execute(
+                select(ComplianceSnapshot).where(
+                    ComplianceSnapshot.tenant_id == t.id,
+                    ComplianceSnapshot.framework == "cis_azure",
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(rows) == 1
 
 
@@ -209,18 +213,30 @@ async def test_get_compliance_trend(db):
 
     # in-window + out-of-window snapshots
     recent = ComplianceSnapshot(
-        tenant_id=t.id, framework="cis_azure", score=80.0,
-        total_controls=10, passing_controls=8, failing_controls=2,
+        tenant_id=t.id,
+        framework="cis_azure",
+        score=80.0,
+        total_controls=10,
+        passing_controls=8,
+        failing_controls=2,
         snapshot_date=today - timedelta(days=5),
     )
     old = ComplianceSnapshot(
-        tenant_id=t.id, framework="cis_azure", score=50.0,
-        total_controls=10, passing_controls=5, failing_controls=5,
+        tenant_id=t.id,
+        framework="cis_azure",
+        score=50.0,
+        total_controls=10,
+        passing_controls=5,
+        failing_controls=5,
         snapshot_date=today - timedelta(days=90),
     )
     other_fw = ComplianceSnapshot(
-        tenant_id=t.id, framework="soc2", score=90.0,
-        total_controls=10, passing_controls=9, failing_controls=1,
+        tenant_id=t.id,
+        framework="soc2",
+        score=90.0,
+        total_controls=10,
+        passing_controls=9,
+        failing_controls=1,
         snapshot_date=today,
     )
     db.add_all([recent, old, other_fw])

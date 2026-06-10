@@ -31,9 +31,7 @@ _cache_module._redis = None
 
 # Honor DATABASE_URL when provided (CI sets it to the same value); falls back to
 # the local default. Allows parallel test shards to target isolated databases.
-TEST_DATABASE_URL = os.environ.get(
-    "DATABASE_URL", "postgresql+asyncpg://cspm:cspm@localhost:5432/cspm_test"
-)
+TEST_DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+asyncpg://cspm:cspm@localhost:5432/cspm_test")
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 TestSession = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)

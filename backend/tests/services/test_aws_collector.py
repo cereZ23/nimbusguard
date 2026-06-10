@@ -27,10 +27,8 @@ from app.models.control import Control
 from app.models.finding import Finding
 from app.models.scan import Scan
 from app.models.tenant import Tenant
-from app.services.aws import collector as collector_mod
 from app.services.aws.collector import AwsCollector, _normalize_resource_type, _sanitize_for_json
 from app.services.credentials import encrypt_credentials
-
 
 # ── tenant_id injection (test-side only) ────────────────────────────────
 
@@ -160,15 +158,9 @@ def _make_fake_clients(*, empty=False, raise_all=False):
     else:
         s3 = SimpleNamespace(
             exceptions=exc,
-            list_buckets=lambda: {
-                "Buckets": [{"Name": "my-bucket", "CreationDate": datetime(2020, 1, 1, tzinfo=UTC)}]
-            },
-            get_public_access_block=lambda Bucket: {
-                "PublicAccessBlockConfiguration": {"BlockPublicAcls": True}
-            },
-            get_bucket_encryption=lambda Bucket: {
-                "ServerSideEncryptionConfiguration": {"Rules": []}
-            },
+            list_buckets=lambda: {"Buckets": [{"Name": "my-bucket", "CreationDate": datetime(2020, 1, 1, tzinfo=UTC)}]},
+            get_public_access_block=lambda Bucket: {"PublicAccessBlockConfiguration": {"BlockPublicAcls": True}},
+            get_bucket_encryption=lambda Bucket: {"ServerSideEncryptionConfiguration": {"Rules": []}},
             get_bucket_versioning=lambda Bucket: {"Status": "Enabled"},
             get_bucket_logging=lambda Bucket: {"LoggingEnabled": {"TargetBucket": "logs"}},
             get_bucket_tagging=lambda Bucket: {"TagSet": [{"Key": "env", "Value": "prod"}]},
@@ -188,6 +180,7 @@ def _make_fake_clients(*, empty=False, raise_all=False):
             describe_flow_logs=lambda **k: {"FlowLogs": []},
         )
     else:
+
         def ec2_paginator(op):
             pages = {
                 "describe_instances": [
@@ -235,9 +228,7 @@ def _make_fake_clients(*, empty=False, raise_all=False):
 
         ec2 = SimpleNamespace(
             get_paginator=ec2_paginator,
-            describe_vpcs=lambda: {
-                "Vpcs": [{"VpcId": "vpc-1", "Tags": [{"Key": "Name", "Value": "main"}]}]
-            },
+            describe_vpcs=lambda: {"Vpcs": [{"VpcId": "vpc-1", "Tags": [{"Key": "Name", "Value": "main"}]}]},
             describe_flow_logs=lambda **k: {"FlowLogs": [{"FlowLogId": "fl-1"}]},
         )
 
@@ -300,6 +291,7 @@ def _make_fake_clients(*, empty=False, raise_all=False):
     elif empty:
         lam = SimpleNamespace(list_functions=lambda **k: {"Functions": []})
     else:
+
         def list_functions(**kwargs):
             if kwargs.get("Marker") == "next":
                 return {"Functions": [{"FunctionName": "fn2"}]}
@@ -326,9 +318,7 @@ def _make_fake_clients(*, empty=False, raise_all=False):
     else:
         ct = SimpleNamespace(
             describe_trails=lambda: {
-                "trailList": [
-                    {"Name": "trail1", "TrailARN": "arn:aws:cloudtrail:us-east-1:123456789012:trail/trail1"}
-                ]
+                "trailList": [{"Name": "trail1", "TrailARN": "arn:aws:cloudtrail:us-east-1:123456789012:trail/trail1"}]
             },
             get_trail_status=lambda Name: {"IsLogging": True},
         )
@@ -351,6 +341,7 @@ def _make_fake_clients(*, empty=False, raise_all=False):
     elif empty:
         sh = SimpleNamespace(get_findings=lambda **k: {"Findings": []})
     else:
+
         def get_findings(**kwargs):
             if kwargs.get("NextToken") == "tok":
                 return {
@@ -396,10 +387,9 @@ def _make_fake_clients(*, empty=False, raise_all=False):
     if raise_all:
         cfg = SimpleNamespace(describe_compliance_by_config_rule=err)
     elif empty:
-        cfg = SimpleNamespace(
-            describe_compliance_by_config_rule=lambda **k: {"ComplianceByConfigRules": []}
-        )
+        cfg = SimpleNamespace(describe_compliance_by_config_rule=lambda **k: {"ComplianceByConfigRules": []})
     else:
+
         def describe_compliance(**kwargs):
             if kwargs.get("NextToken") == "ctok":
                 return {
@@ -408,9 +398,7 @@ def _make_fake_clients(*, empty=False, raise_all=False):
                     ]
                 }
             return {
-                "ComplianceByConfigRules": [
-                    {"ConfigRuleName": "rule1", "Compliance": {"ComplianceType": "COMPLIANT"}}
-                ],
+                "ComplianceByConfigRules": [{"ConfigRuleName": "rule1", "Compliance": {"ComplianceType": "COMPLIANT"}}],
                 "NextToken": "ctok",
             }
 
@@ -619,9 +607,7 @@ async def test_incremental_status_change_updates(db, _tenant_holder, patch_boto3
     # Flip the failing finding's status in the DB so incremental sees a change.
     from sqlalchemy import select
 
-    failing = (
-        await db.execute(select(Finding).where(Finding.status == "fail"))
-    ).scalars().first()
+    failing = (await db.execute(select(Finding).where(Finding.status == "fail"))).scalars().first()
     failing.status = "pass"
     await db.flush()
 
@@ -857,9 +843,7 @@ def _make_inner_fail_clients():
         "cloudtrail": ct,
         "guardduty": gd,
         "securityhub": SimpleNamespace(get_findings=lambda **k: {"Findings": []}),
-        "config": SimpleNamespace(
-            describe_compliance_by_config_rule=lambda **k: {"ComplianceByConfigRules": []}
-        ),
+        "config": SimpleNamespace(describe_compliance_by_config_rule=lambda **k: {"ComplianceByConfigRules": []}),
         "sts": SimpleNamespace(),
     }
 
@@ -908,9 +892,7 @@ async def test_existing_finding_gains_control_id_on_full_rescan(db, _tenant_hold
 
     from sqlalchemy import select
 
-    failing = (
-        await db.execute(select(Finding).where(Finding.status == "fail"))
-    ).scalars().first()
+    failing = (await db.execute(select(Finding).where(Finding.status == "fail"))).scalars().first()
     assert failing.control_id is None
 
     # Add a control that matches the S3.1 generator id.

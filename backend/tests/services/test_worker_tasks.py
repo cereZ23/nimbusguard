@@ -20,7 +20,6 @@ from app.models.cloud_account import CloudAccount
 from app.models.scan import Scan
 from app.worker import tasks
 
-
 # ── helpers ──────────────────────────────────────────────────────────
 
 
@@ -52,10 +51,10 @@ def _stub_notifiers(monkeypatch) -> None:
     async def _noop(*args, **kwargs):
         return None
 
-    import app.services.compliance_snapshot as snap
     import app.services.cache as cache
-    import app.services.webhook_dispatcher as wd
+    import app.services.compliance_snapshot as snap
     import app.services.slack_notifier as slack
+    import app.services.webhook_dispatcher as wd
 
     monkeypatch.setattr(snap, "capture_compliance_snapshot", _noop, raising=False)
     monkeypatch.setattr(cache, "cache_invalidate_tenant", _noop, raising=False)
@@ -183,9 +182,9 @@ async def test_run_collection_and_evaluation_azure(db, seed_data, monkeypatch) -
 
     monkeypatch.setattr(azure_collector, "AzureCollector", _FakeCollector)
 
-    import app.services.normalizer as normalizer
-    import app.services.evaluator as evaluator
     import app.services.asset_graph as asset_graph
+    import app.services.evaluator as evaluator
+    import app.services.normalizer as normalizer
 
     async def _norm(_db, _sid, provider=None):
         return {"normalized": 3}
@@ -226,9 +225,9 @@ async def test_run_collection_and_evaluation_aws(db, seed_data, monkeypatch) -> 
 
     monkeypatch.setattr(aws_collector, "AwsCollector", _FakeAwsCollector)
 
-    import app.services.normalizer as normalizer
-    import app.services.evaluator as evaluator
     import app.services.asset_graph as asset_graph
+    import app.services.evaluator as evaluator
+    import app.services.normalizer as normalizer
 
     async def _norm(_db, _sid, provider=None):
         assert provider == "aws"
@@ -259,10 +258,10 @@ async def test_run_collection_relationship_error_swallowed(db, seed_data, monkey
         async def run(self):
             return {"resources": 0}
 
-    import app.services.azure.collector as azure_collector
-    import app.services.normalizer as normalizer
-    import app.services.evaluator as evaluator
     import app.services.asset_graph as asset_graph
+    import app.services.azure.collector as azure_collector
+    import app.services.evaluator as evaluator
+    import app.services.normalizer as normalizer
 
     async def _norm(_db, _sid, provider=None):
         return {}
@@ -318,10 +317,10 @@ async def test_post_scan_notifications_swallows_errors(db, seed_data, monkeypatc
     async def _boom(*a, **k):
         raise RuntimeError("nope")
 
-    import app.services.compliance_snapshot as snap
     import app.services.cache as cache
-    import app.services.webhook_dispatcher as wd
+    import app.services.compliance_snapshot as snap
     import app.services.slack_notifier as slack
+    import app.services.webhook_dispatcher as wd
 
     monkeypatch.setattr(snap, "capture_compliance_snapshot", _boom, raising=False)
     monkeypatch.setattr(cache, "cache_invalidate_tenant", _boom, raising=False)
@@ -386,8 +385,8 @@ async def test_dispatch_new_priority_alert_new_finding(db, seed_data, monkeypatc
     async def _slack(_db, _tid, _evt, payload):
         dispatched["slack"] = True
 
-    import app.services.webhook_dispatcher as wd
     import app.services.slack_notifier as slack
+    import app.services.webhook_dispatcher as wd
 
     monkeypatch.setattr(wd, "dispatch_webhooks", _wh, raising=False)
     monkeypatch.setattr(slack, "dispatch_slack_notifications", _slack, raising=False)
@@ -405,9 +404,7 @@ async def test_dispatch_new_priority_alert_new_finding(db, seed_data, monkeypatc
 
     acct = await db.get(CloudAccount, uuid.UUID(seed_data["account_id"]))
 
-    await tasks._dispatch_new_priority_alert(
-        db, scan, acct, {"evaluator": {"pass_count": 3, "fail_count": 1}}
-    )
+    await tasks._dispatch_new_priority_alert(db, scan, acct, {"evaluator": {"pass_count": 3, "fail_count": 1}})
     assert dispatched["webhook"] is True
     assert dispatched["slack"] is True
 
@@ -420,8 +417,8 @@ async def test_dispatch_new_priority_alert_no_new_with_prev(db, seed_data, monke
     async def _wh(*a, **k):
         dispatched["called"] = True
 
-    import app.services.webhook_dispatcher as wd
     import app.services.slack_notifier as slack
+    import app.services.webhook_dispatcher as wd
 
     monkeypatch.setattr(wd, "dispatch_webhooks", _wh, raising=False)
     monkeypatch.setattr(slack, "dispatch_slack_notifications", _wh, raising=False)
@@ -482,14 +479,12 @@ async def test_dispatch_new_priority_alert_with_prev_and_fixed(db, seed_data, mo
     async def _slack(*a, **k):
         return None
 
-    import app.services.webhook_dispatcher as wd
     import app.services.slack_notifier as slack
+    import app.services.webhook_dispatcher as wd
 
     monkeypatch.setattr(wd, "dispatch_webhooks", _wh, raising=False)
     monkeypatch.setattr(slack, "dispatch_slack_notifications", _slack, raising=False)
 
-    from app.models.asset import Asset
-    from app.models.control import Control
     from app.models.finding import Finding
 
     tid = uuid.UUID(seed_data["tenant_id"])
@@ -532,9 +527,7 @@ async def test_dispatch_new_priority_alert_with_prev_and_fixed(db, seed_data, mo
     await db.commit()
 
     acct = await db.get(CloudAccount, acc_id)
-    await tasks._dispatch_new_priority_alert(
-        db, cur_scan, acct, {"evaluator": {"pass_count": 0, "fail_count": 0}}
-    )
+    await tasks._dispatch_new_priority_alert(db, cur_scan, acct, {"evaluator": {"pass_count": 0, "fail_count": 0}})
 
     assert "p" in payloads
     assert payloads["p"]["new_p1_count"] == 1
@@ -565,8 +558,8 @@ async def test_notify_scan_failed_swallows_errors(db, seed_data, monkeypatch) ->
     async def _boom(*a, **k):
         raise RuntimeError("send failed")
 
-    import app.services.webhook_dispatcher as wd
     import app.services.slack_notifier as slack
+    import app.services.webhook_dispatcher as wd
 
     monkeypatch.setattr(wd, "dispatch_webhooks", _boom, raising=False)
     monkeypatch.setattr(slack, "dispatch_slack_notifications", _boom, raising=False)

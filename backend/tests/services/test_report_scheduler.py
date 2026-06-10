@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.scheduled_report import ReportHistory, ScheduledReport
 from app.services import report_scheduler
 
-
 # ── calculate_next_run (pure cron) ───────────────────────────────────
 
 
@@ -108,9 +107,7 @@ async def test_generate_executive_summary_report(db, seed_data, tmp_path, monkey
 @pytest.mark.asyncio
 async def test_generate_compliance_report(db, seed_data, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(report_scheduler, "REPORTS_DIR", str(tmp_path))
-    sr = await _make_scheduled_report(
-        db, seed_data, report_type="compliance", config={"framework": "cis_azure"}
-    )
+    sr = await _make_scheduled_report(db, seed_data, report_type="compliance", config={"framework": "cis_azure"})
 
     history = await report_scheduler.generate_scheduled_report(db, sr)
     assert history.status == "completed"
@@ -120,9 +117,7 @@ async def test_generate_compliance_report(db, seed_data, tmp_path, monkeypatch) 
 @pytest.mark.asyncio
 async def test_generate_compliance_report_other_framework(db, seed_data, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(report_scheduler, "REPORTS_DIR", str(tmp_path))
-    sr = await _make_scheduled_report(
-        db, seed_data, report_type="compliance", config={"framework": "soc2"}
-    )
+    sr = await _make_scheduled_report(db, seed_data, report_type="compliance", config={"framework": "soc2"})
 
     history = await report_scheduler.generate_scheduled_report(db, sr)
     assert history.status == "completed"
@@ -141,9 +136,7 @@ async def test_generate_technical_detail_report(db, seed_data, tmp_path, monkeyp
 @pytest.mark.asyncio
 async def test_generate_technical_detail_with_severity_filter(db, seed_data, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(report_scheduler, "REPORTS_DIR", str(tmp_path))
-    sr = await _make_scheduled_report(
-        db, seed_data, report_type="technical_detail", config={"severity": "high"}
-    )
+    sr = await _make_scheduled_report(db, seed_data, report_type="technical_detail", config={"severity": "high"})
 
     history = await report_scheduler.generate_scheduled_report(db, sr)
     assert history.status == "completed"
@@ -153,9 +146,7 @@ async def test_generate_technical_detail_with_severity_filter(db, seed_data, tmp
 async def test_generate_technical_detail_filter_no_match(db, seed_data, tmp_path, monkeypatch) -> None:
     """Filter that matches no findings exercises the empty-findings branch."""
     monkeypatch.setattr(report_scheduler, "REPORTS_DIR", str(tmp_path))
-    sr = await _make_scheduled_report(
-        db, seed_data, report_type="technical_detail", config={"severity": "low"}
-    )
+    sr = await _make_scheduled_report(db, seed_data, report_type="technical_detail", config={"severity": "low"})
 
     history = await report_scheduler.generate_scheduled_report(db, sr)
     assert history.status == "completed"
@@ -202,9 +193,7 @@ async def test_generate_pdf_internal_failure_marks_failed(db, seed_data, tmp_pat
 async def test_check_and_run_due_reports_generates_due(db, seed_data, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(report_scheduler, "REPORTS_DIR", str(tmp_path))
     past = datetime.now(UTC) - timedelta(hours=1)
-    await _make_scheduled_report(
-        db, seed_data, report_type="executive_summary", next_run_at=past
-    )
+    await _make_scheduled_report(db, seed_data, report_type="executive_summary", next_run_at=past)
 
     result = await report_scheduler.check_and_run_due_reports(db)
     assert result["due"] == 1
@@ -216,9 +205,7 @@ async def test_check_and_run_due_reports_generates_due(db, seed_data, tmp_path, 
 async def test_check_and_run_due_reports_counts_failures(db, seed_data, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(report_scheduler, "REPORTS_DIR", str(tmp_path))
     past = datetime.now(UTC) - timedelta(hours=1)
-    await _make_scheduled_report(
-        db, seed_data, report_type="bogus_type", next_run_at=past
-    )
+    await _make_scheduled_report(db, seed_data, report_type="bogus_type", next_run_at=past)
 
     result = await report_scheduler.check_and_run_due_reports(db)
     assert result["due"] == 1
@@ -230,9 +217,7 @@ async def test_check_and_run_due_reports_counts_failures(db, seed_data, tmp_path
 async def test_check_and_run_due_reports_skips_inactive(db, seed_data, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(report_scheduler, "REPORTS_DIR", str(tmp_path))
     past = datetime.now(UTC) - timedelta(hours=1)
-    await _make_scheduled_report(
-        db, seed_data, report_type="executive_summary", is_active=False, next_run_at=past
-    )
+    await _make_scheduled_report(db, seed_data, report_type="executive_summary", is_active=False, next_run_at=past)
 
     result = await report_scheduler.check_and_run_due_reports(db)
     assert result["due"] == 0
@@ -242,9 +227,7 @@ async def test_check_and_run_due_reports_skips_inactive(db, seed_data, tmp_path,
 async def test_check_and_run_due_reports_skips_future(db, seed_data, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(report_scheduler, "REPORTS_DIR", str(tmp_path))
     future = datetime.now(UTC) + timedelta(days=1)
-    await _make_scheduled_report(
-        db, seed_data, report_type="executive_summary", next_run_at=future
-    )
+    await _make_scheduled_report(db, seed_data, report_type="executive_summary", next_run_at=future)
 
     result = await report_scheduler.check_and_run_due_reports(db)
     assert result["due"] == 0
@@ -253,9 +236,7 @@ async def test_check_and_run_due_reports_skips_future(db, seed_data, tmp_path, m
 @pytest.mark.asyncio
 async def test_check_and_run_due_reports_skips_null_next_run(db, seed_data, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(report_scheduler, "REPORTS_DIR", str(tmp_path))
-    await _make_scheduled_report(
-        db, seed_data, report_type="executive_summary", next_run_at=None
-    )
+    await _make_scheduled_report(db, seed_data, report_type="executive_summary", next_run_at=None)
 
     result = await report_scheduler.check_and_run_due_reports(db)
     assert result["due"] == 0
@@ -266,9 +247,7 @@ async def test_check_and_run_due_reports_unexpected_error(db, seed_data, tmp_pat
     """generate_scheduled_report raising propagates to the failed counter."""
     monkeypatch.setattr(report_scheduler, "REPORTS_DIR", str(tmp_path))
     past = datetime.now(UTC) - timedelta(hours=1)
-    await _make_scheduled_report(
-        db, seed_data, report_type="executive_summary", next_run_at=past
-    )
+    await _make_scheduled_report(db, seed_data, report_type="executive_summary", next_run_at=past)
 
     async def _boom(*args, **kwargs):
         raise RuntimeError("unexpected")
@@ -345,9 +324,7 @@ async def test_compliance_with_cis_azure_control_table(db, seed_data, tmp_path, 
     db.add(f)
     await db.commit()
 
-    sr = await _make_scheduled_report(
-        db, seed_data, report_type="compliance", config={"framework": "cis_azure"}
-    )
+    sr = await _make_scheduled_report(db, seed_data, report_type="compliance", config={"framework": "cis_azure"})
     history = await report_scheduler.generate_scheduled_report(db, sr)
     assert history.status == "completed"
     assert history.file_size and history.file_size > 0
@@ -388,9 +365,7 @@ async def test_compliance_soc2_with_mapped_control(db, seed_data, tmp_path, monk
     db.add(f)
     await db.commit()
 
-    sr = await _make_scheduled_report(
-        db, seed_data, report_type="compliance", config={"framework": "soc2"}
-    )
+    sr = await _make_scheduled_report(db, seed_data, report_type="compliance", config={"framework": "soc2"})
     history = await report_scheduler.generate_scheduled_report(db, sr)
     assert history.status == "completed"
 
@@ -401,10 +376,6 @@ async def test_report_history_persisted(db, seed_data, tmp_path, monkeypatch) ->
     sr = await _make_scheduled_report(db, seed_data, report_type="executive_summary")
     history = await report_scheduler.generate_scheduled_report(db, sr)
 
-    rows = (
-        await db.execute(
-            select(ReportHistory).where(ReportHistory.scheduled_report_id == sr.id)
-        )
-    ).scalars().all()
+    rows = (await db.execute(select(ReportHistory).where(ReportHistory.scheduled_report_id == sr.id))).scalars().all()
     assert len(rows) == 1
     assert rows[0].id == history.id

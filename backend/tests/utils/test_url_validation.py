@@ -14,7 +14,6 @@ import socket
 import httpx
 import pytest
 
-from app.utils import url_validation
 from app.utils.url_validation import (
     _check_ip_is_public,
     create_ssrf_safe_client,

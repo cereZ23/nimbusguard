@@ -9,8 +9,8 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.slack_integration import SlackIntegration
-from app.services.credentials import encrypt_value
 from app.services import slack_notifier as sn
+from app.services.credentials import encrypt_value
 
 
 def _mock_client(status_code: int = 200, text: str = "ok", post_exc: Exception | None = None):
@@ -267,9 +267,7 @@ async def test_dispatch_matching_event() -> None:
 
     cls, client = _mock_client(status_code=200)
     with patch.object(sn, "create_ssrf_safe_client", cls):
-        count = await sn.dispatch_slack_notifications(
-            mock_db, str(tenant_id), "scan.completed", {"x": 1}
-        )
+        count = await sn.dispatch_slack_notifications(mock_db, str(tenant_id), "scan.completed", {"x": 1})
     assert count == 1
     client.post.assert_called_once()
 
@@ -286,9 +284,7 @@ async def test_dispatch_skips_non_matching_event() -> None:
 
     cls, client = _mock_client(status_code=200)
     with patch.object(sn, "create_ssrf_safe_client", cls):
-        count = await sn.dispatch_slack_notifications(
-            mock_db, str(tenant_id), "scan.completed", {}
-        )
+        count = await sn.dispatch_slack_notifications(mock_db, str(tenant_id), "scan.completed", {})
     assert count == 0
     client.post.assert_not_called()
 
@@ -300,9 +296,7 @@ async def test_dispatch_no_integrations() -> None:
     mock_result.scalars.return_value.all.return_value = []
     mock_db.execute.return_value = mock_result
 
-    count = await sn.dispatch_slack_notifications(
-        mock_db, str(uuid.uuid4()), "scan.completed", {}
-    )
+    count = await sn.dispatch_slack_notifications(mock_db, str(uuid.uuid4()), "scan.completed", {})
     assert count == 0
 
 
@@ -318,7 +312,5 @@ async def test_dispatch_handles_null_events() -> None:
 
     cls, client = _mock_client(status_code=200)
     with patch.object(sn, "create_ssrf_safe_client", cls):
-        count = await sn.dispatch_slack_notifications(
-            mock_db, str(tenant_id), "scan.completed", {}
-        )
+        count = await sn.dispatch_slack_notifications(mock_db, str(tenant_id), "scan.completed", {})
     assert count == 0
