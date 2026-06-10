@@ -54,8 +54,6 @@
       "lodash": ">=4.17.25",
       "picomatch": "4.0.4",
       "vite": "^8.0.8",
-      "brace-expansion@1": ">=1.1.13",
-      "brace-expansion@5": "5.0.6",
       "postcss": ">=8.5.15",
       "follow-redirects": ">=1.16.0",
       "axios": ">=1.17.0"
