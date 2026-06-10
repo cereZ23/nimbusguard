@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
@@ -28,7 +29,11 @@ import app.services.cache as _cache_module  # noqa: E402
 # Reset Redis singleton between tests to prevent stale connections
 _cache_module._redis = None
 
-TEST_DATABASE_URL = "postgresql+asyncpg://cspm:cspm@localhost:5432/cspm_test"
+# Honor DATABASE_URL when provided (CI sets it to the same value); falls back to
+# the local default. Allows parallel test shards to target isolated databases.
+TEST_DATABASE_URL = os.environ.get(
+    "DATABASE_URL", "postgresql+asyncpg://cspm:cspm@localhost:5432/cspm_test"
+)
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 TestSession = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
