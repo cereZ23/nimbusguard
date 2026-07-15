@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Cloud Security Posture Management — with a triage layer your team can actually act on.</strong><br/>
-  Continuous security assessment for Azure and AWS, built for MSSPs and in-house security teams.
+  Continuous security assessment for Azure, AWS, and Microsoft 365, built for MSSPs and in-house security teams.
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Next.js_14-000?logo=nextdotjs&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/PostgreSQL_16-4169e1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/tests-1273_passing-brightgreen" alt="Tests" />
-  <img src="https://img.shields.io/badge/checks-179-0ea5e9" alt="Security Checks" />
+  <img src="https://img.shields.io/badge/checks-222-0ea5e9" alt="Security Checks" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License" />
   <br/>
   <a href="https://github.com/cereZ23/nimbusguard/actions"><img src="https://github.com/cereZ23/nimbusguard/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
@@ -69,7 +69,7 @@ scoring that buyers can't inspect or customise. Open-source CSPMs
 of findings. NimbusGuard's triage formula is transparent, yaml-driven,
 and editable. That is the moat.
 
-### 2. 179 built-in security checks, mapped to CIS v3.0
+### 2. 222 built-in security checks, mapped to CIS Benchmarks
 
 - **159 Azure evaluators** across 34 resource types — subscription-level
   Defender state, AKS, ACR, Key Vault, SQL, PostgreSQL / MySQL flex,
@@ -77,6 +77,12 @@ and editable. That is the moat.
   Recovery Services Vaults, diagnostic settings sweep, and more.
 - **20 AWS evaluators** across IAM, S3, EC2, RDS, VPC, CloudTrail,
   GuardDuty, Lambda.
+- **43 Microsoft 365 evaluators** mapped to the CIS M365 Foundations
+  Benchmark — Entra identity (Conditional Access, MFA coverage, guest
+  restrictions), Exchange Online & Defender for Office (forwarding,
+  Safe Links / Attachments, DKIM, auditing), SharePoint / OneDrive
+  sharing, and Teams — plus 40 catalogued manual controls.
+  Setup: [docs/m365-setup.md](docs/m365-setup.md).
 - Full catalogue: [docs/CONTROLS.md](docs/CONTROLS.md).
 
 ### 3. Built for teams that actually fix things
@@ -247,6 +253,7 @@ nimbusguard/
 │   │   ├── services/
 │   │   │   ├── azure/checks/ # 159 Azure evaluators
 │   │   │   ├── aws/checks/   # 20 AWS evaluators
+│   │   │   ├── m365/checks/  # 43 Microsoft 365 evaluators
 │   │   │   ├── priority.py   # Priority / Triage calculator
 │   │   │   ├── evaluator.py  # Check registry + orchestration
 │   │   │   └── seed_controls.py
@@ -272,7 +279,7 @@ nimbusguard/
 ## Documentation
 
 - **[CHANGELOG.md](CHANGELOG.md)** — every shipped sprint with commit SHA
-- **[docs/CONTROLS.md](docs/CONTROLS.md)** — full catalogue of the 179 security checks
+- **[docs/CONTROLS.md](docs/CONTROLS.md)** — full catalogue of the 222 security checks
 - **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** — dev workflow + how to add new checks in ~10 minutes
 - **[docs/ROADMAP.md](docs/ROADMAP.md)** — what's next + what was explicitly rejected
 - **[CLAUDE.md](CLAUDE.md)** — architecture notes and project conventions

@@ -9,6 +9,7 @@ import ConfirmDialog from "@/components/ui/confirm-dialog";
 import Modal from "@/components/ui/modal";
 import ErrorState from "@/components/ui/error-state";
 import api from "@/lib/api";
+import { PROVIDERS } from "@/config/providers";
 import type { CloudAccount, CloudProvider } from "@/types";
 
 interface AddAccountForm {
@@ -83,13 +84,20 @@ export default function AccountsPage() {
               client_secret: form.client_secret,
               subscription_id: form.provider_account_id,
             }
-          : {
-              provider: form.provider,
-              access_key_id: form.access_key_id,
-              secret_access_key: form.secret_access_key,
-              region: form.region || "us-east-1",
-              role_arn: form.role_arn || undefined,
-            };
+          : form.provider === "m365"
+            ? {
+                provider: form.provider,
+                tenant_id: form.provider_account_id,
+                client_id: form.client_id,
+                client_secret: form.client_secret,
+              }
+            : {
+                provider: form.provider,
+                access_key_id: form.access_key_id,
+                secret_access_key: form.secret_access_key,
+                region: form.region || "us-east-1",
+                role_arn: form.role_arn || undefined,
+              };
       const res = await api.post("/accounts/test-connection", payload);
       setTestConnectionResult(
         res.data.data as {
@@ -115,8 +123,12 @@ export default function AccountsPage() {
         form.tenant_id.trim().length > 0 &&
         form.client_id.trim().length > 0 &&
         form.client_secret.trim().length > 0
-      : form.access_key_id.trim().length > 0 &&
-        form.secret_access_key.trim().length > 0;
+      : form.provider === "m365"
+        ? form.provider_account_id.trim().length > 0 &&
+          form.client_id.trim().length > 0 &&
+          form.client_secret.trim().length > 0
+        : form.access_key_id.trim().length > 0 &&
+          form.secret_access_key.trim().length > 0;
 
   const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,12 +143,18 @@ export default function AccountsPage() {
               client_id: form.client_id,
               client_secret: form.client_secret,
             }
-          : {
-              access_key_id: form.access_key_id,
-              secret_access_key: form.secret_access_key,
-              region: form.region || "us-east-1",
-              ...(form.role_arn ? { role_arn: form.role_arn } : {}),
-            };
+          : form.provider === "m365"
+            ? {
+                tenant_id: form.provider_account_id,
+                client_id: form.client_id,
+                client_secret: form.client_secret,
+              }
+            : {
+                access_key_id: form.access_key_id,
+                secret_access_key: form.secret_access_key,
+                region: form.region || "us-east-1",
+                ...(form.role_arn ? { role_arn: form.role_arn } : {}),
+              };
       await api.post("/accounts", {
         provider: form.provider,
         display_name: form.display_name,
@@ -361,6 +379,7 @@ export default function AccountsPage() {
             >
               <option value="azure">Azure</option>
               <option value="aws">AWS</option>
+              <option value="m365">Microsoft 365</option>
             </select>
           </div>
 
@@ -389,7 +408,7 @@ export default function AccountsPage() {
               htmlFor="provider_account_id"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
-              {form.provider === "azure" ? "Subscription ID" : "AWS Account ID"}
+              {PROVIDERS[form.provider].accountIdLabel}
             </label>
             <input
               id="provider_account_id"
@@ -399,11 +418,7 @@ export default function AccountsPage() {
               onChange={(e) =>
                 updateField("provider_account_id", e.target.value)
               }
-              placeholder={
-                form.provider === "azure"
-                  ? "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                  : "123456789012"
-              }
+              placeholder={PROVIDERS[form.provider].accountIdPlaceholder}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
             />
           </div>
@@ -413,7 +428,9 @@ export default function AccountsPage() {
             <h3 className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
               {form.provider === "azure"
                 ? "Azure Service Principal"
-                : "AWS Credentials"}
+                : form.provider === "m365"
+                  ? "Microsoft Entra App Registration"
+                  : "AWS Credentials"}
             </h3>
 
             {form.provider === "azure" ? (
@@ -461,6 +478,45 @@ export default function AccountsPage() {
                   </label>
                   <input
                     id="azure_client_secret"
+                    type="password"
+                    required
+                    value={form.client_secret}
+                    onChange={(e) =>
+                      updateField("client_secret", e.target.value)
+                    }
+                    placeholder="••••••••••••"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+              </>
+            ) : form.provider === "m365" ? (
+              <>
+                <div className="mb-3">
+                  <label
+                    htmlFor="m365_client_id"
+                    className="block text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Client ID (App ID)
+                  </label>
+                  <input
+                    id="m365_client_id"
+                    type="text"
+                    required
+                    value={form.client_id}
+                    onChange={(e) => updateField("client_id", e.target.value)}
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="m365_client_secret"
+                    className="block text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Client Secret
+                  </label>
+                  <input
+                    id="m365_client_secret"
                     type="password"
                     required
                     value={form.client_secret}
@@ -566,7 +622,7 @@ export default function AccountsPage() {
           </div>
 
           {/* Test Connection */}
-          {(form.provider === "azure" || form.provider === "aws") && (
+          {form.provider in PROVIDERS && (
             <div className="space-y-2">
               <button
                 type="button"

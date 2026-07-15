@@ -34,6 +34,8 @@ async def test_connection(body: TestConnectionRequest, user: AdminUser) -> dict:
         return await _test_aws_connection(body)
     if body.provider == "azure":
         return await _test_azure_connection(body)
+    if body.provider == "m365":
+        return await _test_m365_connection(body)
 
     return {
         "data": TestConnectionResponse(
@@ -136,6 +138,99 @@ async def _test_azure_connection(body: TestConnectionRequest) -> dict:
             "error": None,
             "meta": None,
         }
+
+
+async def _test_m365_connection(body: TestConnectionRequest) -> dict:
+    """Test Microsoft 365 credentials via Graph, probing one endpoint per workload.
+
+    Hard-fails on invalid credentials or a missing Organization.Read.All
+    permission; every other permission gap is reported as a warning so the
+    user knows exactly which workloads a scan will cover.
+    """
+    from app.services.m365.exchange_client import ExchangeAdminClient, ExchangeAdminError
+    from app.services.m365.graph_client import M365GraphClient
+
+    graph = M365GraphClient(body.tenant_id, body.client_id, body.client_secret)
+    if not graph.authenticate():
+        return {
+            "data": TestConnectionResponse(
+                success=False,
+                resource_count=0,
+                message="Microsoft 365 connection failed. Check tenant ID, client ID, and client secret.",
+            ),
+            "error": None,
+            "meta": None,
+        }
+
+    status_code, org_body = await graph.get_json("/organization")
+    if status_code != 200 or org_body is None:
+        return {
+            "data": TestConnectionResponse(
+                success=False,
+                resource_count=0,
+                message="Authenticated, but cannot read the tenant. Grant the "
+                "'Organization.Read.All' application permission and admin consent.",
+            ),
+            "error": None,
+            "meta": None,
+        }
+    orgs = org_body.get("value", [])
+    org_name = orgs[0].get("displayName", body.tenant_id) if orgs else body.tenant_id
+
+    warnings: list[str] = []
+    workloads_ok = 1  # tenant baseline reachable
+
+    # Identity probes
+    ca_status, _ = await graph.get_json("/identity/conditionalAccess/policies?$top=1")
+    if ca_status != 200:
+        warnings.append("Identity checks limited: grant 'Policy.Read.All' to assess Conditional Access.")
+    mfa_status, _ = await graph.get_json("/reports/authenticationMethods/userRegistrationDetails?$top=1")
+    if mfa_status != 200:
+        warnings.append("MFA coverage checks unavailable: grant 'Reports.Read.All'.")
+
+    # SharePoint / OneDrive
+    spo_status, _ = await graph.get_json("/admin/sharepoint/settings")
+    if spo_status == 200:
+        workloads_ok += 1
+    else:
+        warnings.append("SharePoint/OneDrive checks unavailable: grant 'SharePointTenantSettings.Read.All'.")
+
+    # Teams
+    teams_status, _ = await graph.get_json("/teamwork/teamsAppSettings")
+    if teams_status == 200:
+        workloads_ok += 1
+    else:
+        warnings.append("Teams app-setting checks unavailable: grant 'TeamworkAppSettings.Read.All'.")
+
+    # Exchange Online (admin API)
+    exchange = ExchangeAdminClient(body.tenant_id, body.client_id, body.client_secret)
+    exchange_ok = False
+    if exchange.authenticate():
+        try:
+            await exchange.run_cmdlet("Get-OrganizationConfig")
+            exchange_ok = True
+        except ExchangeAdminError:
+            exchange_ok = False
+    if exchange_ok:
+        workloads_ok += 1
+    else:
+        warnings.append(
+            "Exchange Online & Defender checks unavailable: add the 'Exchange.ManageAsApp' "
+            "application permission (Office 365 Exchange Online) and assign the app the "
+            "'Global Reader' directory role."
+        )
+
+    logger.info("M365 test connection successful: %s (%d/4 workloads)", org_name, workloads_ok)
+    return {
+        "data": TestConnectionResponse(
+            success=True,
+            resource_count=1,
+            message=f"Connected to tenant {org_name}. {workloads_ok} of 4 workloads accessible.",
+            warnings=warnings,
+        ),
+        "error": None,
+        "meta": None,
+    }
 
 
 async def _test_aws_connection(body: TestConnectionRequest) -> dict:

@@ -195,7 +195,7 @@ async def dashboard_trend(
     }
 
 
-VALID_FRAMEWORKS = {"cis_azure", "soc2", "nist", "iso27001"}
+VALID_FRAMEWORKS = {"cis_azure", "cis_m365", "soc2", "nist", "iso27001"}
 
 
 @router.get("/compliance-trend", response_model=ApiResponse[ComplianceTrendResponse])

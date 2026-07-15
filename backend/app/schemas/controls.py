@@ -14,6 +14,7 @@ class ControlResponse(BaseModel):
     framework: str
     remediation_hint: str | None
     framework_mappings: dict | None = None
+    automation: str | None = None
     pass_count: int = 0
     fail_count: int = 0
     total_count: int = 0

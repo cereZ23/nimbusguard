@@ -170,3 +170,138 @@ async def test_tenant_isolation(client: AsyncClient, auth_headers: dict, second_
     assert list_res.status_code == 200
     ids = [a["id"] for a in list_res.json()["data"]]
     assert account_id not in ids
+
+
+# ── Microsoft 365 provider ──────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_m365_account(client: AsyncClient, auth_headers: dict) -> None:
+    res = await client.post(
+        "/api/v1/accounts",
+        headers=auth_headers,
+        json={
+            "provider": "m365",
+            "display_name": "Contoso M365",
+            "provider_account_id": "11111111-2222-3333-4444-555555555555",
+            "credentials": {
+                "tenant_id": "11111111-2222-3333-4444-555555555555",
+                "client_id": "c",
+                "client_secret": "s",
+            },
+        },
+    )
+    assert res.status_code == 201
+    data = res.json()["data"]
+    assert data["provider"] == "m365"
+    assert data["display_name"] == "Contoso M365"
+
+
+@pytest.mark.asyncio
+async def test_create_m365_account_missing_credentials(client: AsyncClient, auth_headers: dict) -> None:
+    res = await client.post(
+        "/api/v1/accounts",
+        headers=auth_headers,
+        json={
+            "provider": "m365",
+            "display_name": "Broken",
+            "provider_account_id": "tid",
+            "credentials": {"tenant_id": "tid"},
+        },
+    )
+    assert res.status_code == 422
+    assert "client_id" in res.text
+
+
+@pytest.mark.asyncio
+async def test_create_account_unknown_provider_rejected(client: AsyncClient, auth_headers: dict) -> None:
+    res = await client.post(
+        "/api/v1/accounts",
+        headers=auth_headers,
+        json={
+            "provider": "gcp",
+            "display_name": "Nope",
+            "provider_account_id": "x",
+            "credentials": {"anything": "y"},
+        },
+    )
+    assert res.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_m365_test_connection_reports_workload_warnings(
+    client: AsyncClient, auth_headers: dict, monkeypatch
+) -> None:
+    """Graph baseline works, SharePoint is forbidden, Exchange role missing —
+    the response succeeds with per-workload warnings."""
+    import app.services.m365.exchange_client as exchange_module
+    import app.services.m365.graph_client as graph_module
+
+    class _FakeGraph:
+        def __init__(self, tenant_id, client_id, client_secret):
+            pass
+
+        def authenticate(self):
+            return True
+
+        async def get_json(self, path, extra_headers=None):
+            if path.startswith("/organization"):
+                return 200, {"value": [{"displayName": "Contoso"}]}
+            if path.startswith("/admin/sharepoint"):
+                return 403, None
+            return 200, {"value": []}
+
+    class _FakeExchange:
+        def __init__(self, tenant_id, client_id, client_secret):
+            pass
+
+        def authenticate(self):
+            return False
+
+    monkeypatch.setattr(graph_module, "M365GraphClient", _FakeGraph)
+    monkeypatch.setattr(exchange_module, "ExchangeAdminClient", _FakeExchange)
+
+    res = await client.post(
+        "/api/v1/accounts/test-connection",
+        headers=auth_headers,
+        json={"provider": "m365", "tenant_id": "tid", "client_id": "cid", "client_secret": "sec"},
+    )
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert data["success"] is True
+    assert "Contoso" in data["message"]
+    assert any("SharePointTenantSettings" in w for w in data["warnings"])
+    assert any("Exchange.ManageAsApp" in w for w in data["warnings"])
+
+
+@pytest.mark.asyncio
+async def test_m365_test_connection_invalid_credentials(client: AsyncClient, auth_headers: dict, monkeypatch) -> None:
+    import app.services.m365.graph_client as graph_module
+
+    class _FailingGraph:
+        def __init__(self, tenant_id, client_id, client_secret):
+            pass
+
+        def authenticate(self):
+            return False
+
+    monkeypatch.setattr(graph_module, "M365GraphClient", _FailingGraph)
+
+    res = await client.post(
+        "/api/v1/accounts/test-connection",
+        headers=auth_headers,
+        json={"provider": "m365", "tenant_id": "tid", "client_id": "cid", "client_secret": "bad"},
+    )
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert data["success"] is False
+
+
+@pytest.mark.asyncio
+async def test_m365_test_connection_requires_fields(client: AsyncClient, auth_headers: dict) -> None:
+    res = await client.post(
+        "/api/v1/accounts/test-connection",
+        headers=auth_headers,
+        json={"provider": "m365", "tenant_id": "tid"},
+    )
+    assert res.status_code == 422

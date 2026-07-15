@@ -118,6 +118,10 @@ async def _run_collection_and_evaluation(db: AsyncSession, scan) -> dict:
         from app.services.aws.collector import AwsCollector
 
         collector = AwsCollector(db, scan)
+    elif provider == "m365":
+        from app.services.m365.collector import M365Collector
+
+        collector = M365Collector(db, scan)
     else:
         from app.services.azure.collector import AzureCollector
 

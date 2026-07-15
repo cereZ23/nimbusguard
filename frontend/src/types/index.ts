@@ -4,7 +4,7 @@ export type Severity = "high" | "medium" | "low";
 
 export type FindingStatus = "pass" | "fail" | "error" | "not_applicable";
 
-export type CloudProvider = "azure" | "aws";
+export type CloudProvider = "azure" | "aws" | "m365";
 
 export type TimeRange = "7d" | "14d" | "30d" | "90d";
 
@@ -106,6 +106,7 @@ export interface Control {
   remediation_hint: string | null;
   provider_check_ref: Record<string, string> | null;
   framework_mappings: Record<string, string[]> | null;
+  automation?: "automated" | "manual" | null;
 }
 
 export interface ControlWithCounts extends Control {

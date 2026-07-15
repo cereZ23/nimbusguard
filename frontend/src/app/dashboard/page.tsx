@@ -192,8 +192,8 @@ export default function DashboardPage() {
               Connect your first cloud account
             </h2>
             <p className="mt-2 max-w-md text-sm text-gray-500 dark:text-gray-400">
-              Add an Azure or AWS account to start scanning your cloud resources
-              and assessing your security posture.
+              Add an Azure, AWS, or Microsoft 365 account to start scanning
+              your cloud resources and assessing your security posture.
             </p>
             <div className="mt-6 flex gap-3">
               <a

@@ -29,6 +29,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { extractApiError } from "@/lib/errors";
 import { formatDate, formatDateTime } from "@/lib/dates";
+import { PROVIDERS, providerFromResourceType } from "@/config/providers";
 import type {
   FindingComment,
   FindingEvent,
@@ -430,8 +431,10 @@ export default function FindingDetailPage() {
     );
   }
 
-  const azurePortalUrl = finding.asset?.provider_id
-    ? `https://portal.azure.com/#@/resource${finding.asset.provider_id}`
+  const providerConfig =
+    PROVIDERS[providerFromResourceType(finding.asset?.resource_type)];
+  const portalUrl = finding.asset
+    ? providerConfig.portalUrlForAsset(finding.asset)
     : null;
 
   return (
@@ -631,16 +634,16 @@ export default function FindingDetailPage() {
                   {finding.asset.region ?? "\u2014"}
                 </p>
               </div>
-              {azurePortalUrl && (
+              {portalUrl && (
                 <a
-                  href={azurePortalUrl}
+                  href={portalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   className="mt-2 inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:border-blue-600 dark:hover:text-blue-400"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  Open in Azure Portal
+                  Open in {providerConfig.portalName}
                 </a>
               )}
             </div>

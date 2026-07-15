@@ -383,6 +383,7 @@ export default function ReportsPage() {
                 className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
               >
                 <option value="cis_azure">CIS Azure</option>
+                <option value="cis_m365">CIS Microsoft 365</option>
                 <option value="soc2">SOC 2</option>
                 <option value="nist">NIST CSF</option>
                 <option value="iso27001">ISO 27001</option>
@@ -889,6 +890,7 @@ export default function ReportsPage() {
                 className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
               >
                 <option value="cis_azure">CIS Azure</option>
+                <option value="cis_m365">CIS Microsoft 365</option>
                 <option value="soc2">SOC 2</option>
                 <option value="nist">NIST CSF</option>
                 <option value="iso27001">ISO 27001</option>

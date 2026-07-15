@@ -22,11 +22,13 @@ import type { AssetGraph, GraphEdge, GraphNode } from "@/types";
 const PROVIDER_COLORS: Record<string, string> = {
   azure: "#0078D4",
   aws: "#FF9900",
+  m365: "#0F7B6C",
 };
 
 const PROVIDER_BG: Record<string, string> = {
   azure: "bg-blue-100 dark:bg-blue-900/30",
   aws: "bg-orange-100 dark:bg-orange-900/30",
+  m365: "bg-teal-100 dark:bg-teal-900/30",
 };
 
 const SEVERITY_COLORS: Record<string, string> = {

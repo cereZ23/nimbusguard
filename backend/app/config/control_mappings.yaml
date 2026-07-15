@@ -3656,3 +3656,1436 @@ controls:
   remediation_group: enable_diagnostic_settings_critical
   remediation_action: Attach a diagnostic setting pointing to Log Analytics for each critical resource
     type
+
+# ── CIS Microsoft 365 Foundations Benchmark (framework: cis-m365) ─────
+# Codes mirror the benchmark's section numbering: CIS-M365-<section>.<sub>.<n>
+# §1 Admin center, §2 Defender, §3 Purview, §5 Entra, §6 Exchange,
+# §7 SharePoint, §8 Teams, §9 Fabric.
+# automation: manual — no app-only API exists; catalogued but never evaluated.
+
+# ── §1 Microsoft 365 admin center ─────────────────────────────────────
+- code: CIS-M365-1.1.1
+  name: Between two and four Global Administrators are designated
+  description: The tenant should have at least two Global Administrator accounts for redundancy but no
+    more than four to limit the attack surface of the most privileged role
+  severity: high
+  framework: cis-m365
+  effort: moderate
+  exposure: internal
+  remediation_group: m365_limit_global_admins
+  remediation_action: Reduce Global Administrator role membership to 2-4 accounts using least-privileged
+    alternatives such as scoped admin roles
+  remediation_hint: 'Entra admin center > Roles & admins > Global Administrator: review and remove excess
+    members'
+  provider_check_ref:
+    m365: graph:/directoryRoles?$expand=members
+  framework_mappings:
+    soc2: [CC6.1, CC6.3]
+    nist: [AC-2, AC-6]
+    iso27001: [A.5.15, A.8.2]
+- code: CIS-M365-1.1.4
+  name: Disabled accounts do not hold privileged roles
+  description: Accounts that are disabled should be removed from all privileged directory roles to prevent
+    reactivation abuse
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_limit_global_admins
+  remediation_action: Remove disabled accounts from all privileged directory roles
+  remediation_hint: 'Entra admin center > Roles & admins: audit each privileged role and remove disabled
+    members'
+  provider_check_ref:
+    m365: graph:/directoryRoles?$expand=members
+  framework_mappings:
+    soc2: [CC6.1, CC6.3]
+    nist: [AC-2]
+    iso27001: [A.5.16, A.5.18]
+
+# ── §2 Microsoft Defender for Office 365 ──────────────────────────────
+- code: CIS-M365-2.1.1
+  name: Safe Links policy is enabled for email
+  description: Microsoft Defender Safe Links should scan URLs at click time in email (and ideally Teams
+    and Office clients) to protect against weaponized links
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_defender_email_policies
+  remediation_action: Enable a Defender for Office 365 Safe Links policy covering all recipients
+  remediation_hint: 'Defender portal > Policies & rules > Threat policies > Safe Links; or PowerShell:
+    New-SafeLinksPolicy'
+  provider_check_ref:
+    m365: exo:Get-SafeLinksPolicy
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-3, SI-8]
+    iso27001: [A.8.7]
+- code: CIS-M365-2.1.2
+  name: Common attachment types filter is enabled
+  description: The anti-malware common attachment types filter should block executable and script attachments
+    outright
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_defender_email_policies
+  remediation_action: Enable the common attachment types filter in the anti-malware policy
+  remediation_hint: 'Set-MalwareFilterPolicy -Identity Default -EnableFileFilter $true'
+  provider_check_ref:
+    m365: exo:Get-MalwareFilterPolicy(EnableFileFilter)
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-3]
+    iso27001: [A.8.7]
+- code: CIS-M365-2.1.3
+  name: Malware notifications for internal senders are enabled
+  description: Administrators should be notified when internal users send malware so compromised accounts
+    are detected quickly
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_defender_email_policies
+  remediation_action: Enable internal-sender admin notifications in the anti-malware policy
+  remediation_hint: 'Set-MalwareFilterPolicy -Identity Default -EnableInternalSenderAdminNotifications
+    $true'
+  provider_check_ref:
+    m365: exo:Get-MalwareFilterPolicy(EnableInternalSenderAdminNotifications)
+  framework_mappings:
+    soc2: [CC7.2]
+    nist: [IR-4, SI-3]
+    iso27001: [A.8.7]
+- code: CIS-M365-2.1.4
+  name: Safe Attachments policy is enabled
+  description: Microsoft Defender Safe Attachments should detonate attachments in a sandbox before delivery
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_defender_email_policies
+  remediation_action: Enable a Defender for Office 365 Safe Attachments policy covering all recipients
+  remediation_hint: 'Defender portal > Policies & rules > Threat policies > Safe Attachments'
+  provider_check_ref:
+    m365: exo:Get-SafeAttachmentPolicy
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-3]
+    iso27001: [A.8.7]
+- code: CIS-M365-2.1.5
+  name: Safe Attachments covers SharePoint, OneDrive, and Teams
+  description: Safe Attachments should extend beyond email to files uploaded to SharePoint, OneDrive,
+    and Teams
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_defender_email_policies
+  remediation_action: Enable ATP for SharePoint, OneDrive, and Microsoft Teams
+  remediation_hint: 'Set-AtpPolicyForO365 -EnableATPForSPOTeamsODB $true'
+  provider_check_ref:
+    m365: exo:Get-AtpPolicyForO365(EnableATPForSPOTeamsODB)
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-3]
+    iso27001: [A.8.7]
+- code: CIS-M365-2.1.6
+  name: Outbound spam notifications are configured
+  description: Outbound spam policies should notify administrators (or BCC suspicious mail) so compromised
+    senders are caught early
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_defender_email_policies
+  remediation_action: Configure outbound spam policy notifications for administrators
+  remediation_hint: 'Set-HostedOutboundSpamFilterPolicy -Identity Default -NotifyOutboundSpam $true'
+  provider_check_ref:
+    m365: exo:Get-HostedOutboundSpamFilterPolicy
+  framework_mappings:
+    soc2: [CC7.2]
+    nist: [IR-4]
+    iso27001: [A.8.7]
+- code: CIS-M365-2.1.7
+  name: Anti-phishing policy with mailbox intelligence is enabled
+  description: An anti-phishing policy with mailbox intelligence should protect against impersonation
+    and spoofing attacks
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_defender_email_policies
+  remediation_action: Enable an anti-phishing policy with mailbox intelligence for all recipients
+  remediation_hint: 'Defender portal > Policies & rules > Threat policies > Anti-phishing'
+  provider_check_ref:
+    m365: exo:Get-AntiPhishPolicy
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-3, SI-8]
+    iso27001: [A.8.7]
+- code: CIS-M365-2.1.9
+  name: DKIM is enabled for all Exchange Online domains
+  description: DKIM signing should be enabled for every accepted domain so recipients can verify message
+    integrity and origin
+  severity: medium
+  framework: cis-m365
+  effort: moderate
+  exposure: internet
+  remediation_group: m365_email_authentication
+  remediation_action: Enable DKIM signing for every accepted domain
+  remediation_hint: 'Set-DkimSigningConfig -Identity <domain> -Enabled $true (publish the CNAME records
+    first)'
+  provider_check_ref:
+    m365: exo:Get-DkimSigningConfig
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [SC-8]
+    iso27001: [A.5.14, A.8.26]
+- code: CIS-M365-2.1.11
+  name: Connection filter has no IP allow list
+  description: The connection filter policy should not whitelist sender IP ranges, which bypass all spam
+    and phishing filtering
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_defender_email_policies
+  remediation_action: Remove IP addresses from the connection filter allow list
+  remediation_hint: 'Set-HostedConnectionFilterPolicy -Identity Default -IPAllowList @{}'
+  provider_check_ref:
+    m365: exo:Get-HostedConnectionFilterPolicy(IPAllowList)
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-8]
+    iso27001: [A.8.7]
+- code: CIS-M365-2.1.12
+  name: Anti-spam policies do not whitelist sender domains
+  description: Allowed sender domain lists bypass spam and phishing filtering for entire domains and
+    are a common phishing bypass
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_defender_email_policies
+  remediation_action: Remove allowed sender domains from anti-spam policies
+  remediation_hint: 'Set-HostedContentFilterPolicy -Identity Default -AllowedSenderDomains @{}'
+  provider_check_ref:
+    m365: exo:Get-HostedContentFilterPolicy(AllowedSenderDomains)
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-8]
+    iso27001: [A.8.7]
+
+# ── §3 Microsoft Purview ──────────────────────────────────────────────
+- code: CIS-M365-3.1.1
+  name: Microsoft 365 unified audit log search is enabled
+  description: The unified audit log must be enabled so admin, user, and system activity across all workloads
+    is recorded and searchable
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_enable_auditing
+  remediation_action: Enable unified audit log ingestion
+  remediation_hint: 'Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true'
+  provider_check_ref:
+    m365: exo:Get-AdminAuditLogConfig(UnifiedAuditLogIngestionEnabled)
+  framework_mappings:
+    soc2: [CC7.2]
+    nist: [AU-2, AU-12]
+    iso27001: [A.8.15]
+
+# ── §5 Microsoft Entra admin center ───────────────────────────────────
+- code: CIS-M365-5.1.1.1
+  name: Security defaults or Conditional Access protect the tenant
+  description: The tenant must have baseline identity protection - either security defaults or a set
+    of enabled Conditional Access policies
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_conditional_access
+  remediation_action: Enable security defaults, or deploy Conditional Access policies covering MFA and
+    legacy authentication
+  remediation_hint: 'Entra admin center > Overview > Properties > Manage security defaults'
+  provider_check_ref:
+    m365: graph:/policies/identitySecurityDefaultsEnforcementPolicy
+  framework_mappings:
+    soc2: [CC6.1, CC6.2]
+    nist: [IA-2, AC-3]
+    iso27001: [A.8.5, A.5.15]
+- code: CIS-M365-5.1.2.1
+  name: Users cannot register applications
+  description: Regular users should not be able to register applications in the tenant, which can be
+    abused for illicit consent and persistence
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_user_defaults
+  remediation_action: Disable app registration for non-admin users
+  remediation_hint: 'Entra admin center > Users > User settings > App registrations: No'
+  provider_check_ref:
+    m365: graph:/policies/authorizationPolicy(allowedToCreateApps)
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [CM-7, AC-6]
+    iso27001: [A.5.15]
+- code: CIS-M365-5.1.2.2
+  name: Users cannot create tenants
+  description: Regular users should not be able to create new Entra tenants, which escape all organizational
+    security controls
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_user_defaults
+  remediation_action: Restrict tenant creation to administrators
+  remediation_hint: 'Entra admin center > Users > User settings > Restrict non-admin users from creating
+    tenants: Yes'
+  provider_check_ref:
+    m365: graph:/policies/authorizationPolicy(allowedToCreateTenants)
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [CM-7, AC-6]
+    iso27001: [A.5.15]
+- code: CIS-M365-5.1.2.3
+  name: Users cannot create security groups
+  description: Security group creation should be restricted to administrators to keep access management
+    centrally controlled
+  severity: low
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_user_defaults
+  remediation_action: Restrict security group creation to administrators
+  remediation_hint: 'Entra admin center > Groups > General > Users can create security groups: No'
+  provider_check_ref:
+    m365: graph:/policies/authorizationPolicy(allowedToCreateSecurityGroups)
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [AC-2, AC-6]
+    iso27001: [A.5.15]
+- code: CIS-M365-5.1.5.1
+  name: User consent to applications is restricted
+  description: Users should not be able to consent to third-party application permission requests, or
+    only to low-impact permissions from verified publishers
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_user_defaults
+  remediation_action: Disable user consent to apps, or limit it to verified publishers requesting low-impact
+    permissions
+  remediation_hint: 'Entra admin center > Enterprise applications > Consent and permissions > User consent
+    settings'
+  provider_check_ref:
+    m365: graph:/policies/authorizationPolicy(permissionGrantPoliciesAssigned)
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [CM-7, AC-6]
+    iso27001: [A.5.15]
+- code: CIS-M365-5.1.6.1
+  name: Guest invitations are restricted
+  description: Only administrators and users in the guest-inviter role should be able to invite guests
+    into the tenant
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_guest_access
+  remediation_action: Restrict guest invitations to admins and guest-inviter roles
+  remediation_hint: 'Entra admin center > External identities > External collaboration settings > Guest
+    invite settings'
+  provider_check_ref:
+    m365: graph:/policies/authorizationPolicy(allowInvitesFrom)
+  framework_mappings:
+    soc2: [CC6.1, CC6.3]
+    nist: [AC-2, AC-3]
+    iso27001: [A.5.15, A.5.19]
+- code: CIS-M365-5.1.6.2
+  name: Guest user access is restricted
+  description: Guest users should have the most restricted directory role so they cannot enumerate users,
+    groups, or other directory objects
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_guest_access
+  remediation_action: Set guest user access to the most restricted level
+  remediation_hint: 'Entra admin center > External identities > External collaboration settings > Guest
+    user access: most restricted'
+  provider_check_ref:
+    m365: graph:/policies/authorizationPolicy(guestUserRoleId)
+  framework_mappings:
+    soc2: [CC6.1, CC6.3]
+    nist: [AC-3, AC-6]
+    iso27001: [A.5.15, A.5.19]
+- code: CIS-M365-5.1.3.1
+  name: Password expiration is disabled
+  description: Passwords should be set to never expire per modern NIST and Microsoft guidance - forced
+    rotation encourages weaker passwords
+  severity: low
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_password_policy
+  remediation_action: Set password validity to never expire on all verified domains
+  remediation_hint: 'Update-MgDomain or Microsoft 365 admin center > Settings > Org settings > Security
+    & privacy > Password expiration policy'
+  provider_check_ref:
+    m365: graph:/domains(passwordValidityPeriodInDays)
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [IA-5]
+    iso27001: [A.5.17]
+- code: CIS-M365-5.2.2.1
+  name: MFA is enforced for administrative roles
+  description: A Conditional Access policy (or security defaults) must require multi-factor authentication
+    for all administrative directory roles
+  severity: high
+  framework: cis-m365
+  effort: moderate
+  exposure: internet
+  remediation_group: m365_conditional_access
+  remediation_action: Create a Conditional Access policy requiring MFA for all directory roles
+  remediation_hint: 'Entra admin center > Protection > Conditional Access: policy targeting directory
+    roles with Require MFA grant'
+  provider_check_ref:
+    m365: graph:/identity/conditionalAccess/policies
+  framework_mappings:
+    soc2: [CC6.1, CC6.2]
+    nist: [IA-2(1)]
+    iso27001: [A.8.5, A.5.17]
+- code: CIS-M365-5.2.2.2
+  name: MFA is enforced for all users
+  description: A Conditional Access policy (or security defaults) must require multi-factor authentication
+    for all users
+  severity: high
+  framework: cis-m365
+  effort: moderate
+  exposure: internet
+  remediation_group: m365_conditional_access
+  remediation_action: Create a Conditional Access policy requiring MFA for all users
+  remediation_hint: 'Entra admin center > Protection > Conditional Access: policy targeting all users
+    with Require MFA grant'
+  provider_check_ref:
+    m365: graph:/identity/conditionalAccess/policies
+  framework_mappings:
+    soc2: [CC6.1, CC6.2]
+    nist: [IA-2(2)]
+    iso27001: [A.8.5, A.5.17]
+- code: CIS-M365-5.2.2.3
+  name: Legacy authentication is blocked
+  description: Legacy authentication protocols (POP, IMAP, SMTP AUTH, ActiveSync basic auth) bypass MFA
+    and must be blocked via Conditional Access or security defaults
+  severity: high
+  framework: cis-m365
+  effort: moderate
+  exposure: internet
+  remediation_group: m365_conditional_access
+  remediation_action: Create a Conditional Access policy blocking legacy authentication clients
+  remediation_hint: 'Entra admin center > Protection > Conditional Access: policy on client apps Exchange
+    ActiveSync + Other clients with Block grant'
+  provider_check_ref:
+    m365: graph:/identity/conditionalAccess/policies
+  framework_mappings:
+    soc2: [CC6.1, CC6.6]
+    nist: [IA-2, AC-17]
+    iso27001: [A.8.5, A.8.20]
+- code: CIS-M365-5.2.3.1
+  name: All administrators have registered MFA
+  description: Every account holding an administrative role must have at least one MFA method registered
+  severity: high
+  framework: cis-m365
+  effort: moderate
+  exposure: internet
+  remediation_group: m365_mfa_registration
+  remediation_action: Drive MFA registration for all administrator accounts
+  remediation_hint: 'Entra admin center > Protection > Authentication methods > User registration details:
+    filter by admins'
+  provider_check_ref:
+    m365: graph:/reports/authenticationMethods/userRegistrationDetails
+  framework_mappings:
+    soc2: [CC6.1, CC6.2]
+    nist: [IA-2(1)]
+    iso27001: [A.8.5]
+- code: CIS-M365-5.2.3.2
+  name: Tenant-wide MFA registration coverage meets threshold
+  description: At least 95% of users should have an MFA method registered - unregistered users cannot
+    be protected by MFA policies
+  severity: medium
+  framework: cis-m365
+  effort: refactor
+  exposure: internet
+  remediation_group: m365_mfa_registration
+  remediation_action: Run an MFA registration campaign for remaining users
+  remediation_hint: 'Entra admin center > Protection > Authentication methods > Registration campaign'
+  provider_check_ref:
+    m365: graph:/reports/authenticationMethods/userRegistrationDetails
+  framework_mappings:
+    soc2: [CC6.1, CC6.2]
+    nist: [IA-2]
+    iso27001: [A.8.5]
+- code: CIS-M365-5.2.3.3
+  name: SMS and voice authentication methods are disabled
+  description: SMS and voice-call MFA are vulnerable to SIM-swapping and should be replaced by authenticator
+    apps or phishing-resistant methods
+  severity: medium
+  framework: cis-m365
+  effort: moderate
+  exposure: internet
+  remediation_group: m365_mfa_registration
+  remediation_action: Disable SMS and voice authentication methods in the authentication methods policy
+  remediation_hint: 'Entra admin center > Protection > Authentication methods > Policies: disable SMS
+    and Voice call'
+  provider_check_ref:
+    m365: graph:/policies/authenticationMethodsPolicy
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [IA-2(1)]
+    iso27001: [A.8.5]
+
+# ── §6 Exchange admin center ──────────────────────────────────────────
+- code: CIS-M365-6.1.1
+  name: Mailbox auditing is enabled organization-wide
+  description: Organization-wide mailbox auditing must not be disabled - it records mailbox access, sends,
+    and permission changes
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_enable_auditing
+  remediation_action: Enable organization-wide mailbox auditing
+  remediation_hint: 'Set-OrganizationConfig -AuditDisabled $false'
+  provider_check_ref:
+    m365: exo:Get-OrganizationConfig(AuditDisabled)
+  framework_mappings:
+    soc2: [CC7.2]
+    nist: [AU-2, AU-12]
+    iso27001: [A.8.15]
+- code: CIS-M365-6.2.1
+  name: External mail forwarding is blocked
+  description: Automatic forwarding to external domains is a classic exfiltration channel and must be
+    blocked in outbound spam policy and transport rules
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_exchange_forwarding
+  remediation_action: Set outbound spam policy AutoForwardingMode to Off and remove forwarding transport
+    rules
+  remediation_hint: 'Set-HostedOutboundSpamFilterPolicy -Identity Default -AutoForwardingMode Off'
+  provider_check_ref:
+    m365: exo:Get-HostedOutboundSpamFilterPolicy,Get-TransportRule
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-4, SC-7]
+    iso27001: [A.5.14, A.8.12]
+- code: CIS-M365-6.2.2
+  name: Transport rules do not whitelist sender domains
+  description: Transport rules that set SCL to -1 for sender domains bypass all spam and phishing filtering
+    and are frequently abused
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_exchange_forwarding
+  remediation_action: Remove transport rules that bypass spam filtering for entire domains
+  remediation_hint: 'Review Get-TransportRule output for SetSCL -1 rules and remove them'
+  provider_check_ref:
+    m365: exo:Get-TransportRule(SetSCL)
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-8]
+    iso27001: [A.8.7]
+- code: CIS-M365-6.3.1
+  name: Default remote domain does not allow auto-forwarding
+  description: The default (*) remote domain should have automatic forwarding disabled as a backstop against
+    mailbox-rule exfiltration
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_exchange_forwarding
+  remediation_action: Disable auto-forwarding on the default remote domain
+  remediation_hint: 'Set-RemoteDomain -Identity Default -AutoForwardEnabled $false'
+  provider_check_ref:
+    m365: exo:Get-RemoteDomain(AutoForwardEnabled)
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-4, SC-7]
+    iso27001: [A.5.14, A.8.12]
+- code: CIS-M365-6.4.1
+  name: Anonymous external calendar sharing is disabled
+  description: Sharing policies should not allow anonymous users to view calendar details, which leak
+    org structure and travel patterns
+  severity: low
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_exchange_sharing
+  remediation_action: Remove anonymous calendar sharing from Exchange sharing policies
+  remediation_hint: 'Set-SharingPolicy -Identity <policy> -Domains (list without Anonymous:Calendar entries)'
+  provider_check_ref:
+    m365: exo:Get-SharingPolicy(Domains)
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14]
+- code: CIS-M365-6.5.1
+  name: Modern authentication for Exchange Online is enabled
+  description: OAuth2 (modern authentication) must be enabled so clients authenticate with tokens and
+    Conditional Access applies to Exchange
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_exchange_hardening
+  remediation_action: Enable modern authentication for Exchange Online
+  remediation_hint: 'Set-OrganizationConfig -OAuth2ClientProfileEnabled $true'
+  provider_check_ref:
+    m365: exo:Get-OrganizationConfig(OAuth2ClientProfileEnabled)
+  framework_mappings:
+    soc2: [CC6.1, CC6.6]
+    nist: [IA-2, AC-17]
+    iso27001: [A.8.5, A.8.20]
+- code: CIS-M365-6.5.2
+  name: MailTips are enabled including external-recipient warnings
+  description: MailTips warn users before mailing external recipients or large audiences, reducing accidental
+    data disclosure
+  severity: low
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_exchange_hardening
+  remediation_action: Enable all MailTips including external recipient tips
+  remediation_hint: 'Set-OrganizationConfig -MailTipsAllTipsEnabled $true -MailTipsExternalRecipientsTipsEnabled
+    $true'
+  provider_check_ref:
+    m365: exo:Get-OrganizationConfig(MailTips)
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-4]
+    iso27001: [A.5.14]
+- code: CIS-M365-6.5.3
+  name: Third-party storage providers are disabled in Outlook on the web
+  description: OWA should not offer third-party storage providers (Dropbox, Box, etc.) as attachment sources,
+    keeping data inside sanctioned storage
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_exchange_hardening
+  remediation_action: Disable additional storage providers in OWA mailbox policies
+  remediation_hint: 'Set-OwaMailboxPolicy -Identity OwaMailboxPolicy-Default -AdditionalStorageProvidersAvailable
+    $false'
+  provider_check_ref:
+    m365: exo:Get-OwaMailboxPolicy(AdditionalStorageProvidersAvailable)
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-20, SC-7]
+    iso27001: [A.5.14, A.8.12]
+
+# ── §7 SharePoint admin center ────────────────────────────────────────
+- code: CIS-M365-7.2.1
+  name: Legacy authentication to SharePoint is disabled
+  description: Legacy authentication protocols to SharePoint bypass Conditional Access and MFA and must
+    be disabled
+  severity: high
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_sharepoint_sharing
+  remediation_action: Disable legacy authentication protocols in SharePoint admin settings
+  remediation_hint: 'SharePoint admin center > Policies > Access control > Apps that don''t use modern
+    authentication: Block'
+  provider_check_ref:
+    m365: graph:/admin/sharepoint/settings(isLegacyAuthProtocolsEnabled)
+  framework_mappings:
+    soc2: [CC6.1, CC6.6]
+    nist: [IA-2, AC-17]
+    iso27001: [A.8.5, A.8.20]
+- code: CIS-M365-7.2.3
+  name: SharePoint external sharing requires sign-in
+  description: Tenant-wide sharing should be limited to new and existing guests who authenticate - anonymous
+    "anyone" links must be disabled
+  severity: high
+  framework: cis-m365
+  effort: moderate
+  exposure: internet
+  remediation_group: m365_sharepoint_sharing
+  remediation_action: Set tenant external sharing to "New and existing guests" or more restrictive
+  remediation_hint: 'SharePoint admin center > Policies > Sharing: set the SharePoint slider to New and
+    existing guests or lower'
+  provider_check_ref:
+    m365: graph:/admin/sharepoint/settings(sharingCapability)
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3, AC-4]
+    iso27001: [A.5.14, A.8.12]
+- code: CIS-M365-7.2.5
+  name: Guests must accept invitations with the invited account
+  description: Requiring the accepting account to match the invited account prevents invitation hijacking
+    via forwarded emails
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_sharepoint_sharing
+  remediation_action: Require accepting users to match the invited account
+  remediation_hint: 'Set-SPOTenant -RequireAcceptingAccountMatchInvitedAccount $true (or SharePoint admin
+    center > Sharing)'
+  provider_check_ref:
+    m365: graph:/admin/sharepoint/settings(isRequireAcceptingUserToMatchInvitedUserEnabled)
+  framework_mappings:
+    soc2: [CC6.1, CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14, A.5.19]
+- code: CIS-M365-7.2.6
+  name: External sharing is restricted by domain
+  description: When external sharing is enabled it should be constrained to an allow list (or block list)
+    of partner domains
+  severity: medium
+  framework: cis-m365
+  effort: moderate
+  exposure: internet
+  remediation_group: m365_sharepoint_sharing
+  remediation_action: Configure a sharing domain allow list for external collaboration
+  remediation_hint: 'SharePoint admin center > Policies > Sharing > Limit external sharing by domain'
+  provider_check_ref:
+    m365: graph:/admin/sharepoint/settings(sharingDomainRestrictionMode)
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-4]
+    iso27001: [A.5.14]
+- code: CIS-M365-7.2.9
+  name: Re-sharing by external users is disabled
+  description: Guests should not be able to re-share content that was shared with them, which silently
+    widens data exposure
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internet
+  remediation_group: m365_sharepoint_sharing
+  remediation_action: Prevent external users from re-sharing content
+  remediation_hint: 'SharePoint admin center > Policies > Sharing > Allow guests to share items they don''t
+    own: off'
+  provider_check_ref:
+    m365: graph:/admin/sharepoint/settings(isResharingByExternalUsersEnabled)
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3, AC-4]
+    iso27001: [A.5.14, A.8.12]
+- code: CIS-M365-7.3.2
+  name: OneDrive sync is restricted to managed devices
+  description: Restricting the OneDrive sync client to managed devices prevents bulk data sync to unmanaged
+    personal machines
+  severity: medium
+  framework: cis-m365
+  effort: moderate
+  exposure: internal
+  remediation_group: m365_sharepoint_sharing
+  remediation_action: Restrict OneDrive sync to devices joined to specific domains
+  remediation_hint: 'SharePoint admin center > Settings > OneDrive Sync > Allow syncing only on computers
+    joined to specific domains'
+  provider_check_ref:
+    m365: graph:/admin/sharepoint/settings(isUnmanagedSyncAppForTenantRestricted)
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-20, SC-7]
+    iso27001: [A.5.14, A.8.1]
+- code: CIS-M365-7.3.4
+  name: Idle browser sessions are signed out automatically
+  description: Idle session sign-out limits the exposure window of unattended SharePoint and OneDrive
+    browser sessions on shared devices
+  severity: low
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_sharepoint_sharing
+  remediation_action: Enable idle session sign-out for SharePoint and OneDrive
+  remediation_hint: 'SharePoint admin center > Policies > Access control > Idle session sign-out'
+  provider_check_ref:
+    m365: graph:/admin/sharepoint/settings(idleSessionSignOut)
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [AC-11, AC-12]
+    iso27001: [A.8.1]
+
+# ── §8 Teams admin center ─────────────────────────────────────────────
+- code: CIS-M365-8.4.1
+  name: Resource-specific consent for Teams apps is restricted
+  description: Users should not be able to grant resource-specific consent to Teams apps, which gives
+    apps direct access to team and chat data
+  severity: medium
+  framework: cis-m365
+  effort: quick
+  exposure: internal
+  remediation_group: m365_teams_apps
+  remediation_action: Disable user resource-specific consent for Teams apps
+  remediation_hint: 'Teams admin center > Teams apps > Permission policies; Graph: PATCH /teamwork/teamsAppSettings'
+  provider_check_ref:
+    m365: graph:/teamwork/teamsAppSettings
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [CM-7, AC-6]
+    iso27001: [A.5.15]
+
+# ── CIS M365: manual controls (no app-only API) ───────────────────────
+- code: CIS-M365-1.1.2
+  name: Administrative accounts are cloud-only and dedicated
+  description: Privileged roles should be held by dedicated cloud-only accounts without mailboxes or
+    day-to-day licenses, separate from the user's regular identity
+  severity: high
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internal
+  remediation_hint: 'Review each privileged account: it should be cloud-only (not synced) and hold no
+    productivity licenses'
+  provider_check_ref:
+    m365: manual:admin-center
+  framework_mappings:
+    soc2: [CC6.1, CC6.3]
+    nist: [AC-2, AC-6]
+    iso27001: [A.5.15, A.8.2]
+- code: CIS-M365-1.2.1
+  name: Sign-in to shared mailboxes is blocked
+  description: Shared mailbox accounts should have interactive sign-in blocked - they are unattended
+    identities with no MFA owner
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internal
+  remediation_hint: 'For each shared mailbox: Entra admin center > Users > Block sign-in, or Set-AzureADUser
+    -AccountEnabled $false'
+  provider_check_ref:
+    m365: manual:admin-center
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [AC-2]
+    iso27001: [A.5.16]
+- code: CIS-M365-1.3.1
+  name: Customer lockbox is enabled
+  description: Customer lockbox requires explicit approval before Microsoft engineers can access tenant
+    data during support operations
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internal
+  remediation_hint: 'Microsoft 365 admin center > Settings > Org settings > Security & privacy > Customer
+    lockbox (requires E5)'
+  provider_check_ref:
+    m365: manual:admin-center
+  framework_mappings:
+    soc2: [CC6.1, CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14]
+- code: CIS-M365-1.3.2
+  name: Idle session timeout is configured for Microsoft 365 web apps
+  description: An idle session timeout for the M365 web experience limits exposure of unattended sessions
+    on shared or unmanaged devices
+  severity: low
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internal
+  remediation_hint: 'Microsoft 365 admin center > Settings > Org settings > Security & privacy > Idle
+    session timeout'
+  provider_check_ref:
+    m365: manual:admin-center
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [AC-11]
+    iso27001: [A.8.1]
+- code: CIS-M365-1.3.3
+  name: Third-party integrated applications are reviewed
+  description: Integrated apps and add-ins allowed tenant-wide should be periodically reviewed and unused
+    ones removed
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internal
+  remediation_hint: 'Microsoft 365 admin center > Settings > Integrated apps: review the list quarterly'
+  provider_check_ref:
+    m365: manual:admin-center
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [CM-7]
+    iso27001: [A.5.15]
+- code: CIS-M365-2.1.8
+  name: SPF records are published for all domains
+  description: Every sending domain must publish an SPF record authorizing Exchange Online, so receivers
+    can reject spoofed mail
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internet
+  remediation_hint: 'Publish TXT record "v=spf1 include:spf.protection.outlook.com -all" for each domain
+    at your DNS provider'
+  provider_check_ref:
+    m365: manual:dns
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [SC-8]
+    iso27001: [A.5.14, A.8.26]
+- code: CIS-M365-2.1.10
+  name: DMARC records are published for all domains
+  description: DMARC policies tell receivers how to handle mail failing SPF/DKIM and provide reporting
+    on spoofing attempts
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internet
+  remediation_hint: 'Publish _dmarc TXT record with p=quarantine or p=reject for each domain'
+  provider_check_ref:
+    m365: manual:dns
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [SC-8]
+    iso27001: [A.5.14, A.8.26]
+- code: CIS-M365-2.4.1
+  name: Priority account protection is enabled and configured
+  description: Executives and other high-value mailboxes should be tagged as priority accounts for enhanced
+    Defender protection and monitoring
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internet
+  remediation_hint: 'Defender portal > Settings > Email & collaboration > Priority account protection'
+  provider_check_ref:
+    m365: manual:defender-portal
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-3]
+    iso27001: [A.8.7]
+- code: CIS-M365-2.4.2
+  name: Zero-hour auto purge (ZAP) is enabled
+  description: ZAP retroactively removes delivered messages later classified as malware or phishing from
+    mailboxes
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Verify ZAP is enabled in anti-malware and anti-spam policies (on by default; confirm
+    not disabled)'
+  provider_check_ref:
+    m365: manual:defender-portal
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-3]
+    iso27001: [A.8.7]
+- code: CIS-M365-3.2.1
+  name: DLP policies are enabled for Exchange, SharePoint, and OneDrive
+  description: Data loss prevention policies should detect and block sharing of sensitive information
+    types across workloads
+  severity: high
+  framework: cis-m365
+  automation: manual
+  effort: refactor
+  exposure: internet
+  remediation_hint: 'Purview portal > Data loss prevention > Policies: create policies for financial/PII
+    sensitive info types'
+  provider_check_ref:
+    m365: manual:purview-portal
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-4, SC-7]
+    iso27001: [A.8.12]
+- code: CIS-M365-3.2.2
+  name: DLP policies cover Microsoft Teams messages
+  description: DLP should extend to Teams chat and channel messages to prevent sensitive data leaking
+    through chat
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internet
+  remediation_hint: 'Purview portal > Data loss prevention: include Teams chat and channel messages as
+    a location'
+  provider_check_ref:
+    m365: manual:purview-portal
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-4]
+    iso27001: [A.8.12]
+- code: CIS-M365-3.3.1
+  name: Sensitivity labels are published and used
+  description: Information protection sensitivity labels should classify and protect documents and emails
+    across the tenant
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: refactor
+  exposure: internal
+  remediation_hint: 'Purview portal > Information protection > Labels: define and publish a label taxonomy'
+  provider_check_ref:
+    m365: manual:purview-portal
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [MP-3, AC-16]
+    iso27001: [A.5.12, A.5.13]
+- code: CIS-M365-5.1.8.1
+  name: Password hash synchronization is enabled for hybrid tenants
+  description: Hybrid tenants should sync password hashes so leaked-credential detection and cloud sign-in
+    resilience work
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internal
+  remediation_hint: 'Entra Connect: enable password hash synchronization (not applicable to cloud-only
+    tenants)'
+  provider_check_ref:
+    m365: manual:entra-connect
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [IA-5]
+    iso27001: [A.5.17]
+- code: CIS-M365-5.2.2.4
+  name: Sign-in frequency and persistent sessions are managed for admins
+  description: Administrative sessions should have a bounded sign-in frequency and no persistent browser
+    sessions
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internet
+  remediation_hint: 'Conditional Access policy for directory roles: Sign-in frequency 4-24h, persistent
+    browser session Never'
+  provider_check_ref:
+    m365: manual:conditional-access
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [AC-11, AC-12]
+    iso27001: [A.8.1]
+- code: CIS-M365-5.2.2.5
+  name: Phishing-resistant MFA is required for administrators
+  description: Administrators should use phishing-resistant methods (FIDO2, certificate-based, Windows
+    Hello) via authentication-strength policies
+  severity: high
+  framework: cis-m365
+  automation: manual
+  effort: refactor
+  exposure: internet
+  remediation_hint: 'Conditional Access: require the Phishing-resistant MFA authentication strength for
+    directory roles'
+  provider_check_ref:
+    m365: manual:conditional-access
+  framework_mappings:
+    soc2: [CC6.1, CC6.2]
+    nist: [IA-2(1)]
+    iso27001: [A.8.5]
+- code: CIS-M365-5.2.4.1
+  name: Self-service password reset is enabled
+  description: SSPR reduces helpdesk load and enables secure recovery, and its registration doubles as
+    MFA registration
+  severity: low
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internal
+  remediation_hint: 'Entra admin center > Protection > Password reset: enable for all users'
+  provider_check_ref:
+    m365: manual:entra-portal
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [IA-5]
+    iso27001: [A.5.17]
+- code: CIS-M365-5.2.6.1
+  name: Privileged Identity Management is used for role activation
+  description: Privileged roles should be eligible (not permanently active) and activated just-in-time
+    through PIM with approval and MFA
+  severity: high
+  framework: cis-m365
+  automation: manual
+  effort: refactor
+  exposure: internal
+  remediation_hint: 'Entra admin center > Identity governance > PIM: convert permanent assignments to
+    eligible (requires P2)'
+  provider_check_ref:
+    m365: manual:pim
+  framework_mappings:
+    soc2: [CC6.1, CC6.3]
+    nist: [AC-2, AC-6]
+    iso27001: [A.5.15, A.8.2]
+- code: CIS-M365-5.3.1
+  name: Access reviews are configured for privileged roles
+  description: Periodic access reviews should recertify privileged role membership so stale privileges
+    are removed
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internal
+  remediation_hint: 'Entra admin center > Identity governance > Access reviews: schedule quarterly reviews
+    of directory roles'
+  provider_check_ref:
+    m365: manual:access-reviews
+  framework_mappings:
+    soc2: [CC6.1, CC6.3]
+    nist: [AC-2]
+    iso27001: [A.5.18]
+- code: CIS-M365-5.3.2
+  name: Access reviews are configured for guest users
+  description: Periodic reviews of guest accounts remove external identities that no longer need access
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internet
+  remediation_hint: 'Entra admin center > Identity governance > Access reviews: schedule guest user reviews'
+  provider_check_ref:
+    m365: manual:access-reviews
+  framework_mappings:
+    soc2: [CC6.1, CC6.3]
+    nist: [AC-2]
+    iso27001: [A.5.18, A.5.19]
+- code: CIS-M365-6.1.2
+  name: Mailbox auditing covers all recommended actions
+  description: Per-mailbox audit action sets should include the recommended admin, delegate, and owner
+    actions
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internal
+  remediation_hint: 'Review Get-Mailbox audit action sets against Microsoft''s recommended baseline'
+  provider_check_ref:
+    m365: manual:exo-powershell
+  framework_mappings:
+    soc2: [CC7.2]
+    nist: [AU-2, AU-12]
+    iso27001: [A.8.15]
+- code: CIS-M365-6.1.3
+  name: No mailboxes bypass auditing
+  description: Audit bypass associations silently exclude accounts from mailbox auditing and should not
+    exist
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internal
+  remediation_hint: 'Get-MailboxAuditBypassAssociation | Where AuditBypassEnabled; remove any entries'
+  provider_check_ref:
+    m365: manual:exo-powershell
+  framework_mappings:
+    soc2: [CC7.2]
+    nist: [AU-2]
+    iso27001: [A.8.15]
+- code: CIS-M365-6.2.3
+  name: External sender tagging is enabled
+  description: The external sender tag in Outlook warns users when mail originates outside the organization
+  severity: low
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Set-ExternalInOutlook -Enabled $true'
+  provider_check_ref:
+    m365: manual:exo-powershell
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [SI-8]
+    iso27001: [A.8.7]
+- code: CIS-M365-7.2.2
+  name: SharePoint and OneDrive integration with Entra B2B is enabled
+  description: B2B integration makes guests real directory objects subject to Conditional Access, access
+    reviews, and auditing
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Set-SPOTenant -EnableAzureADB2BIntegration $true'
+  provider_check_ref:
+    m365: manual:spo-powershell
+  framework_mappings:
+    soc2: [CC6.1]
+    nist: [AC-2]
+    iso27001: [A.5.19]
+- code: CIS-M365-7.2.4
+  name: OneDrive sharing is not more permissive than SharePoint
+  description: The OneDrive external sharing level must be equal to or more restrictive than the SharePoint
+    tenant level
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'SharePoint admin center > Policies > Sharing: set the OneDrive slider at or below
+    the SharePoint level'
+  provider_check_ref:
+    m365: manual:sharepoint-admin
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3, AC-4]
+    iso27001: [A.5.14]
+- code: CIS-M365-7.2.7
+  name: Default sharing link type is restricted
+  description: The default link type for sharing should be "Specific people" rather than organization-wide
+    or anyone links
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'SharePoint admin center > Policies > Sharing > File and folder links: Specific people'
+  provider_check_ref:
+    m365: manual:sharepoint-admin
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14]
+- code: CIS-M365-7.2.10
+  name: Anyone links expire and are read-only
+  description: If anonymous links are permitted at all, they must expire within 30 days and default to
+    view-only
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'SharePoint admin center > Policies > Sharing > Advanced settings for Anyone links'
+  provider_check_ref:
+    m365: manual:sharepoint-admin
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3, AC-4]
+    iso27001: [A.5.14]
+- code: CIS-M365-7.3.3
+  name: Custom script execution is disabled on SharePoint sites
+  description: Custom scripts on personal and self-service sites enable stored-XSS-style attacks and
+    should be blocked
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Set-SPOSite -DenyAddAndCustomizePages $true (tenant default via SharePoint admin
+    center > Settings)'
+  provider_check_ref:
+    m365: manual:spo-powershell
+  framework_mappings:
+    soc2: [CC6.8]
+    nist: [CM-7, SI-3]
+    iso27001: [A.8.7]
+- code: CIS-M365-8.1.1
+  name: External file sharing in Teams is limited to approved services
+  description: Third-party cloud storage options (Dropbox, Box, Google Drive) in Teams file sharing should
+    be disabled unless approved
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Teams admin center > Teams settings > Files: disable unapproved cloud storage options
+    (Set-CsTeamsClientConfiguration)'
+  provider_check_ref:
+    m365: manual:teams-powershell
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-20]
+    iso27001: [A.5.14]
+- code: CIS-M365-8.1.2
+  name: Users cannot send emails to a channel email address
+  description: Channel email addresses bypass mail-flow protections and should be disabled
+  severity: low
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Teams admin center > Teams settings > Email integration: off (Set-CsTeamsClientConfiguration
+    -AllowEmailIntoChannel $false)'
+  provider_check_ref:
+    m365: manual:teams-powershell
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [SC-7]
+    iso27001: [A.8.20]
+- code: CIS-M365-8.2.1
+  name: External domain communication in Teams is restricted
+  description: Federation should be limited to an allow list of partner domains rather than open to all
+    external domains
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: moderate
+  exposure: internet
+  remediation_hint: 'Teams admin center > Users > External access: allow only specific external domains
+    (Set-CsTenantFederationConfiguration)'
+  provider_check_ref:
+    m365: manual:teams-powershell
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-4, SC-7]
+    iso27001: [A.5.14]
+- code: CIS-M365-8.2.2
+  name: Unmanaged Teams users cannot initiate contact
+  description: Unmanaged (personal) Teams accounts should not be able to start conversations with organization
+    users
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Teams admin center > Users > External access: block Teams users with unmanaged accounts
+    from initiating chats'
+  provider_check_ref:
+    m365: manual:teams-powershell
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14]
+- code: CIS-M365-8.5.1
+  name: Anonymous users cannot join Teams meetings
+  description: Anonymous meeting join allows uninvited external parties into meetings and should be disabled
+    where business allows
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Teams admin center > Meetings > Meeting policies > Anonymous users can join a meeting:
+    off (Set-CsTeamsMeetingPolicy)'
+  provider_check_ref:
+    m365: manual:teams-powershell
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14]
+- code: CIS-M365-8.5.2
+  name: Anonymous users cannot start Teams meetings
+  description: Anonymous participants must never be able to start a meeting, which would let them admit
+    other lobby participants
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Set-CsTeamsMeetingPolicy -Identity Global -AllowAnonymousUsersToStartMeeting $false'
+  provider_check_ref:
+    m365: manual:teams-powershell
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14]
+- code: CIS-M365-8.5.3
+  name: Only invited users are automatically admitted to meetings
+  description: The meeting lobby should hold everyone except explicitly invited users
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Set-CsTeamsMeetingPolicy -Identity Global -AutoAdmittedUsers "InvitedUsers"'
+  provider_check_ref:
+    m365: manual:teams-powershell
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14]
+- code: CIS-M365-8.5.4
+  name: Dial-in users cannot bypass the meeting lobby
+  description: PSTN dial-in participants should wait in the lobby like other unauthenticated participants
+  severity: low
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Set-CsTeamsMeetingPolicy -Identity Global -AllowPSTNUsersToBypassLobby $false'
+  provider_check_ref:
+    m365: manual:teams-powershell
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14]
+- code: CIS-M365-8.5.5
+  name: Only organizers and co-organizers can present
+  description: Restricting the presenter role prevents meeting hijacking via screen share
+  severity: low
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Set-CsTeamsMeetingPolicy -Identity Global -DesignatedPresenterRoleMode "OrganizerOnlyUserOverride"'
+  provider_check_ref:
+    m365: manual:teams-powershell
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14]
+- code: CIS-M365-8.6.1
+  name: Users can report security concerns in Teams
+  description: Message reporting should be enabled so users can flag suspicious Teams messages to security
+    teams
+  severity: low
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internal
+  remediation_hint: 'Teams admin center > Messaging policies > Report a security concern: on'
+  provider_check_ref:
+    m365: manual:teams-admin
+  framework_mappings:
+    soc2: [CC7.2]
+    nist: [IR-6]
+    iso27001: [A.6.8]
+- code: CIS-M365-9.1.1
+  name: Fabric guest user access is restricted
+  description: Guest users should not be able to access Microsoft Fabric / Power BI content unless explicitly
+    required
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Fabric admin portal > Tenant settings > Export and sharing settings: restrict guest
+    access'
+  provider_check_ref:
+    m365: manual:fabric-admin
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3]
+    iso27001: [A.5.14, A.5.19]
+- code: CIS-M365-9.1.2
+  name: Fabric external data sharing is disabled
+  description: Datasets and reports should not be shareable with users outside the organization unless
+    explicitly approved
+  severity: medium
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Fabric admin portal > Tenant settings: disable external data sharing'
+  provider_check_ref:
+    m365: manual:fabric-admin
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-4]
+    iso27001: [A.5.14]
+- code: CIS-M365-9.1.3
+  name: Publish to web is blocked in Fabric
+  description: The "publish to web" feature makes reports publicly accessible without authentication and
+    should be blocked
+  severity: high
+  framework: cis-m365
+  automation: manual
+  effort: quick
+  exposure: internet
+  remediation_hint: 'Fabric admin portal > Tenant settings > Publish to web: disabled or restricted to
+    specific security groups'
+  provider_check_ref:
+    m365: manual:fabric-admin
+  framework_mappings:
+    soc2: [CC6.7]
+    nist: [AC-3, AC-4]
+    iso27001: [A.5.14, A.8.12]

@@ -16,9 +16,15 @@ from app.models.finding import Finding
 
 logger = logging.getLogger(__name__)
 
-# Frameworks to snapshot.  "cis_azure" maps to Control.framework == "cis-lite".
-# The others are derived from Control.framework_mappings JSONB keys.
-SNAPSHOT_FRAMEWORKS = ["cis_azure", "soc2", "nist", "iso27001"]
+# Frameworks to snapshot. Primary frameworks map to Control.framework values;
+# the others are derived from Control.framework_mappings JSONB keys.
+SNAPSHOT_FRAMEWORKS = ["cis_azure", "cis_m365", "soc2", "nist", "iso27001"]
+
+# Snapshot framework name -> Control.framework value
+_PRIMARY_FRAMEWORKS = {
+    "cis_azure": "cis-lite",
+    "cis_m365": "cis-m365",
+}
 
 # Mapping from snapshot framework name to the key used inside framework_mappings
 _MAPPING_KEY = {
@@ -71,9 +77,10 @@ async def capture_compliance_snapshot(
     for framework in SNAPSHOT_FRAMEWORKS:
         # Determine which controls belong to this framework
         framework_control_ids: set[uuid.UUID] = set()
-        if framework == "cis_azure":
+        if framework in _PRIMARY_FRAMEWORKS:
+            primary = _PRIMARY_FRAMEWORKS[framework]
             for ctrl in all_controls:
-                if ctrl.framework == "cis-lite":
+                if ctrl.framework == primary:
                     framework_control_ids.add(ctrl.id)
         else:
             mapping_key = _MAPPING_KEY.get(framework, framework)

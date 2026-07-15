@@ -51,6 +51,7 @@ VALID_FRAMEWORKS = {"cis_azure", "soc2", "nist", "iso27001"}
 
 FRAMEWORK_LABELS: dict[str, str] = {
     "cis_azure": "CIS Azure Foundations Benchmark",
+    "cis_m365": "CIS Microsoft 365 Foundations Benchmark",
     "soc2": "SOC 2 Trust Services Criteria",
     "nist": "NIST Cybersecurity Framework",
     "iso27001": "ISO/IEC 27001:2022",
@@ -59,9 +60,16 @@ FRAMEWORK_LABELS: dict[str, str] = {
 # Mapping from query param value to the key used in Control.framework_mappings
 FRAMEWORK_MAPPING_KEY: dict[str, str] = {
     "cis_azure": "cis_azure",
+    "cis_m365": "cis_m365",
     "soc2": "soc2",
     "nist": "nist",
     "iso27001": "iso27001",
+}
+
+# Report framework -> code prefix for primary (Control.framework-based) frameworks
+_PRIMARY_FRAMEWORK_CODE_PREFIX: dict[str, str] = {
+    "cis_azure": "CIS-AZ",
+    "cis_m365": "CIS-M365",
 }
 
 
@@ -451,7 +459,7 @@ async def compliance_report(
     request: Request,
     db: DB,
     user: CurrentUser,
-    framework: str = Query("cis_azure", pattern=r"^(cis_azure|soc2|nist|iso27001)$"),
+    framework: str = Query("cis_azure", pattern=r"^(cis_azure|cis_m365|soc2|nist|iso27001)$"),
 ) -> StreamingResponse:
     """Generate a compliance report PDF for a given framework."""
     tenant_id = user.tenant_id
@@ -473,6 +481,7 @@ async def compliance_report(
                 func.count(Finding.id).label("total_count"),
                 func.count(case((Finding.status == "fail", 1))).label("fail_count"),
                 func.count(case((Finding.status == "pass", 1))).label("pass_count"),
+                Control.automation,
             )
             .outerjoin(Finding, Finding.control_id == Control.id)
             .outerjoin(CloudAccount, CloudAccount.id == Finding.cloud_account_id)
@@ -483,12 +492,17 @@ async def compliance_report(
     ).all()
 
     # Filter controls relevant to the selected framework
-    if framework == "cis_azure":
-        # All controls with CIS-AZ codes are part of cis_azure
-        relevant_controls = [r for r in control_rows if r[1].startswith("CIS-AZ")]
+    if framework in _PRIMARY_FRAMEWORK_CODE_PREFIX:
+        prefix = _PRIMARY_FRAMEWORK_CODE_PREFIX[framework]
+        relevant_controls = [r for r in control_rows if r[1].startswith(prefix)]
     else:
         # Controls that have a mapping for this framework
         relevant_controls = [r for r in control_rows if r[6] and isinstance(r[6], dict) and mapping_key in r[6]]
+
+    # Manual controls (no app-only API) are listed separately and stay out
+    # of the compliance percentage.
+    manual_controls = [r for r in relevant_controls if r[10] == "manual"]
+    relevant_controls = [r for r in relevant_controls if r[10] != "manual"]
 
     # Compute overall compliance
     total_controls = len(relevant_controls)
@@ -603,6 +617,30 @@ async def compliance_report(
                 s["normal"],
             )
         )
+
+    # Manual verification section
+    if manual_controls:
+        elements.append(Spacer(1, 1 * cm))
+        elements.append(Paragraph("Manual Verification Required", s["heading"]))
+        elements.append(
+            Paragraph(
+                f"{len(manual_controls)} controls in this framework have no app-only API and "
+                "must be verified by hand. They are excluded from the compliance percentage.",
+                s["small"],
+            )
+        )
+        manual_data = [["Code", "Name", "Severity"]]
+        for r in manual_controls:
+            manual_data.append(
+                [
+                    r[1],
+                    Paragraph(_xml_escape(r[2][:60]), s["small"]),
+                    r[3].capitalize(),
+                ]
+            )
+        manual_tbl = Table(manual_data, colWidths=[2.5 * cm, 9 * cm, 2 * cm])
+        manual_tbl.setStyle(_header_table_style())
+        elements.append(manual_tbl)
 
     elements.append(PageBreak())
 

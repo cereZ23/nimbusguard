@@ -15,9 +15,15 @@ test.describe("Compliance Flow", () => {
   });
 
   test("framework tabs are visible", async ({ page }) => {
-    // The compliance page has built-in framework tabs: CIS Azure, SOC 2 Type II, NIST 800-53, ISO 27001
+    // The compliance page has built-in framework tabs: CIS Azure, CIS Microsoft 365, SOC 2 Type II, NIST 800-53, ISO 27001
     // These are rendered as buttons or tab-like elements
-    const frameworkLabels = ["CIS Azure", "SOC 2", "NIST", "ISO 27001"];
+    const frameworkLabels = [
+      "CIS Azure",
+      "CIS Microsoft 365",
+      "SOC 2",
+      "NIST",
+      "ISO 27001",
+    ];
 
     for (const label of frameworkLabels) {
       const tab = page.getByRole("button", { name: new RegExp(label, "i") });

@@ -24,10 +24,18 @@ interface ComplianceTrendChartProps {
 
 const FRAMEWORK_LABELS: Record<string, string> = {
   cis_azure: "CIS Azure",
+  cis_m365: "CIS Microsoft 365",
   soc2: "SOC 2",
   nist: "NIST 800-53",
   iso27001: "ISO 27001",
 };
+
+// Per-framework line color; indigo is the default for existing frameworks.
+const FRAMEWORK_COLORS: Record<string, string> = {
+  cis_m365: "#0f7b6c",
+};
+
+const DEFAULT_LINE_COLOR = "#6366f1";
 
 function TrendTooltip({
   active,
@@ -97,6 +105,7 @@ export default function ComplianceTrendChart({
   }
 
   const frameworkLabel = FRAMEWORK_LABELS[framework] ?? framework;
+  const lineColor = FRAMEWORK_COLORS[framework] ?? DEFAULT_LINE_COLOR;
 
   // Calculate score change
   const firstScore = data[0].score;
@@ -210,14 +219,14 @@ export default function ComplianceTrendChart({
             <Line
               type="monotone"
               dataKey="score"
-              stroke="#6366f1"
+              stroke={lineColor}
               strokeWidth={2.5}
               dot={false}
               activeDot={{
                 r: 5,
                 strokeWidth: 2,
                 fill: "#fff",
-                stroke: "#6366f1",
+                stroke: lineColor,
               }}
             />
           </LineChart>
@@ -227,7 +236,10 @@ export default function ComplianceTrendChart({
       {/* Legend */}
       <div className="mt-3 flex items-center justify-center gap-6">
         <div className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-indigo-500" />
+          <span
+            className="h-2 w-2 rounded-full"
+            style={{ backgroundColor: lineColor }}
+          />
           <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
             Compliance Score
           </span>

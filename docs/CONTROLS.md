@@ -1,14 +1,15 @@
 # Security Controls Reference
 
-NimbusGuard ships **179 security checks** out of the box, mapped to
-**CIS Benchmarks v3.0** and enriched with priority metadata (severity ×
+NimbusGuard ships **222 security checks** out of the box, mapped to
+**CIS Benchmarks** and enriched with priority metadata (severity ×
 effort × exposure) that feeds the [Priority / Triage layer](../README.md#priority--triage-layer).
 
-| Provider  | Evaluators | YAML controls | Resource types |
-| --------- | ---------- | ------------- | -------------- |
-| Azure     | **159**    | 163           | 34             |
-| AWS       | **20**     | 20            | 12             |
-| **Total** | **179**    | **183**       | **46**         |
+| Provider      | Evaluators | YAML controls | Resource types |
+| ------------- | ---------- | ------------- | -------------- |
+| Azure         | **159**    | 163           | 34             |
+| AWS           | **20**     | 20            | 12             |
+| Microsoft 365 | **43**     | 83            | 4              |
+| **Total**     | **222**    | **266**       | **50**         |
 
 > The YAML count is slightly higher than the evaluator count because a few
 > Azure controls (e.g. `CIS-AZ-01`, `CIS-AZ-02` for tenant-level MFA) are
@@ -126,6 +127,50 @@ as a generic framework, to keep evaluator logic transparent and debuggable.
 | `aws.cloudtrail.trail`    | 1      | Multi-region trail enabled                                  |
 | `aws.guardduty.detector`  | 1      | GuardDuty enabled in region                                 |
 | `aws.lambda.function`     | 1      | Runtime not deprecated                                      |
+
+---
+
+## Microsoft 365 coverage
+
+Mapped to the **CIS Microsoft 365 Foundations Benchmark** — codes mirror the
+benchmark's section numbering (`CIS-M365-<section>.<sub>.<n>`), and the
+catalogue is seeded under `framework: cis-m365` (its own tab on the
+Compliance page).
+
+The M365 collector (`backend/app/services/m365/`) authenticates with an
+Entra app registration (client-credentials) and creates **four synthetic
+assets**, one per workload:
+
+| Resource type            | Data source                     | Automated checks | Highlights                                                                                                                                  |
+| ------------------------ | ------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `microsoft365/tenant`    | Microsoft Graph                 | 16               | Global admin count, security defaults / Conditional Access MFA + legacy-auth block, MFA registration coverage, user defaults (app registration, consent, tenant/group creation), guest restrictions, password expiry, weak auth methods |
+| `microsoft365/exchange`  | Exchange admin API (see below)  | 19               | Mailbox + unified audit, external forwarding blocked, transport-rule whitelisting, modern auth, MailTips, OWA storage providers, Safe Links / Safe Attachments (incl. SPO/Teams), anti-phishing, anti-malware file filter, DKIM, spam-filter allow lists |
+| `microsoft365/sharepoint`| Graph `/admin/sharepoint/settings` | 7             | Legacy auth, external-sharing capability, invited-account matching, domain restriction, guest re-sharing, unmanaged sync, idle session sign-out |
+| `microsoft365/teams`     | Graph `/teamwork/teamsAppSettings` | 1             | Resource-specific consent for Teams apps                                                                                                    |
+
+### Manual controls
+
+40 catalogued controls carry `automation: manual` — their settings have **no
+app-only API** (Teams meeting/messaging/federation policies via CsTeams*
+PowerShell, Purview DLP / sensitivity labels, Fabric tenant settings,
+SPF/DMARC DNS records, PIM / access reviews, customer lockbox, and several
+admin-center toggles). They appear in the catalogue and compliance PDF with
+a **Manual** badge but never produce findings and are excluded from
+compliance scores.
+
+### Exchange admin API caveat
+
+Exchange Online and Defender-for-Office configuration is not exposed through
+Microsoft Graph. NimbusGuard calls the Exchange admin REST endpoint that the
+official `ExchangeOnlineManagement` PowerShell module uses
+(`POST https://outlook.office365.com/adminapi/beta/{tenant}/InvokeCommand`)
+— the same approach used by Prowler, Monkey365, and ScubaGear. It requires
+the **`Exchange.ManageAsApp`** application permission plus a **Global
+Reader** directory-role assignment on the service principal, and the client
+allowlists `Get-*` cmdlets only. If the role is missing, Exchange checks are
+**skipped** (never failed) and the connection test reports the gap.
+
+Setup walkthrough: [docs/m365-setup.md](m365-setup.md).
 
 ---
 

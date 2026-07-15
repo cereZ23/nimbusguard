@@ -248,6 +248,48 @@ async def test_run_collection_and_evaluation_aws(db, seed_data, monkeypatch) -> 
 
 
 @pytest.mark.asyncio
+async def test_run_collection_and_evaluation_m365(db, seed_data, monkeypatch) -> None:
+    # Flip the account to the m365 provider — must dispatch to M365Collector,
+    # never fall through to the Azure collector.
+    acct = await db.get(CloudAccount, uuid.UUID(seed_data["account_id"]))
+    acct.provider = "m365"
+    await db.commit()
+    scan = await _make_scan(db, seed_data)
+
+    class _FakeM365Collector:
+        def __init__(self, _db, _scan):
+            pass
+
+        async def run(self):
+            return {"workloads_collected": ["tenant"]}
+
+    import app.services.m365.collector as m365_collector
+
+    monkeypatch.setattr(m365_collector, "M365Collector", _FakeM365Collector)
+
+    import app.services.asset_graph as asset_graph
+    import app.services.evaluator as evaluator
+    import app.services.normalizer as normalizer
+
+    async def _norm(_db, _sid, provider=None):
+        assert provider == "m365"
+        return {}
+
+    async def _eval(_db, _acc, _sid):
+        return {}
+
+    async def _rel(_tid, _db):
+        return 0
+
+    monkeypatch.setattr(normalizer, "normalize_findings", _norm)
+    monkeypatch.setattr(evaluator, "evaluate_all", _eval)
+    monkeypatch.setattr(asset_graph, "build_relationships", _rel)
+
+    stats = await tasks._run_collection_and_evaluation(db, scan)
+    assert stats["workloads_collected"] == ["tenant"]
+
+
+@pytest.mark.asyncio
 async def test_run_collection_relationship_error_swallowed(db, seed_data, monkeypatch) -> None:
     scan = await _make_scan(db, seed_data)
 

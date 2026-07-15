@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { Building2, ChevronRight } from "lucide-react";
 import { GlassCard, SectionHeader } from "./chart-section";
 import { formatDateTime } from "@/lib/dates";
-import type { CloudAccount } from "@/types";
+import { PROVIDERS } from "@/config/providers";
+import type { CloudAccount, CloudProvider } from "@/types";
 
 interface AccountBreakdownProps {
   accounts: CloudAccount[];
@@ -12,16 +13,16 @@ interface AccountBreakdownProps {
 }
 
 function ProviderBadge({ provider }: { provider: string }) {
-  const isAzure = provider === "azure";
+  const config =
+    provider in PROVIDERS ? PROVIDERS[provider as CloudProvider] : null;
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold ${
-        isAzure
-          ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-          : "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+        config?.badgeClass ??
+        "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
       }`}
     >
-      {isAzure ? "Azure" : "AWS"}
+      {config?.shortLabel ?? provider.toUpperCase()}
     </span>
   );
 }

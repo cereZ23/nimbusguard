@@ -15,6 +15,10 @@ from app.schemas.findings import FindingResponse
 
 router = APIRouter()
 
+# Frameworks stored directly in Control.framework (one control belongs to
+# exactly one). Everything else filters framework_mappings JSONB keys.
+PRIMARY_FRAMEWORKS = {"cis-lite", "cis-m365"}
+
 
 @router.get("", response_model=ApiResponse[list[ControlResponse]])
 async def list_controls(
@@ -57,10 +61,10 @@ async def list_controls(
         base = base.where(search_filter)
         count_base = count_base.where(search_filter)
     if framework:
-        if framework == "cis-lite":
-            # Default: return all controls (they all belong to cis-lite)
-            base = base.where(Control.framework == "cis-lite")
-            count_base = count_base.where(Control.framework == "cis-lite")
+        if framework in PRIMARY_FRAMEWORKS:
+            # Primary frameworks filter directly on Control.framework
+            base = base.where(Control.framework == framework)
+            count_base = count_base.where(Control.framework == framework)
         else:
             # Filter controls that have this framework key in framework_mappings JSONB
             fw_filter = Control.framework_mappings.has_key(framework)  # noqa: W601
@@ -84,6 +88,7 @@ async def list_controls(
                 framework=ctrl.framework,
                 remediation_hint=ctrl.remediation_hint,
                 framework_mappings=ctrl.framework_mappings,
+                automation=ctrl.automation,
                 pass_count=row[1],
                 fail_count=row[2],
                 total_count=row[3],

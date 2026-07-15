@@ -20,6 +20,7 @@ import { AssetDetailSkeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
 import { extractApiError } from "@/lib/errors";
 import { formatDate } from "@/lib/dates";
+import { PROVIDERS, providerFromResourceType } from "@/config/providers";
 import type { Asset, AssetRelationship, Finding } from "@/types";
 
 export default function AssetDetailPage() {
@@ -95,9 +96,8 @@ export default function AssetDetailPage() {
   const failCount = findings.filter((f) => f.status === "fail").length;
   const passCount = findings.filter((f) => f.status === "pass").length;
 
-  const azurePortalUrl = asset.provider_id
-    ? `https://portal.azure.com/#@/resource${asset.provider_id}`
-    : null;
+  const providerConfig = PROVIDERS[providerFromResourceType(asset.resource_type)];
+  const portalUrl = providerConfig.portalUrlForAsset(asset);
 
   return (
     <AppShell>
@@ -120,15 +120,15 @@ export default function AssetDetailPage() {
               <p className="mt-1 text-sm text-gray-500 font-mono dark:text-gray-400">
                 {asset.provider_id}
               </p>
-              {azurePortalUrl && (
+              {portalUrl && (
                 <a
-                  href={azurePortalUrl}
+                  href={portalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-blue-600 dark:hover:text-blue-400"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  Open in Azure Portal
+                  Open in {providerConfig.portalName}
                 </a>
               )}
             </div>

@@ -32,6 +32,11 @@ class Control(Base, UUIDPrimaryKey, TimestampMixin):
     exposure: Mapped[str | None] = mapped_column(String(16), nullable=True)  # internet | internal | none
     remediation_group: Mapped[str | None] = mapped_column(String(100), nullable=True)
     remediation_action: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # "automated" (default) — an evaluator check exists; "manual" — the
+    # setting has no app-only API and must be verified by hand. Manual
+    # controls are catalogue-visible but never produce findings and stay
+    # out of compliance scores.
+    automation: Mapped[str | None] = mapped_column(String(16), nullable=True)  # automated | manual
 
     findings: Mapped[list[Finding]] = relationship(back_populates="control", lazy="noload")
 

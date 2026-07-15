@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Building2,
   Cloud,
   Shield,
   CheckCircle,
@@ -20,6 +21,8 @@ import {
 import api from "@/lib/api";
 import { extractApiError } from "@/lib/errors";
 import Input from "@/components/ui/input";
+import { PROVIDERS } from "@/config/providers";
+import type { CloudProvider } from "@/types";
 
 // ── Step definitions ────────────────────────────────────────────────
 
@@ -89,7 +92,7 @@ interface TestResult {
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<WizardStep>("welcome");
-  const [provider, setProvider] = useState<"azure" | "aws" | null>(null);
+  const [provider, setProvider] = useState<CloudProvider | null>(null);
   const [form, setForm] = useState<CredentialForm>(EMPTY_FORM);
   const [showGuide, setShowGuide] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
@@ -126,37 +129,71 @@ export default function OnboardingPage() {
   const updateField = (field: keyof CredentialForm, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  const hasProviderCredentials = (): boolean => {
+    switch (provider) {
+      case "azure":
+        return (
+          form.subscription_id.trim().length > 0 &&
+          form.tenant_id.trim().length > 0 &&
+          form.client_id.trim().length > 0 &&
+          form.client_secret.trim().length > 0
+        );
+      case "aws":
+        return (
+          form.access_key_id.trim().length > 0 &&
+          form.secret_access_key.trim().length > 0
+        );
+      case "m365":
+        return (
+          form.tenant_id.trim().length > 0 &&
+          form.client_id.trim().length > 0 &&
+          form.client_secret.trim().length > 0
+        );
+      default:
+        return false;
+    }
+  };
+
   const isCredentialsValid =
-    form.display_name.trim().length > 0 &&
-    (provider === "azure"
-      ? form.subscription_id.trim().length > 0 &&
-        form.tenant_id.trim().length > 0 &&
-        form.client_id.trim().length > 0 &&
-        form.client_secret.trim().length > 0
-      : form.access_key_id.trim().length > 0 &&
-        form.secret_access_key.trim().length > 0);
+    form.display_name.trim().length > 0 && hasProviderCredentials();
 
   // ── Test connection handler ─────────────────────────────────────
 
+  const buildTestConnectionPayload = (): Record<string, string> | null => {
+    switch (provider) {
+      case "azure":
+        return {
+          provider: "azure",
+          tenant_id: form.tenant_id,
+          client_id: form.client_id,
+          client_secret: form.client_secret,
+          subscription_id: form.subscription_id,
+        };
+      case "aws":
+        return {
+          provider: "aws",
+          access_key_id: form.access_key_id,
+          secret_access_key: form.secret_access_key,
+          region: form.region,
+        };
+      case "m365":
+        return {
+          provider: "m365",
+          tenant_id: form.tenant_id,
+          client_id: form.client_id,
+          client_secret: form.client_secret,
+        };
+      default:
+        return null;
+    }
+  };
+
   const handleTestConnection = async () => {
+    const connPayload = buildTestConnectionPayload();
+    if (!connPayload) return;
     setIsTesting(true);
     setTestResult(null);
     try {
-      const connPayload =
-        provider === "azure"
-          ? {
-              provider: "azure",
-              tenant_id: form.tenant_id,
-              client_id: form.client_id,
-              client_secret: form.client_secret,
-              subscription_id: form.subscription_id,
-            }
-          : {
-              provider: "aws",
-              access_key_id: form.access_key_id,
-              secret_access_key: form.secret_access_key,
-              region: form.region,
-            };
       const res = await api.post("/accounts/test-connection", connPayload);
       const data = res.data.data as TestResult;
       setTestResult(data);
@@ -173,32 +210,52 @@ export default function OnboardingPage() {
 
   // ── Create account handler ──────────────────────────────────────
 
+  const buildCreateAccountPayload = () => {
+    switch (provider) {
+      case "azure":
+        return {
+          provider: "azure",
+          display_name: form.display_name,
+          provider_account_id: form.subscription_id,
+          credentials: {
+            tenant_id: form.tenant_id,
+            client_id: form.client_id,
+            client_secret: form.client_secret,
+          },
+        };
+      case "aws":
+        return {
+          provider: "aws",
+          display_name: form.display_name,
+          provider_account_id: form.access_key_id,
+          credentials: {
+            access_key_id: form.access_key_id,
+            secret_access_key: form.secret_access_key,
+            region: form.region,
+          },
+        };
+      case "m365":
+        return {
+          provider: "m365",
+          display_name: form.display_name,
+          provider_account_id: form.tenant_id,
+          credentials: {
+            tenant_id: form.tenant_id,
+            client_id: form.client_id,
+            client_secret: form.client_secret,
+          },
+        };
+      default:
+        return null;
+    }
+  };
+
   const handleCreateAccount = async () => {
+    const accountPayload = buildCreateAccountPayload();
+    if (!accountPayload) return;
     setIsCreating(true);
     setCreateError(null);
     try {
-      const accountPayload =
-        provider === "azure"
-          ? {
-              provider: "azure",
-              display_name: form.display_name,
-              provider_account_id: form.subscription_id,
-              credentials: {
-                tenant_id: form.tenant_id,
-                client_id: form.client_id,
-                client_secret: form.client_secret,
-              },
-            }
-          : {
-              provider: "aws",
-              display_name: form.display_name,
-              provider_account_id: form.access_key_id,
-              credentials: {
-                access_key_id: form.access_key_id,
-                secret_access_key: form.secret_access_key,
-                region: form.region,
-              },
-            };
       const res = await api.post("/accounts", accountPayload);
       const account = res.data.data as { id: string };
       setCreatedAccountId(account.id);
@@ -233,6 +290,30 @@ export default function OnboardingPage() {
       setIsScanning(false);
     }
   };
+
+  // ── Confirm step summary rows (never include secret values) ──────
+
+  const confirmRows: { label: string; value: string; mono?: boolean }[] =
+    provider === "azure"
+      ? [
+          { label: "Subscription ID", value: form.subscription_id, mono: true },
+          { label: "Tenant ID", value: form.tenant_id, mono: true },
+          { label: "Client ID", value: form.client_id, mono: true },
+          { label: "Client Secret", value: "**********************" },
+        ]
+      : provider === "aws"
+        ? [
+            { label: "Access Key ID", value: form.access_key_id, mono: true },
+            { label: "Secret Access Key", value: "**********************" },
+            { label: "Region", value: form.region, mono: true },
+          ]
+        : provider === "m365"
+          ? [
+              { label: "Entra Tenant ID", value: form.tenant_id, mono: true },
+              { label: "Client ID", value: form.client_id, mono: true },
+              { label: "Client Secret", value: "**********************" },
+            ]
+          : [];
 
   // ── Render ────────────────────────────────────────────────────────
 
@@ -288,8 +369,8 @@ export default function OnboardingPage() {
               </h1>
               <p className="mx-auto mt-3 max-w-md text-gray-500 dark:text-gray-400">
                 Let&apos;s connect your first cloud account. This wizard will
-                guide you through setting up Azure credentials so we can start
-                assessing your security posture.
+                guide you through setting up your cloud credentials so we can
+                start assessing your security posture.
               </p>
               <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">
                 It takes about 2 minutes to complete.
@@ -322,7 +403,7 @@ export default function OnboardingPage() {
                 Choose the cloud provider you want to connect.
               </p>
 
-              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {/* Azure */}
                 <button
                   onClick={() => setProvider("azure")}
@@ -378,6 +459,34 @@ export default function OnboardingPage() {
                     Amazon Web Services
                   </span>
                 </button>
+
+                {/* Microsoft 365 */}
+                <button
+                  onClick={() => setProvider("m365")}
+                  className={`flex flex-col items-center gap-3 rounded-xl border-2 p-6 transition-all ${
+                    provider === "m365"
+                      ? "border-teal-600 bg-teal-50 dark:border-teal-500 dark:bg-teal-900/20"
+                      : "border-gray-200 bg-white hover:border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-gray-500"
+                  }`}
+                >
+                  <Building2
+                    size={32}
+                    className={
+                      provider === "m365"
+                        ? "text-teal-600 dark:text-teal-400"
+                        : "text-gray-400"
+                    }
+                  />
+                  <span
+                    className={`text-sm font-semibold ${
+                      provider === "m365"
+                        ? "text-teal-600 dark:text-teal-400"
+                        : "text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    Microsoft 365
+                  </span>
+                </button>
               </div>
 
               <div className="mt-8 flex items-center justify-between">
@@ -406,12 +515,16 @@ export default function OnboardingPage() {
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 {provider === "azure"
                   ? "Azure Service Principal"
-                  : "AWS Access Credentials"}
+                  : provider === "m365"
+                    ? "Microsoft Entra App Registration"
+                    : "AWS Access Credentials"}
               </h2>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 {provider === "azure"
                   ? "Enter the credentials for the Azure Service Principal that will be used to read your cloud resources."
-                  : "Enter the IAM access key for the AWS account you want to monitor."}
+                  : provider === "m365"
+                    ? "Enter the credentials for the Entra app registration that will be used to read your Microsoft 365 tenant."
+                    : "Enter the IAM access key for the AWS account you want to monitor."}
               </p>
 
               <div className="mt-6 space-y-4">
@@ -573,6 +686,69 @@ export default function OnboardingPage() {
                     </div>
                   </>
                 )}
+
+                {/* Microsoft 365-specific fields */}
+                {provider === "m365" && (
+                  <>
+                    {/* Tenant ID */}
+                    <Input
+                      id="wiz_m365_tenant_id"
+                      label="Entra Tenant ID"
+                      type="text"
+                      value={form.tenant_id}
+                      onChange={(e) => updateField("tenant_id", e.target.value)}
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      className="font-mono"
+                    />
+
+                    {/* Client ID */}
+                    <Input
+                      id="wiz_m365_client_id"
+                      label="Client ID (App ID)"
+                      type="text"
+                      value={form.client_id}
+                      onChange={(e) => updateField("client_id", e.target.value)}
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      className="font-mono"
+                    />
+
+                    {/* Client Secret */}
+                    <div>
+                      <label
+                        htmlFor="wiz_m365_client_secret"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        Client Secret
+                      </label>
+                      <div className="relative mt-1">
+                        <input
+                          id="wiz_m365_client_secret"
+                          type={showSecret ? "text" : "password"}
+                          value={form.client_secret}
+                          onChange={(e) =>
+                            updateField("client_secret", e.target.value)
+                          }
+                          placeholder="Enter your client secret"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSecret(!showSecret)}
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          aria-label={
+                            showSecret ? "Hide secret" : "Show secret"
+                          }
+                        >
+                          {showSecret ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Collapsible guide */}
@@ -655,8 +831,8 @@ export default function OnboardingPage() {
                 Test Connection
               </h2>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Verify that PostureOne can connect to your Azure subscription
-                before proceeding.
+                Verify that PostureOne can connect to your cloud account before
+                proceeding.
               </p>
 
               <div className="mt-6 flex flex-col items-center gap-4">
@@ -775,19 +951,19 @@ export default function OnboardingPage() {
 
               <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-900/50">
                 <dl className="divide-y divide-gray-200 dark:divide-gray-600">
-                  <SummaryRow label="Provider" value="Azure" />
+                  <SummaryRow
+                    label="Provider"
+                    value={provider ? PROVIDERS[provider].label : "—"}
+                  />
                   <SummaryRow label="Display Name" value={form.display_name} />
-                  <SummaryRow
-                    label="Subscription ID"
-                    value={form.subscription_id}
-                    mono
-                  />
-                  <SummaryRow label="Tenant ID" value={form.tenant_id} mono />
-                  <SummaryRow label="Client ID" value={form.client_id} mono />
-                  <SummaryRow
-                    label="Client Secret"
-                    value="**********************"
-                  />
+                  {confirmRows.map((row) => (
+                    <SummaryRow
+                      key={row.label}
+                      label={row.label}
+                      value={row.value}
+                      mono={row.mono}
+                    />
+                  ))}
                   {testResult && (
                     <SummaryRow
                       label="Resources Found"
@@ -845,8 +1021,8 @@ export default function OnboardingPage() {
                 Account Connected!
               </h2>
               <p className="mx-auto mt-3 max-w-md text-gray-500 dark:text-gray-400">
-                Your Azure subscription has been successfully connected. Run
-                your first security scan to discover resources and assess your
+                Your cloud account has been successfully connected. Run your
+                first security scan to discover resources and assess your
                 security posture.
               </p>
 

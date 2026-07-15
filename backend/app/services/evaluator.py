@@ -32,7 +32,10 @@ class EvalResult:
     description: str = ""
 
 
-CheckFn = Callable[[Asset], EvalResult]
+# A check returns None to signal "skipped" — the required data was not
+# collected this scan (e.g. a permission gap), so neither pass nor fail
+# can be asserted and no finding is written.
+CheckFn = Callable[[Asset], EvalResult | None]
 
 
 class CheckRegistry:
@@ -72,6 +75,7 @@ def check(resource_type: str, control_code: str) -> Callable[[CheckFn], CheckFn]
 # Import all check modules — this triggers @check decorators and populates the registry
 import app.services.aws.checks  # noqa: E402, F401
 import app.services.azure.checks  # noqa: E402, F401
+import app.services.m365.checks  # noqa: E402, F401
 
 # ── Evaluation orchestration ─────────────────────────────────────────
 
@@ -88,6 +92,8 @@ def evaluate_asset(
             logger.warning("Control %s not found in DB, skipping", control_code)
             continue
         result = fn(asset)
+        if result is None:
+            continue
         results.append((control_code, result))
     return results
 

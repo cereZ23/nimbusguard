@@ -48,6 +48,6 @@ export const HELP_CONTENT = {
       "Webhooks send HTTP POST notifications to your endpoints when security events occur.",
     mfa: "Two-factor authentication adds an extra layer of security to your account using time-based codes.",
     cloudAccount:
-      "A cloud account connects PostureOne to your Azure subscription. PostureOne requires Reader and Security Reader roles.",
+      "A cloud account connects PostureOne to your Azure subscription, AWS account, or Microsoft 365 tenant. PostureOne only requires read-only access.",
   },
 } as const;

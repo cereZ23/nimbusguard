@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class TestConnectionRequest(BaseModel):
-    provider: str = Field(pattern=r"^(azure|aws)$")
+    provider: str = Field(pattern=r"^(azure|aws|m365)$")
     # Azure fields
     tenant_id: str | None = Field(default=None, min_length=1, max_length=100)
     client_id: str | None = Field(default=None, min_length=1, max_length=100)
@@ -28,6 +28,9 @@ class TestConnectionRequest(BaseModel):
         elif self.provider == "aws" and not all([self.access_key_id, self.secret_access_key]):
             msg = "AWS requires access_key_id and secret_access_key"
             raise ValueError(msg)
+        elif self.provider == "m365" and not all([self.tenant_id, self.client_id, self.client_secret]):
+            msg = "Microsoft 365 requires tenant_id, client_id, and client_secret"
+            raise ValueError(msg)
         return self
 
 
@@ -39,11 +42,12 @@ class TestConnectionResponse(BaseModel):
 
 
 class CloudAccountCreate(BaseModel):
-    provider: str = Field(pattern=r"^(azure|aws)$")
+    provider: str = Field(pattern=r"^(azure|aws|m365)$")
     display_name: str = Field(min_length=1, max_length=255)
     provider_account_id: str = Field(min_length=1, max_length=255)
     # Azure: JSON with tenant_id, client_id, client_secret
     # AWS: JSON with access_key_id, secret_access_key, region, optional role_arn, external_id
+    # M365: JSON with tenant_id, client_id, client_secret (Entra app registration)
     credentials: dict
 
     @model_validator(mode="after")
@@ -64,6 +68,12 @@ class CloudAccountCreate(BaseModel):
             # Set default region if not provided
             if "region" not in creds or not creds["region"]:
                 creds["region"] = "us-east-1"
+        elif self.provider == "m365":
+            required = ["tenant_id", "client_id", "client_secret"]
+            missing = [k for k in required if not creds.get(k)]
+            if missing:
+                msg = f"Microsoft 365 credentials must include: {', '.join(missing)}"
+                raise ValueError(msg)
         return self
 
 

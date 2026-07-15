@@ -37,7 +37,7 @@ const ComplianceTrendChart = dynamic(
 
 // --- Framework configuration ---
 
-type FrameworkKey = "cis-lite" | "soc2" | "nist" | "iso27001";
+type FrameworkKey = "cis-lite" | "cis-m365" | "soc2" | "nist" | "iso27001";
 
 interface FrameworkConfig {
   key: FrameworkKey;
@@ -50,6 +50,11 @@ const BUILT_IN_FRAMEWORKS: FrameworkConfig[] = [
     key: "cis-lite",
     label: "CIS Azure",
     description: "CIS Benchmark for Microsoft Azure - Lite",
+  },
+  {
+    key: "cis-m365",
+    label: "CIS Microsoft 365",
+    description: "CIS Benchmark for Microsoft 365 Foundations",
   },
   {
     key: "soc2",
@@ -71,6 +76,7 @@ const BUILT_IN_FRAMEWORKS: FrameworkConfig[] = [
 // Map frontend framework key to API framework key for trend endpoint
 const TREND_FRAMEWORK_MAP: Record<FrameworkKey, string> = {
   "cis-lite": "cis_azure",
+  "cis-m365": "cis_m365",
   soc2: "soc2",
   nist: "nist",
   iso27001: "iso27001",
@@ -265,8 +271,8 @@ function groupControlsByFramework(
   controls: ControlWithCounts[],
   framework: FrameworkKey,
 ): ControlGroup[] {
-  if (framework === "cis-lite") {
-    // No grouping for CIS, return a single flat group
+  if (framework === "cis-lite" || framework === "cis-m365") {
+    // No grouping for CIS frameworks, return a single flat group
     return [{ key: "all", label: "", controls }];
   }
 
@@ -843,14 +849,18 @@ export default function CompliancePage() {
   }, [filteredControls, activeTab]);
 
   const frameworkSummary = useMemo(() => {
-    const totalPassing = controls.filter(
+    // Manual controls are never evaluated automatically, so they are
+    // excluded from the compliance score and counted separately.
+    const automated = controls.filter((c) => c.automation !== "manual");
+    const totalPassing = automated.filter(
       (c) => c.total_count > 0 && c.fail_count === 0,
     ).length;
-    const totalFailing = controls.filter((c) => c.fail_count > 0).length;
+    const totalFailing = automated.filter((c) => c.fail_count > 0).length;
     return {
       passing: totalPassing,
       failing: totalFailing,
-      total: controls.length,
+      total: automated.length,
+      manual: controls.length - automated.length,
     };
   }, [controls]);
 
@@ -881,11 +891,13 @@ export default function CompliancePage() {
   );
 
   const customSummary = useMemo(() => {
-    if (!customCompliance) return { passing: 0, failing: 0, total: 0 };
+    if (!customCompliance)
+      return { passing: 0, failing: 0, total: 0, manual: 0 };
     return {
       passing: customCompliance.passing_controls,
       failing: customCompliance.failing_controls,
       total: customCompliance.total_controls,
+      manual: 0,
     };
   }, [customCompliance]);
 
@@ -995,18 +1007,29 @@ export default function CompliancePage() {
             <SeverityBadge severity={control.severity} />
           </div>
 
-          {/* Pass rate */}
-          <div className="flex-shrink-0">
-            <PassRateBar
-              passCount={control.pass_count}
-              totalCount={control.total_count}
-            />
-          </div>
+          {control.automation === "manual" ? (
+            /* Manual controls are never evaluated automatically */
+            <div className="flex-shrink-0">
+              <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                Manual
+              </span>
+            </div>
+          ) : (
+            <>
+              {/* Pass rate */}
+              <div className="flex-shrink-0">
+                <PassRateBar
+                  passCount={control.pass_count}
+                  totalCount={control.total_count}
+                />
+              </div>
 
-          {/* Status label */}
-          <div className="w-24 flex-shrink-0 text-right">
-            <StatusLabel control={control} />
-          </div>
+              {/* Status label */}
+              <div className="w-24 flex-shrink-0 text-right">
+                <StatusLabel control={control} />
+              </div>
+            </>
+          )}
         </button>
 
         {/* Expanded detail panel */}
@@ -1337,6 +1360,11 @@ export default function CompliancePage() {
                       currentSummary.failing}{" "}
                     no data
                   </span>
+                  {currentSummary.manual > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                      {currentSummary.manual} manual
+                    </span>
+                  )}
                 </div>
               </div>
               <span

@@ -39,12 +39,14 @@ const ProviderSeverityChart = dynamic(
 const PROVIDER_COLORS: Record<string, string> = {
   azure: "#0078d4",
   aws: "#ff9900",
+  m365: "#0f7b6c",
   gcp: "#4285f4",
 };
 
 const PROVIDER_GRADIENTS: Record<string, { from: string; to: string }> = {
   azure: { from: "#0078d4", to: "#50b0ff" },
   aws: { from: "#ff9900", to: "#ffbf60" },
+  m365: { from: "#0f7b6c", to: "#4db6a5" },
   gcp: { from: "#4285f4", to: "#82b1ff" },
 };
 
